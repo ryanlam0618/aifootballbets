@@ -1,0 +1,175 @@
+{
+    "match_id": "4813575",
+    "match_time": "Wed, Jan 7, 2026, 19:30 UTC",
+    "timestamp": "2026-01-08 20:17:04",
+    "home_team": {
+        "name": "AFC Bournemouth",
+        "id": 8678,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 1067256,
+                "name": "Djordje Petrovic",
+                "number": "1",
+                "position_id": 11,
+                "rating": 6.8
+            },
+            {
+                "id": 1526689,
+                "name": "Alex Jimenez",
+                "number": "20",
+                "position_id": 32,
+                "rating": 6.5
+            },
+            {
+                "id": 959407,
+                "name": "James Hill",
+                "number": "23",
+                "position_id": 34,
+                "rating": 7.5
+            },
+            {
+                "id": 785411,
+                "name": "Marcos Senesi",
+                "number": "5",
+                "position_id": 36,
+                "rating": 7.8
+            },
+            {
+                "id": 1177358,
+                "name": "Adrien Truffert",
+                "number": "3",
+                "position_id": 38,
+                "rating": 6.8
+            },
+            {
+                "id": 1233655,
+                "name": "Alex Scott",
+                "number": "8",
+                "position_id": 64,
+                "rating": 7
+            },
+            {
+                "id": 562724,
+                "name": "Lewis Cook",
+                "number": "4",
+                "position_id": 66,
+                "rating": 7
+            },
+            {
+                "id": 789630,
+                "name": "Marcus Tavernier",
+                "number": "16",
+                "position_id": 83,
+                "rating": 7.5
+            },
+            {
+                "id": 1460534,
+                "name": "Eli Junior Kroupi",
+                "number": "22",
+                "position_id": 85,
+                "rating": 7.4
+            },
+            {
+                "id": 933576,
+                "name": "Antoine Semenyo",
+                "number": "24",
+                "position_id": 87,
+                "rating": 7.5
+            },
+            {
+                "id": 1098096,
+                "name": "Evanilson",
+                "number": "9",
+                "position_id": 115,
+                "rating": 7.3
+            }
+        ],
+        "coach": "Andoni Iraola"
+    },
+    "away_team": {
+        "name": "Tottenham Hotspur",
+        "id": 8586,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 538501,
+                "name": "Guglielmo Vicario",
+                "number": "1",
+                "position_id": 11,
+                "rating": 4.8
+            },
+            {
+                "id": 941573,
+                "name": "Pedro Porro",
+                "number": "23",
+                "position_id": 32,
+                "rating": 6.3
+            },
+            {
+                "id": 789066,
+                "name": "Cristian Romero",
+                "number": "17",
+                "position_id": 34,
+                "rating": 8.3
+            },
+            {
+                "id": 1097466,
+                "name": "Micky van de Ven",
+                "number": "37",
+                "position_id": 36,
+                "rating": 6.1
+            },
+            {
+                "id": 894803,
+                "name": "Djed Spence",
+                "number": "24",
+                "position_id": 38,
+                "rating": 6.3
+            },
+            {
+                "id": 524434,
+                "name": "Joao Palhinha",
+                "number": "6",
+                "position_id": 64,
+                "rating": 7.2
+            },
+            {
+                "id": 620618,
+                "name": "Rodrigo Bentancur",
+                "number": "30",
+                "position_id": 66,
+                "rating": 6.8
+            },
+            {
+                "id": 1173787,
+                "name": "Xavi Simons",
+                "number": "7",
+                "position_id": 83,
+                "rating": 7
+            },
+            {
+                "id": 1386775,
+                "name": "Lucas Bergvall",
+                "number": "15",
+                "position_id": 85,
+                "rating": 6.1
+            },
+            {
+                "id": 1288111,
+                "name": "Mathys Tel",
+                "number": "11",
+                "position_id": 87,
+                "rating": 8.5
+            },
+            {
+                "id": 823825,
+                "name": "Randal Kolo Muani",
+                "number": "39",
+                "position_id": 115,
+                "rating": 5.8
+            }
+        ],
+        "coach": "Thomas Frank"
+    }
+}
