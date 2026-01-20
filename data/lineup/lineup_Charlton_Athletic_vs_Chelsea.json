@@ -1,0 +1,175 @@
+{
+    "match_id": "5089900",
+    "match_time": "Sat, Jan 10, 2026, 20:00 UTC",
+    "timestamp": "2026-01-11 03:26:22",
+    "home_team": {
+        "name": "Charlton Athletic",
+        "id": 8451,
+        "formation": "3-1-4-2",
+        "starters": [
+            {
+                "id": 763952,
+                "name": "Will Mannion",
+                "number": "25",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 1805495,
+                "name": "Keenan Gough",
+                "number": "36",
+                "position_id": 33,
+                "rating": null
+            },
+            {
+                "id": 447418,
+                "name": "Lloyd Jones",
+                "number": "5",
+                "position_id": 35,
+                "rating": null
+            },
+            {
+                "id": 471271,
+                "name": "Amari'i Bell",
+                "number": "17",
+                "position_id": 37,
+                "rating": null
+            },
+            {
+                "id": 770256,
+                "name": "Conor Coventry",
+                "number": "6",
+                "position_id": 65,
+                "rating": null
+            },
+            {
+                "id": 539939,
+                "name": "James Bree",
+                "number": "28",
+                "position_id": 82,
+                "rating": null
+            },
+            {
+                "id": 430429,
+                "name": "Greg Docherty",
+                "number": "10",
+                "position_id": 84,
+                "rating": null
+            },
+            {
+                "id": 1081081,
+                "name": "Sonny Carey",
+                "number": "14",
+                "position_id": 86,
+                "rating": null
+            },
+            {
+                "id": 1338978,
+                "name": "Tyreece Campbell",
+                "number": "7",
+                "position_id": 88,
+                "rating": null
+            },
+            {
+                "id": 1389994,
+                "name": "Miles Leaburn",
+                "number": "11",
+                "position_id": 104,
+                "rating": null
+            },
+            {
+                "id": 982745,
+                "name": "Charlie Kelman",
+                "number": "23",
+                "position_id": 106,
+                "rating": null
+            }
+        ],
+        "coach": "Nathan Jones"
+    },
+    "away_team": {
+        "name": "Chelsea",
+        "id": 8455,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 1200984,
+                "name": "Filip Jörgensen",
+                "number": "12",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 1400216,
+                "name": "Josh Acheampong",
+                "number": "34",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 683402,
+                "name": "Tosin Adarabioyo",
+                "number": "4",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 955376,
+                "name": "Benoit Badiashile",
+                "number": "5",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 1413846,
+                "name": "Jorrel Hato",
+                "number": "21",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 1137668,
+                "name": "Moisés Caicedo",
+                "number": "25",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 1372921,
+                "name": "Andrey Santos",
+                "number": "17",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 1113692,
+                "name": "Jamie Gittens",
+                "number": "11",
+                "position_id": 83,
+                "rating": null
+            },
+            {
+                "id": 1336566,
+                "name": "Facundo Buonanotte",
+                "number": "40",
+                "position_id": 85,
+                "rating": null
+            },
+            {
+                "id": 1203665,
+                "name": "Alejandro Garnacho",
+                "number": "49",
+                "position_id": 87,
+                "rating": null
+            },
+            {
+                "id": 1412137,
+                "name": "Marc Guiu",
+                "number": "38",
+                "position_id": 115,
+                "rating": null
+            }
+        ],
+        "coach": "Liam Rosenior"
+    }
+}

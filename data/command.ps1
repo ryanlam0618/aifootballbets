@@ -1,9 +1,7 @@
 # 1. Define Links
 $links = @(
-     "https://www.oddsportal.com/football/italy/serie-a/ac-milan-genoa-AcQMX0pK/#1X2;2",
-     "https://www.oddsportal.com/football/spain/super-cup/atl-madrid-real-madrid-2B1LLrac/#1X2;2",
-     "https://www.oddsportal.com/football/england/premier-league/arsenal-liverpool-SC5rmMjl/#1X2;2"
-)
+     "https://www.oddsportal.com/football/italy/serie-a/como-ac-milan-AsUcWVnf/#1X2;2"
+     )
 
 # 2. Define File Paths
 $basePath = "c:\Users\Ryan\python\.vscode\fb_ai_bets\data"
@@ -30,7 +28,7 @@ for ($i = 0; $i -lt $links.Count; $i++) {
         --sport football `
         --match_links "$currentLink" `
         --format csv `
-        --markets "1x2,over_under_2,over_under_2_5,over_under_3,over_under_3_5,asian_handicap_-2_5,asian_handicap_-2,asian_handicap_-1_5,asian_handicap_-1,asian_handicap_-0_5,asian_handicap_-0_25,asian_handicap_0,asian_handicap_+0_25,asian_handicap_+0_5,asian_handicap_+1,asian_handicap_+1_5,asian_handicap_+2" `
+        --markets "1x2,over_under_2,over_under_2_5,over_under_3,over_under_3_5,asian_handicap_-2,asian_handicap_-1_5,asian_handicap_-1,asian_handicap_-0_5,asian_handicap_-0_25,asian_handicap_+2,asian_handicap_+1_5,asian_handicap_+1,asian_handicap_+0_5,asian_handicap_0" `
         --scrape_odds_history `
         --file_path "$tempFile" `
         --concurrency_tasks 5 `

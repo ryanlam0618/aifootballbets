@@ -27,7 +27,7 @@ class Settings:
     # --- 資金管理設定 ---
     INITIAL_BANKROLL = 101
     KELLY_FRACTION = 0.75 # Kelly 投注比例
-    MIN_EDGE = 0.18 # 最小期望值 (Edge) 門檻
+    MIN_EDGE = 0.09 # 最小期望值 (Edge) 門檻
 
 
     # --- API 設定 (OpenAI 兼容模式) ---

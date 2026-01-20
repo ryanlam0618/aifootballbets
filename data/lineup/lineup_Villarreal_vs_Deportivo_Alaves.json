@@ -1,0 +1,175 @@
+{
+    "match_id": "4837293",
+    "match_time": "Sat, Jan 10, 2026, 15:15 UTC",
+    "timestamp": "2026-01-10 22:55:29",
+    "home_team": {
+        "name": "Villarreal",
+        "id": 10205,
+        "formation": "4-4-2",
+        "starters": [
+            {
+                "id": 1187044,
+                "name": "Luiz Junior",
+                "number": "1",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 1407468,
+                "name": "Santiago Mourino",
+                "number": "15",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 833219,
+                "name": "Juan Foyth",
+                "number": "8",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 1343750,
+                "name": "Renato Veiga",
+                "number": "12",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 629594,
+                "name": "Alfonso Pedraza",
+                "number": "24",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 1026135,
+                "name": "Tajon Buchanan",
+                "number": "17",
+                "position_id": 72,
+                "rating": null
+            },
+            {
+                "id": 75307,
+                "name": "Daniel Parejo",
+                "number": "10",
+                "position_id": 74,
+                "rating": null
+            },
+            {
+                "id": 671865,
+                "name": "Santi Comesana",
+                "number": "14",
+                "position_id": 76,
+                "rating": null
+            },
+            {
+                "id": 1184694,
+                "name": "Alberto Moleiro",
+                "number": "20",
+                "position_id": 78,
+                "rating": null
+            },
+            {
+                "id": 479020,
+                "name": "Ayoze Pérez",
+                "number": "22",
+                "position_id": 104,
+                "rating": null
+            },
+            {
+                "id": 1117069,
+                "name": "Georges Mikautadze",
+                "number": "9",
+                "position_id": 106,
+                "rating": null
+            }
+        ],
+        "coach": "Marcelino Garcia"
+    },
+    "away_team": {
+        "name": "Deportivo Alaves",
+        "id": 9866,
+        "formation": "4-1-4-1",
+        "starters": [
+            {
+                "id": 530468,
+                "name": "Antonio Sivera",
+                "number": "1",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 360918,
+                "name": "Jonny Otto",
+                "number": "17",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 860314,
+                "name": "Nahuel Tenaglia",
+                "number": "14",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 1112072,
+                "name": "Jon Pacheco",
+                "number": "5",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 1056071,
+                "name": "Victor Parada",
+                "number": "24",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 845998,
+                "name": "Antonio Blanco",
+                "number": "8",
+                "position_id": 65,
+                "rating": null
+            },
+            {
+                "id": 1229177,
+                "name": "Carlos Vicente",
+                "number": "7",
+                "position_id": 82,
+                "rating": null
+            },
+            {
+                "id": 1238154,
+                "name": "Pablo Ibánez",
+                "number": "19",
+                "position_id": 84,
+                "rating": null
+            },
+            {
+                "id": 678192,
+                "name": "Jon Guridi",
+                "number": "18",
+                "position_id": 86,
+                "rating": null
+            },
+            {
+                "id": 637756,
+                "name": "Carles Alena",
+                "number": "10",
+                "position_id": 88,
+                "rating": null
+            },
+            {
+                "id": 640123,
+                "name": "Antonio Martinez",
+                "number": "11",
+                "position_id": 115,
+                "rating": null
+            }
+        ],
+        "coach": "Eduardo Coudet"
+    }
+}

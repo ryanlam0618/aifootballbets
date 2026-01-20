@@ -1,0 +1,175 @@
+{
+    "match_id": "5089895",
+    "match_time": "Sat, Jan 10, 2026, 17:45 UTC",
+    "timestamp": "2026-01-11 00:23:26",
+    "home_team": {
+        "name": "Tottenham Hotspur",
+        "id": 8586,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 538501,
+                "name": "Guglielmo Vicario",
+                "number": "1",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 941573,
+                "name": "Pedro Porro",
+                "number": "23",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 789066,
+                "name": "Cristian Romero",
+                "number": "17",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 1097466,
+                "name": "Micky van de Ven",
+                "number": "37",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 894803,
+                "name": "Djed Spence",
+                "number": "24",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 524434,
+                "name": "Joao Palhinha",
+                "number": "6",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 620618,
+                "name": "Rodrigo Bentancur",
+                "number": "30",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 1173787,
+                "name": "Xavi Simons",
+                "number": "7",
+                "position_id": 83,
+                "rating": null
+            },
+            {
+                "id": 1386775,
+                "name": "Lucas Bergvall",
+                "number": "15",
+                "position_id": 85,
+                "rating": null
+            },
+            {
+                "id": 1288111,
+                "name": "Mathys Tel",
+                "number": "11",
+                "position_id": 87,
+                "rating": null
+            },
+            {
+                "id": 823825,
+                "name": "Randal Kolo Muani",
+                "number": "39",
+                "position_id": 115,
+                "rating": null
+            }
+        ],
+        "coach": "Thomas Frank"
+    },
+    "away_team": {
+        "name": "Aston Villa",
+        "id": 10252,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 268375,
+                "name": "Emiliano Martinez",
+                "number": "23",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 729731,
+                "name": "Matty Cash",
+                "number": "2",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 710159,
+                "name": "Ezri Konsa",
+                "number": "4",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 258269,
+                "name": "Victor Nilsson Lindelöf",
+                "number": "3",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 210111,
+                "name": "Lucas Digne",
+                "number": "12",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 816325,
+                "name": "Boubacar Kamara",
+                "number": "44",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 465960,
+                "name": "Youri Tielemans",
+                "number": "8",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 846381,
+                "name": "Jadon Sancho",
+                "number": "19",
+                "position_id": 83,
+                "rating": null
+            },
+            {
+                "id": 356406,
+                "name": "John McGinn",
+                "number": "7",
+                "position_id": 85,
+                "rating": null
+            },
+            {
+                "id": 883080,
+                "name": "Morgan Rogers",
+                "number": "27",
+                "position_id": 87,
+                "rating": null
+            },
+            {
+                "id": 540088,
+                "name": "Ollie Watkins",
+                "number": "11",
+                "position_id": 115,
+                "rating": null
+            }
+        ],
+        "coach": "Unai Emery"
+    }
+}
