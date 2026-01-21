@@ -3,7 +3,7 @@ import os
 import json
 import re
 import difflib
-
+#x
 # 強制設定輸出編碼，避免 Windows 下中文亂碼
 sys.stdout.reconfigure(encoding='utf-8')
 
