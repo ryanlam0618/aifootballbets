@@ -42,6 +42,9 @@ class LLMOrchestrator:
         return self._call_model(client, settings.MODEL_GEMINI, "You are a data assistant.", query) or "Data Error"
 
     def search_and_analyze_market_reaction(self, match_info: str, odds_data_input: any):
+        """
+        Grok 聯網分析：使用 xAI 的 web_search 工具
+        """
         print(f"🤖 [Grok] 正在啟動即時分析：掃描 X 與新聞 ({settings.MODEL_GROK})...")
         net_client = NetworkedLLM(settings.GROK_API_KEY, settings.API_BASE_URL)
         
@@ -54,15 +57,23 @@ class LLMOrchestrator:
         else:
             odds_text = str(odds_data_input)
 
-        system_prompt = "你是由 xAI 開發的 Grok，擁有即時存取 X (Twitter) 數據的能力。"
+        # 簡化 Prompt，讓 Grok 自由發揮搜尋能力
+        system_prompt = "You are an expert sports betting analyst with access to real-time search tools (web_search)in \"X\"and web."
         user_content = f"""
         比賽：{match_info}
-        【任務】找出這場比賽的最新狀況（首發、傷停），並結合以下【全盤口賠率】進行分析。
-        【賠率數據】\n{odds_text}
+        
+        請利用你的搜尋工具 (web_search) 查找關於這場比賽的最新資訊，包括：
+        1. 雙方官方確認的首發陣容 (Confirmed Lineups) 或最新預測。
+        2. 關鍵球員的傷停更新 (Injuries)。
+        3. 賽前新聞或突發狀況。
+
+        接著，結合以下即時賠率數據進行分析：
+        【賠率數據】
+        {odds_text}
+        
         請回答：
-        1. 雙方最新傷停與狀態（重要！）。
-        2. 市場主力資金流向了哪個盤口？
-        3. 這是誘盤還是合理調整？
+        - 綜合情報後，市場資金流向是否合理？
+        - 是否存在主力缺陣導致的誘盤或價值注機會？
         """
         
         result = net_client.chat_with_search(
@@ -84,14 +95,17 @@ class LLMOrchestrator:
         
         【2. 市場面 (Grok 即時情報)】
         {json.dumps(odds_data_package, ensure_ascii=False)}
-        
-        【3. 異常檢測指令 (Sanity Check) - 非常重要！】
+
+        【3. 首發陣容】
+        {json.dumps(match_context.get('lineup', {}), ensure_ascii=False)}
+              
+        【4. 異常檢測指令 (Sanity Check) - 非常重要！】
         - 請計算「市場賠率隱含勝率」(1/Odds)。
         - **對比**: 將「數學模型勝率」與「市場隱含勝率」進行對比。
         - **警告**: 如果兩者差距超過 15% (例如模型說 60%，市場賠率 5.0 暗示 20%)，這通常代表數學模型使用的歷史數據已過時（如未考慮核心球員受傷）。
         - **決策邏輯**: 
             - 如果 Grok 情報顯示該隊有重大傷停或狀態極差，而數學模型卻看好該隊 -> **請判定為「模型失真」，建議 [No Bet] 或反向下注**。
-            - 只有在 Grok 情報也支持該隊被低估時，才視為 Value Bet。
+            - 在 Grok 情報也支持該隊被低估時，視為 Value Bet。
         
         請輸出 JSON 格式:
         {{
@@ -118,5 +132,3 @@ class LLMOrchestrator:
             return {"recommendation": {"market": "Error", "reasoning": "JSON Parse Error"}}
 
 llm = LLMOrchestrator()
-
-

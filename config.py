@@ -15,6 +15,9 @@ class Settings:
     
     # 賠率數據路徑 (讀取本地 odds.csv)
     ODDS_DATA_PATH = os.path.join(BASE_DIR, "data", "odds.csv")
+
+    # the_odds_api 金鑰
+    ODDS_API_KEY = "b404547d496d1606bc0eda3c7f1fe5ea"  
     
     # Excel 報表名稱
     EXCEL_FILENAME = "Betting_Records.xlsx"
@@ -25,9 +28,9 @@ class Settings:
         EXCEL_FILEPATH = os.path.join(BASE_DIR, EXCEL_FILENAME)
 
     # --- 資金管理設定 ---
-    INITIAL_BANKROLL = 101
+    INITIAL_BANKROLL = 1000
     KELLY_FRACTION = 0.75 # Kelly 投注比例
-    MIN_EDGE = 0.18 # 最小期望值 (Edge) 門檻
+    MIN_EDGE = 0.09 # 最小期望值 (Edge) 門檻
 
 
     # --- API 設定 (OpenAI 兼容模式) ---
@@ -44,7 +47,7 @@ class Settings:
     # 必須使用標準名稱
     MODEL_GEMINI = "gemini-3-pro-preview"  
     MODEL_GROK = "grok-4.1"
-    MODEL_GPT = "gpt-5"
+    MODEL_GPT = "gpt-5.2"
 
 settings = Settings()
 

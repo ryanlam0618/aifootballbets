@@ -1,0 +1,175 @@
+{
+    "match_id": "4803229",
+    "match_time": "Sat, Jan 10, 2026, 14:00 UTC",
+    "timestamp": "2026-01-10 22:01:01",
+    "home_team": {
+        "name": "Como",
+        "id": 10171,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 560939,
+                "name": "Jean Butez",
+                "number": "1",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 1082597,
+                "name": "Ignace Van Der Brempt",
+                "number": "77",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 355356,
+                "name": "Marc-Oliver Kempf",
+                "number": "2",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 570434,
+                "name": "Diego Carlos",
+                "number": "34",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 314605,
+                "name": "Alberto Moreno",
+                "number": "18",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 1336582,
+                "name": "Maximo Perrone",
+                "number": "23",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 1076647,
+                "name": "Lucas Da Cunha",
+                "number": "33",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 560945,
+                "name": "Mergim Vojvoda",
+                "number": "31",
+                "position_id": 83,
+                "rating": null
+            },
+            {
+                "id": 1347574,
+                "name": "Nico Paz",
+                "number": "10",
+                "position_id": 85,
+                "rating": null
+            },
+            {
+                "id": 1624039,
+                "name": "Jesus Rodriguez",
+                "number": "17",
+                "position_id": 87,
+                "rating": null
+            },
+            {
+                "id": 873270,
+                "name": "Anastasios Douvikas",
+                "number": "11",
+                "position_id": 115,
+                "rating": null
+            }
+        ],
+        "coach": "Cesc Fàbregas"
+    },
+    "away_team": {
+        "name": "Bologna",
+        "id": 9857,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 793041,
+                "name": "Federico Ravaglia",
+                "number": "13",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 1080669,
+                "name": "Nadir Zortea",
+                "number": "20",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 935550,
+                "name": "Torbjørn Heggem",
+                "number": "14",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 860913,
+                "name": "Jhon Lucumi",
+                "number": "26",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 873956,
+                "name": "Juan Miranda",
+                "number": "33",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 201704,
+                "name": "Remo Freuler",
+                "number": "8",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 790732,
+                "name": "Tommaso Pobega",
+                "number": "4",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 1113694,
+                "name": "Jonathan Rowe",
+                "number": "11",
+                "position_id": 83,
+                "rating": null
+            },
+            {
+                "id": 1276505,
+                "name": "Giovanni Fabbian",
+                "number": "80",
+                "position_id": 85,
+                "rating": null
+            },
+            {
+                "id": 1044029,
+                "name": "Nicolo Cambiaghi",
+                "number": "28",
+                "position_id": 87,
+                "rating": null
+            },
+            {
+                "id": 1282008,
+                "name": "Santiago Castro",
+                "number": "9",
+                "position_id": 115,
+                "rating": null
+            }
+        ],
+        "coach": "Vincenzo Italiano"
+    }
+}

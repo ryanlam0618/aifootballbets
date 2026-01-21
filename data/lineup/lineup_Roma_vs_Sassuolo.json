@@ -1,0 +1,175 @@
+{
+    "match_id": "4803235",
+    "match_time": "Sat, Jan 10, 2026, 17:00 UTC",
+    "timestamp": "2026-01-10 23:38:11",
+    "home_team": {
+        "name": "Roma",
+        "id": 8686,
+        "formation": "3-4-1-2",
+        "starters": [
+            {
+                "id": 768474,
+                "name": "Mile Svilar",
+                "number": "99",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 588687,
+                "name": "Gianluca Mancini",
+                "number": "23",
+                "position_id": 33,
+                "rating": null
+            },
+            {
+                "id": 1511063,
+                "name": "Jan Ziolkowski",
+                "number": "24",
+                "position_id": 35,
+                "rating": null
+            },
+            {
+                "id": 671203,
+                "name": "Mario Hermoso",
+                "number": "22",
+                "position_id": 37,
+                "rating": null
+            },
+            {
+                "id": 867225,
+                "name": "Mehmet Zeki Celik",
+                "number": "19",
+                "position_id": 62,
+                "rating": null
+            },
+            {
+                "id": 1451196,
+                "name": "Niccolo Pisilli",
+                "number": "61",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 1016132,
+                "name": "Kouadio Koné",
+                "number": "17",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 671529,
+                "name": "Konstantinos Tsimikas",
+                "number": "12",
+                "position_id": 68,
+                "rating": null
+            },
+            {
+                "id": 1280082,
+                "name": "Matias Soulé",
+                "number": "18",
+                "position_id": 85,
+                "rating": null
+            },
+            {
+                "id": 325916,
+                "name": "Paulo Dybala",
+                "number": "21",
+                "position_id": 104,
+                "rating": null
+            },
+            {
+                "id": 1068482,
+                "name": "Evan Ferguson",
+                "number": "11",
+                "position_id": 106,
+                "rating": null
+            }
+        ],
+        "coach": "Gian Piero Gasperini"
+    },
+    "away_team": {
+        "name": "Sassuolo",
+        "id": 7943,
+        "formation": "4-3-3",
+        "starters": [
+            {
+                "id": 760752,
+                "name": "Arijanet Muric",
+                "number": "49",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 860592,
+                "name": "Sebastian Walukiewicz",
+                "number": "6",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 937412,
+                "name": "Jay Idzes",
+                "number": "21",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 1250485,
+                "name": "Tarik Muharemovic",
+                "number": "80",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 1130330,
+                "name": "Josh Doig",
+                "number": "3",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 1189692,
+                "name": "Edoardo Iannoni",
+                "number": "44",
+                "position_id": 73,
+                "rating": null
+            },
+            {
+                "id": 115067,
+                "name": "Nemanja Matic",
+                "number": "18",
+                "position_id": 75,
+                "rating": null
+            },
+            {
+                "id": 1288119,
+                "name": "Ismael Kone",
+                "number": "90",
+                "position_id": 77,
+                "rating": null
+            },
+            {
+                "id": 1159233,
+                "name": "Alieu Fadera",
+                "number": "20",
+                "position_id": 103,
+                "rating": null
+            },
+            {
+                "id": 750030,
+                "name": "Andrea Pinamonti",
+                "number": "99",
+                "position_id": 105,
+                "rating": null
+            },
+            {
+                "id": 935769,
+                "name": "Armand Laurienté",
+                "number": "45",
+                "position_id": 107,
+                "rating": null
+            }
+        ],
+        "coach": "Fabio Grosso"
+    }
+}

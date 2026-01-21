@@ -1,0 +1,175 @@
+{
+    "match_id": "5089905",
+    "match_time": "Sat, Jan 10, 2026, 12:15 UTC",
+    "timestamp": "2026-01-10 19:34:56",
+    "home_team": {
+        "name": "Everton",
+        "id": 8668,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 303919,
+                "name": "Jordan Pickford",
+                "number": "1",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 1112684,
+                "name": "Nathan Patterson",
+                "number": "2",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 1098607,
+                "name": "Jake O'Brien",
+                "number": "15",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 243138,
+                "name": "James Tarkowski",
+                "number": "6",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 874025,
+                "name": "Vitaliy Mykolenko",
+                "number": "16",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 950474,
+                "name": "James Garner",
+                "number": "37",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 1210384,
+                "name": "Merlin Röhl",
+                "number": "34",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 1292833,
+                "name": "Tyler Dibling",
+                "number": "20",
+                "position_id": 83,
+                "rating": null
+            },
+            {
+                "id": 939542,
+                "name": "Dwight McNeil",
+                "number": "7",
+                "position_id": 85,
+                "rating": null
+            },
+            {
+                "id": 1559637,
+                "name": "Harrison Armstrong",
+                "number": "45",
+                "position_id": 87,
+                "rating": null
+            },
+            {
+                "id": 1079485,
+                "name": "Beto",
+                "number": "9",
+                "position_id": 115,
+                "rating": null
+            }
+        ],
+        "coach": null
+    },
+    "away_team": {
+        "name": "Sunderland",
+        "id": 8472,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 1125720,
+                "name": "Robin Roefs",
+                "number": "22",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 1067763,
+                "name": "Trai Hume",
+                "number": "32",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 602304,
+                "name": "Nordi Mukiele",
+                "number": "20",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 480253,
+                "name": "Luke O'Nien",
+                "number": "13",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 1118480,
+                "name": "Dennis Cirkin",
+                "number": "3",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 207236,
+                "name": "Granit Xhaka",
+                "number": "34",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 1359649,
+                "name": "Noah Sadiki",
+                "number": "27",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 1227012,
+                "name": "Simon Adingra",
+                "number": "24",
+                "position_id": 83,
+                "rating": null
+            },
+            {
+                "id": 1049999,
+                "name": "Enzo Le Fee",
+                "number": "28",
+                "position_id": 85,
+                "rating": null
+            },
+            {
+                "id": 1123947,
+                "name": "Romaine Mundle",
+                "number": "14",
+                "position_id": 87,
+                "rating": null
+            },
+            {
+                "id": 1391052,
+                "name": "Eliezer Mayenda",
+                "number": "12",
+                "position_id": 115,
+                "rating": null
+            }
+        ],
+        "coach": null
+    }
+}

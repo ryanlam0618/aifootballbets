@@ -1,0 +1,175 @@
+{
+    "match_id": "4837292",
+    "match_time": "Sat, Jan 10, 2026, 17:30 UTC",
+    "timestamp": "2026-01-10 23:37:57",
+    "home_team": {
+        "name": "Girona",
+        "id": 7732,
+        "formation": "4-1-4-1",
+        "starters": [
+            {
+                "id": 278285,
+                "name": "Paulo Gazzaniga",
+                "number": "13",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 1194892,
+                "name": "Arnau Martinez",
+                "number": "4",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 1580952,
+                "name": "Vitor Reis",
+                "number": "12",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 161012,
+                "name": "Daley Blind",
+                "number": "17",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 477588,
+                "name": "Álex Moreno",
+                "number": "24",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 39591,
+                "name": "Axel Witsel",
+                "number": "20",
+                "position_id": 65,
+                "rating": null
+            },
+            {
+                "id": 564847,
+                "name": "Viktor Tsigankov",
+                "number": "15",
+                "position_id": 82,
+                "rating": null
+            },
+            {
+                "id": 967871,
+                "name": "Iván Martin",
+                "number": "23",
+                "position_id": 84,
+                "rating": null
+            },
+            {
+                "id": 468931,
+                "name": "Thomas Lemar",
+                "number": "11",
+                "position_id": 86,
+                "rating": null
+            },
+            {
+                "id": 970692,
+                "name": "Bryan Gil",
+                "number": "21",
+                "position_id": 88,
+                "rating": null
+            },
+            {
+                "id": 1231648,
+                "name": "Vladyslav Vanat",
+                "number": "19",
+                "position_id": 115,
+                "rating": null
+            }
+        ],
+        "coach": "Michel"
+    },
+    "away_team": {
+        "name": "Osasuna",
+        "id": 8371,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 683762,
+                "name": "Sergio Herrera",
+                "number": "1",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 763970,
+                "name": "Valentin Rosier",
+                "number": "19",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 814663,
+                "name": "Alejandro Catena",
+                "number": "24",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 1098365,
+                "name": "Jorge Herrando",
+                "number": "5",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 695062,
+                "name": "Javi Galán",
+                "number": "20",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 921825,
+                "name": "Jon Moncayola",
+                "number": "7",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 303879,
+                "name": "Lucas Torro",
+                "number": "6",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 1553105,
+                "name": "Victor Munoz",
+                "number": "21",
+                "position_id": 83,
+                "rating": null
+            },
+            {
+                "id": 1054786,
+                "name": "Aimar Oroz",
+                "number": "10",
+                "position_id": 85,
+                "rating": null
+            },
+            {
+                "id": 384413,
+                "name": "Rubén Garcia",
+                "number": "14",
+                "position_id": 87,
+                "rating": null
+            },
+            {
+                "id": 251269,
+                "name": "Ante Budimir",
+                "number": "17",
+                "position_id": 115,
+                "rating": null
+            }
+        ],
+        "coach": "Alessio Lisci"
+    }
+}

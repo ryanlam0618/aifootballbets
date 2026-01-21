@@ -1,0 +1,175 @@
+{
+    "match_id": "4947157",
+    "match_time": "Tue, Jan 20, 2026, 20:00 UTC",
+    "timestamp": "2026-01-21 03:31:00",
+    "home_team": {
+        "name": "Sporting CP",
+        "id": 9768,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 361717,
+                "name": "Rui Silva",
+                "number": "1",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 1325998,
+                "name": "Iván Fresneda",
+                "number": "22",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 1165710,
+                "name": "Goncalo Inacio",
+                "number": "25",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 653592,
+                "name": "Matheus",
+                "number": "2",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 824655,
+                "name": "Ricardo Mangas",
+                "number": "91",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 1663855,
+                "name": "Joao Simoes",
+                "number": "52",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 915102,
+                "name": "Hidemasa Morita",
+                "number": "5",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 1088753,
+                "name": "Geny Catamo",
+                "number": "10",
+                "position_id": 83,
+                "rating": null
+            },
+            {
+                "id": 732282,
+                "name": "Trincao",
+                "number": "17",
+                "position_id": 85,
+                "rating": null
+            },
+            {
+                "id": 1031656,
+                "name": "Maximiliano Araujo",
+                "number": "20",
+                "position_id": 87,
+                "rating": null
+            },
+            {
+                "id": 792303,
+                "name": "Luis Suárez",
+                "number": "97",
+                "position_id": 115,
+                "rating": null
+            }
+        ],
+        "coach": "Rui Borges"
+    },
+    "away_team": {
+        "name": "Paris Saint-Germain",
+        "id": 9847,
+        "formation": "4-3-3",
+        "starters": [
+            {
+                "id": 1177131,
+                "name": "Lucas Chevalier",
+                "number": "30",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 1367615,
+                "name": "Warren Zaire-Emery",
+                "number": "33",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 267365,
+                "name": "Marquinhos",
+                "number": "5",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 1137670,
+                "name": "Willian Pacho",
+                "number": "51",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 1158945,
+                "name": "Nuno Mendes",
+                "number": "25",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 1574189,
+                "name": "Senny Mayulu",
+                "number": "24",
+                "position_id": 73,
+                "rating": null
+            },
+            {
+                "id": 1061249,
+                "name": "Vitinha",
+                "number": "17",
+                "position_id": 75,
+                "rating": null
+            },
+            {
+                "id": 605654,
+                "name": "Fabián Ruiz",
+                "number": "8",
+                "position_id": 77,
+                "rating": null
+            },
+            {
+                "id": 1339208,
+                "name": "Désiré Doué",
+                "number": "14",
+                "position_id": 103,
+                "rating": null
+            },
+            {
+                "id": 692984,
+                "name": "Ousmane Dembélé",
+                "number": "10",
+                "position_id": 105,
+                "rating": null
+            },
+            {
+                "id": 1297165,
+                "name": "Bradley Barcola",
+                "number": "29",
+                "position_id": 107,
+                "rating": null
+            }
+        ],
+        "coach": "Luis Enrique"
+    }
+}

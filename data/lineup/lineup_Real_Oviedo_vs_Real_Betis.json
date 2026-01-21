@@ -1,0 +1,175 @@
+{
+    "match_id": "4837295",
+    "match_time": "Sat, Jan 10, 2026, 13:00 UTC",
+    "timestamp": "2026-01-10 20:54:24",
+    "home_team": {
+        "name": "Real Oviedo",
+        "id": 8670,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 534955,
+                "name": "Aaron Escandell",
+                "number": "13",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 687568,
+                "name": "Lucas Ahijado",
+                "number": "24",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 479217,
+                "name": "David Costas",
+                "number": "4",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 954962,
+                "name": "David Carmo",
+                "number": "16",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 1333066,
+                "name": "Rahim Alhassane",
+                "number": "3",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 948745,
+                "name": "Kwasi Sibo",
+                "number": "6",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 686460,
+                "name": "Santiago Colombatto",
+                "number": "11",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 971787,
+                "name": "Haissem Hassan",
+                "number": "10",
+                "position_id": 83,
+                "rating": null
+            },
+            {
+                "id": 1323510,
+                "name": "Alberto Reina",
+                "number": "5",
+                "position_id": 85,
+                "rating": null
+            },
+            {
+                "id": 1169595,
+                "name": "Ilyas Chaira",
+                "number": "7",
+                "position_id": 87,
+                "rating": null
+            },
+            {
+                "id": 1304120,
+                "name": "Alex Forés",
+                "number": "19",
+                "position_id": 115,
+                "rating": null
+            }
+        ],
+        "coach": "Guillermo Almada"
+    },
+    "away_team": {
+        "name": "Real Betis",
+        "id": 8603,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 999171,
+                "name": "Álvaro Vallés",
+                "number": "1",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 1580522,
+                "name": "Angel Ortiz",
+                "number": "40",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 195305,
+                "name": "Marc Bartra",
+                "number": "5",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 1338016,
+                "name": "Valentin Gomez",
+                "number": "16",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 743192,
+                "name": "Junior Firpo",
+                "number": "23",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 683450,
+                "name": "Pablo Fornals",
+                "number": "8",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 640220,
+                "name": "Marc Roca",
+                "number": "21",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 967622,
+                "name": "Antony",
+                "number": "7",
+                "position_id": 83,
+                "rating": null
+            },
+            {
+                "id": 604126,
+                "name": "Giovani Lo Celso",
+                "number": "20",
+                "position_id": 85,
+                "rating": null
+            },
+            {
+                "id": 676533,
+                "name": "Aitor Ruibal",
+                "number": "24",
+                "position_id": 87,
+                "rating": null
+            },
+            {
+                "id": 852071,
+                "name": "Juan Hernández",
+                "number": "19",
+                "position_id": 115,
+                "rating": null
+            }
+        ],
+        "coach": "Manuel Pellegrini"
+    }
+}
