@@ -1,6 +1,6 @@
 # 1. Define Links
 $links = @(
-     "https://www.oddsportal.com/football/italy/serie-a/como-ac-milan-AsUcWVnf/#1X2;2"
+     "https://www.oddsportal.com/football/germany/bundesliga/vfb-stuttgart-union-berlin-lrCyogAk/#1X2;2"
      )
 
 # 2. Define File Paths
@@ -32,7 +32,6 @@ for ($i = 0; $i -lt $links.Count; $i++) {
         --scrape_odds_history `
         --file_path "$tempFile" `
         --concurrency_tasks 5 `
-        --browser_user_agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" `
         --target_bookmaker "1xBet" `
         --headless
 

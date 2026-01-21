@@ -6,14 +6,17 @@ import ast
 import json
 import pickle
 import difflib
+import requests  # 新增 requests 用於 API 連線
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Any
 from dataclasses import dataclass
 from config import settings
 
-# ⚠️ 注意：頂層不要匯入 math_models
+# ⚠️ 注意：頂層不要匯入 math_models，避免與 app.py 產生循環引用
 
-# --- 1. 歷史數據儲存庫 ---
+# ==========================================
+# 1. 歷史數據儲存庫 (HistoryRepo)
+# ==========================================
 class HistoryRepo:
     def __init__(self, csv_path: str):
         self.df = None
@@ -50,7 +53,6 @@ class HistoryRepo:
             
             self.df.columns = self.df.columns.str.strip().str.lower().str.replace('\ufeff', '')
             
-            rename_dict = {} # (省略詳細 mapping 以節省空間，保持原樣)
             column_mapping = {
                 "date": ["date", "match_date", "time", "日期"],
                 "league": ["league", "div", "division", "聯賽"],
@@ -59,6 +61,7 @@ class HistoryRepo:
                 "home_goals": ["home_goals", "fthg", "h_score", "hg", "主隊進球"],
                 "away_goals": ["away_goals", "ftag", "a_score", "ag", "客隊進球"],
             }
+            rename_dict = {}
             for standard_col, possible_names in column_mapping.items():
                 for col in self.df.columns:
                     if col in possible_names:
@@ -90,29 +93,44 @@ class HistoryRepo:
         data_dir = os.path.dirname(settings.HISTORY_CSV_PATH)
         if not os.path.exists(data_dir): return None
         
-        candidates = [f for f in os.listdir(data_dir) if f.endswith(".json") and "lineup" in f.lower()]
+        candidates = []
+        for root, dirs, files in os.walk(data_dir):
+            for file in files:
+                if file.endswith(".json") and "lineup" in file.lower():
+                    candidates.append(os.path.join(root, file))
+        
         best_score = 0.0
         best_candidate = None
         
         h_input = home_team.lower().replace(".", "").strip()
         a_input = away_team.lower().replace(".", "").strip()
         
-        for f in candidates:
-            clean_name = f.lower().replace("lineup_", "").replace(".json", "").replace("_", " ")
+        for f_path in candidates:
+            f_name = os.path.basename(f_path)
+            clean_name = f_name.lower().replace("lineup_", "").replace(".json", "").replace("_", " ")
+            
+            score = 0.0
             if " vs " in clean_name:
                 parts = clean_name.split(" vs ")
-                score = (difflib.SequenceMatcher(None, h_input, parts[0]).ratio() + 
-                         difflib.SequenceMatcher(None, a_input, parts[1]).ratio()) / 2
+                # 比對主客隊名稱相似度
+                s1 = difflib.SequenceMatcher(None, h_input, parts[0]).ratio()
+                s2 = difflib.SequenceMatcher(None, a_input, parts[1]).ratio()
+                score = (s1 + s2) / 2
+                
+                # 嘗試反向比對 (防呆)
+                s1_rev = difflib.SequenceMatcher(None, h_input, parts[1]).ratio()
+                s2_rev = difflib.SequenceMatcher(None, a_input, parts[0]).ratio()
+                score = max(score, (s1_rev + s2_rev) / 2)
             else:
                 score = difflib.SequenceMatcher(None, f"{h_input} {a_input}", clean_name).ratio()
             
             if score > best_score:
                 best_score = score
-                best_candidate = f
+                best_candidate = f_path
         
-        return os.path.join(data_dir, best_candidate) if best_candidate and best_score > 0.5 else None
+        # 門檻值 0.5
+        return best_candidate if best_candidate and best_score > 0.5 else None
 
-    # ✅ 新增：獲取純數據 (給 GPT 用)
     def get_lineup_data(self, home_team, away_team):
         target_file = self._find_lineup_file(home_team, away_team)
         if target_file:
@@ -122,12 +140,11 @@ class HistoryRepo:
             except: pass
         return {}
 
-    # 獲取預測值 (給 app.py 顯示用)
     def get_lineup_prediction(self, home_team, away_team):
         if not self.lineup_model_class: return None
         data = self.get_lineup_data(home_team, away_team)
         if data:
-            print(f"   📄 成功載入陣容數據 (用於 AI 分析)")
+            print(f"   📄 成功載入陣容數據: {home_team} vs {away_team}")
             return self.lineup_model_class(data).predict_win_prob()
         return None
 
@@ -143,11 +160,10 @@ class HistoryRepo:
         real_away = self._fuzzy_match_team(away, all_teams)
         
         if real_home != home or real_away != away:
-            print(f"   🔄 隊名校正: {home} -> {real_home}, {away} -> {real_away}")
+            print(f"   🔄 歷史數據隊名校正: {home} -> {real_home}, {away} -> {real_away}")
 
         home_s, away_s = real_home.lower().strip(), real_away.lower().strip()
         
-        # Ranking Info
         ranking_info = {}
         if self.ranking_system:
             try:
@@ -159,7 +175,6 @@ class HistoryRepo:
                 ranking_info = {"home_rating": round(val_h, 0), "away_rating": round(val_a, 0), "win_prob": round(prob, 2)}
             except: pass
 
-        # Recent Stats
         tmp = self.df.copy()
         tmp["hl"] = tmp["home_team"].astype(str).str.lower().str.strip()
         tmp["al"] = tmp["away_team"].astype(str).str.lower().str.strip()
@@ -183,8 +198,6 @@ class HistoryRepo:
         
         cols = ["date", "league", "home_team", "away_team", "home_goals", "away_goals"]
         avail_cols = [c for c in cols if c in h_games.columns]
-
-        # ✅ 關鍵：在這裡調用 get_lineup_data，將陣容數據塞入 context
         lineup_json = self.get_lineup_data(home, away)
 
         return {
@@ -194,101 +207,153 @@ class HistoryRepo:
             "stats": {"home_weighted_xg": home_w_avg, "away_weighted_xg": away_w_avg, "league": league},
             "glicko": ranking_info,
             "elo": ranking_info,
-            "lineup": lineup_json # 新增欄位
+            "lineup": lineup_json
         }
 
-# --- RealOddsFetcher (維持不變) ---
+# ==========================================
+# 2. 真實賠率獲取器 (整合 The Odds API)
+# ==========================================
 @dataclass
 class OddsPoint:
     time_offset: str; decimal_odds: float; bookmaker: str = "Aggregated"
 
+# 結構: Market -> Selection -> {max:[], min:[], avg:[]}
 OddsDataStructure = Dict[str, Dict[str, Dict[str, List[OddsPoint]]]]
 
 class RealOddsFetcher:
-    def __init__(self): self.data_path = settings.ODDS_DATA_PATH
-    def get_real_odds(self, league, home, away):
-        print(f"📈 嘗試從 {os.path.basename(self.data_path)} 讀取數據...")
-        if not os.path.exists(self.data_path): return {}
+    def __init__(self):
+        # 請確保在 config.py 中設定了 ODDS_API_KEY (非 OpenAI Key)
+        # 申請地址: https://the-odds-api.com/
+        self.api_key = getattr(settings, 'ODDS_API_KEY', '') 
+        self.base_url = "https://api.the-odds-api.com/v4/sports"
+
+    def get_real_odds(self, league: str, home: str, away: str) -> OddsDataStructure:
+        print(f"🌍 連線 The Odds API 獲取即時賠率...")
+        
+        if not self.api_key:
+            print("⚠️ 錯誤: 未設定 ODDS_API_KEY。請在 config.py 設定。將使用模擬數據。")
+            return self._generate_simulation_aggregated()
+
+        # 1. 取得對應的 Sport Key
+        sport_key = self._get_sport_key(league)
+        print(f"   目標聯賽: {league} -> API Key: {sport_key}")
+
+        # 2. 發送請求
+        # markets: h2h (1x2), spreads (讓球), totals (大小球)
         try:
-            if self.data_path.endswith('.json'): return self._read_from_json(home, away)
-            else: return self._read_from_csv(home, away)
-        except: return {}
-
-    def _read_from_json(self, h, a):
-        with open(self.data_path, 'r', encoding='utf-8') as f: matches = json.load(f)
-        for m in matches:
-            if h.lower() in m.get('home_team', '').lower():
-                print(f"✅ 找到比賽: {m.get('home_team')} vs {m.get('away_team')}")
-                return self._parse_all_markets(m)
-        return {}
-
-    def _read_from_csv(self, h, a):
-        try:
-            df = pd.read_csv(self.data_path, low_memory=False)
-            csv_homes = df['home_team'].unique().astype(str).tolist()
-            matches = difflib.get_close_matches(h, csv_homes, n=1, cutoff=0.6)
-            target = matches[0] if matches else h
-            match_row = df[df['home_team'] == target]
-            if not match_row.empty:
-                print(f"✅ 找到比賽: {match_row.iloc[0]['home_team']} vs {match_row.iloc[0]['away_team']}")
-                return self._parse_all_markets(match_row.iloc[0].to_dict())
-        except: pass
-        return {}
-
-    def _parse_all_markets(self, d):
-        res = {}
-        for k, v in d.items():
-            if not str(k).endswith('_market'): continue
-            try:
-                bks = ast.literal_eval(str(v)) if isinstance(v, str) else v
-                if not isinstance(bks, list): continue
-                m_name = k.replace('_market', '').replace('_', ' ').title()
-                sels = []
-                if '1x2' in k: m_name, sels = "1x2", ["Home", "Draw", "Away"]
-                elif 'asian' in k:
-                    line = k.replace('asian_handicap_', '').replace('_market', '').replace('_', '.').replace('plus', '+')
-                    m_name, sels = f"Asian Handicap {line}", ["Home", "Away"]
-                elif 'over_under' in k:
-                    line = k.replace('over_under_', '').replace('_market', '').replace('_', '.')
-                    m_name, sels = f"Over/Under {line}", ["Over", "Under"]
-                else: continue
-                
-                stats = self._agg_bks(bks, sels)
-                if any(stats[s]['avg'] for s in sels): res[m_name] = stats
-            except: continue
-        return res
-
-    def _agg_bks(self, bks, sels):
-        raw = {s: [] for s in sels}
-        for bk in bks:
-            hist = bk.get('odds_history_data', [])
-            if not isinstance(hist, list): continue
-            for i, s in enumerate(sels):
-                if i < len(hist):
-                    d = hist[i]
-                    cur = None
-                    if isinstance(d, dict):
-                        if 'odds_history' in d and d['odds_history']:
-                            try: cur = d['odds_history'][-1].get('odds')
-                            except: pass
-                        elif 'odds' in d: cur = d.get('odds')
-                    if cur: 
-                        try: raw[s].append(float(cur))
-                        except: pass
-        res = {}
-        for s in sels:
-            vals = raw[s]
-            if not vals: 
-                res[s] = {'max':[], 'min':[], 'avg':[]}
-                continue
-            res[s] = {
-                'max': [OddsPoint("Cur", max(vals), "Max")],
-                'min': [OddsPoint("Cur", min(vals), "Min")],
-                'avg': [OddsPoint("Cur", round(sum(vals)/len(vals), 2), "Avg")]
+            url = f"{self.base_url}/{sport_key}/odds"
+            params = {
+                'apiKey': self.api_key,
+                'regions': 'eu,uk', # 歐洲與英國盤口
+                'markets': 'h2h,spreads,totals', 
+                'oddsFormat': 'decimal'
             }
-        return res
+            response = requests.get(url, params=params, timeout=10)
+            
+            if response.status_code != 200:
+                print(f"❌ API 錯誤 ({response.status_code}): {response.text}")
+                return self._generate_simulation_aggregated()
+            
+            data = response.json()
+            
+            # 3. 尋找目標比賽
+            target_match = None
+            h_input = home.lower()
+            
+            # 簡單模糊比對 API 回傳的比賽
+            for match in data:
+                api_home = match.get('home_team', '').lower()
+                api_away = match.get('away_team', '').lower()
+                
+                # 比對主隊名稱是否包含
+                if h_input in api_home or api_home in h_input:
+                    # 雙重確認客隊
+                    if away.lower()[:4] in api_away: 
+                        target_match = match
+                        break
+            
+            if target_match:
+                print(f"✅ 找到比賽 (API): {target_match['home_team']} vs {target_match['away_team']}")
+                return self._process_api_response(target_match)
+            else:
+                print(f"⚠️ API 回傳中找不到 '{home}' 的比賽。可能尚未開盤或名稱差異過大。")
+                return self._generate_simulation_aggregated()
+
+        except Exception as e:
+            print(f"❌ 連線例外錯誤: {e}")
+            return self._generate_simulation_aggregated()
+
+    def _get_sport_key(self, league_name: str) -> str:
+        """將用戶輸入的聯賽名稱轉換為 The Odds API 的 Key"""
+        l = league_name.lower()
+        if 'premier' in l or 'epl' in l: return 'soccer_epl'
+        if 'liga' in l or 'spain' in l: return 'soccer_spain_la_liga'
+        if 'serie a' in l or 'italy' in l: return 'soccer_italy_serie_a'
+        if 'bundesliga' in l or 'germany' in l: return 'soccer_germany_bundesliga'
+        if 'ligue 1' in l or 'france' in l: return 'soccer_france_ligue_one'
+        if 'champion' in l: return 'soccer_uefa_champs_league'
+        return 'soccer_epl' # 預設
+
+    def _process_api_response(self, match_data) -> OddsDataStructure:
+        """解析 API JSON 並轉換為內部格式"""
+        all_markets = {}
+        bookmakers = match_data.get('bookmakers', [])
+        
+        # 暫存結構: { "Market Name": { "Selection": [odds1, odds2...] } }
+        temp_data = {}
+
+        for bk in bookmakers:
+            for market in bk.get('markets', []):
+                key = market['key'] # h2h, spreads, totals
+                
+                for outcome in market['outcomes']:
+                    name = outcome['name']
+                    price = outcome['price']
+                    point = outcome.get('point') # 讓球數或大小球數
+
+                    # 標準化市場名稱與選項
+                    market_name = ""
+                    selection_name = ""
+
+                    if key == 'h2h':
+                        market_name = "1x2"
+                        selection_name = "Home" if name == match_data['home_team'] else ("Away" if name == match_data['away_team'] else "Draw")
+                    
+                    elif key == 'spreads':
+                        # The Odds API 的 point 是相對於客隊的，或是主隊的，需小心處理
+                        # 通常 point 為負代表讓球
+                        p_str = f"{point}" if point < 0 else f"+{point}"
+                        market_name = f"Asian Handicap {p_str}" 
+                        # API 這裡 name 也是隊名
+                        selection_name = "Home" if name == match_data['home_team'] else "Away"
+                    
+                    elif key == 'totals':
+                        market_name = f"Over/Under {point}"
+                        selection_name = name # Over / Under
+
+                    if market_name and selection_name:
+                        if market_name not in temp_data: temp_data[market_name] = {}
+                        if selection_name not in temp_data[market_name]: temp_data[market_name][selection_name] = []
+                        temp_data[market_name][selection_name].append(price)
+
+        # 計算統計值 (Max, Min, Avg)
+        for m_name, selections in temp_data.items():
+            market_stats = {}
+            for s_name, prices in selections.items():
+                if prices:
+                    market_stats[s_name] = {
+                        'max': [OddsPoint("Current", max(prices), "Max")],
+                        'min': [OddsPoint("Current", min(prices), "Min")],
+                        'avg': [OddsPoint("Current", round(sum(prices)/len(prices), 2), "Avg")]
+                    }
+            if market_stats:
+                all_markets[m_name] = market_stats
+
+        return all_markets
+
+    def _generate_simulation_aggregated(self):
+        # 回傳空字典或簡單模擬，避免程式崩潰
+        return {}
 
 class OddsAnalyzer:
     def analyze_movement(self, h): return {}
-
-

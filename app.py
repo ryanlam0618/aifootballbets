@@ -117,7 +117,7 @@ def main():
     grok_reaction = llm.search_and_analyze_market_reaction(f"{home} vs {away}", grok_input)
     
     print("\n--------- 🤖 Grok 市場觀點 ---------", flush=True)
-    print(grok_reaction[:200] + "..." if len(grok_reaction) > 200 else grok_reaction, flush=True)
+    print(grok_reaction  + "..." if len(grok_reaction) > 200 else grok_reaction, flush=True)
 
     # 5. ChatGPT 決策 (決策中樞)
     print(f"\n🧠 [4/4] ChatGPT 綜合決策...", flush=True)
