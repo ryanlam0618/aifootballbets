@@ -3,18 +3,17 @@ import os
 import json
 import re
 import difflib
-#x
-# 強制設定輸出編碼，避免 Windows 下中文亂碼
+
+# 強制設定輸出編碼
 sys.stdout.reconfigure(encoding='utf-8')
 
 try:
     from config import settings
-    from data_modules import HistoryRepo, RealOddsFetcher, OddsPoint
+    # 匯入 LEAGUE_OPTIONS
+    from data_modules import HistoryRepo, RealOddsFetcher, OddsPoint, LEAGUE_OPTIONS
     from llm_clients import llm
     from finance import calculate_kelly_stake, ExcelLogger
-    # 引入多個數學模型
     from math_models import PoissonModel, MonteCarloSimulator, DixonColesModel
-    # 引入新模型 v2
     from math_models_v2 import OptimizedDixonColes, MonteCarloSimulator as MCSim_v2
 except ImportError as e:
     print(f"❌ 模組載入失敗: {e}", flush=True)
@@ -22,60 +21,72 @@ except ImportError as e:
 
 def main():
     print("========================================", flush=True)
-    print("⚽ AI 足球分析系統 v5.2 (Fix Input)", flush=True)
+    print("⚽ AI 足球分析系統 v6.0 (API Integrated)", flush=True)
     print("========================================", flush=True)
 
-    # 1. 使用者輸入
+    # 1. 選擇聯賽 (新增選單功能)
+    print("\n📋 請選擇聯賽 (輸入數字):")
+    # 排序並顯示選單
+    sorted_keys = sorted(LEAGUE_OPTIONS.keys(), key=lambda x: int(x))
+    for key in sorted_keys:
+        print(f"   [{key}] {LEAGUE_OPTIONS[key]['name']}")
+    
+    league_idx = input("👉 選擇: ").strip()
+    
+    # 預設為英超
+    if league_idx not in LEAGUE_OPTIONS:
+        print("⚠️ 輸入無效，預設使用 Premier League")
+        league_idx = "1"
+        
+    selected_league = LEAGUE_OPTIONS[league_idx]
+    league_name = selected_league['name']
+    league_key = selected_league['key'] # API 需要這個 key
+    
+    print(f"✅ 已選擇: {league_name} ({league_key})")
+
+    # 2. 輸入比賽
     match_input = input("\n👉 請輸入比賽對戰組合 (Enter 預設 Bournemouth vs Tottenham): ").strip()
     if not match_input: match_input = "Bournemouth vs Tottenham"
 
     try:
-        # 加強分割邏輯，處理大小寫 "vs", "Vs", "VS", " v " 等
         if re.search(r"\s+vs\.?\s+", match_input, re.IGNORECASE) or " v " in match_input:
             parts = re.split(r"\s+vs\.?\s+|\s+v\s+", match_input, flags=re.IGNORECASE)
             if len(parts) >= 2:
                 home, away = parts[0].strip(), parts[1].strip()
             else:
-                print("⚠️ 格式錯誤，無法識別主客隊，請使用 '主隊 vs 客隊' 格式")
-                return
+                print("⚠️ 格式錯誤"); return
         else: 
-            print("⚠️ 格式錯誤，請使用 '主隊 vs 客隊'")
-            return
+            print("⚠️ 格式錯誤"); return
     except ValueError: return
 
-    league = input("請輸入聯賽 (預設 Premier League): ").strip() or "Premier League"
-
-    # 初始化各模組
+    # 初始化
     repo = HistoryRepo(settings.HISTORY_CSV_PATH)
     odds_fetcher = RealOddsFetcher()
     logger = ExcelLogger()
 
-    # 2. 獲取數據 & 執行數學模型
+    # 3. 獲取數據 & 數學模型 (傳入 league_name 給歷史數據模組顯示用)
     print(f"\n🔍 [1/4] 執行 Glicko-2 回測與機器學習預測...", flush=True)
-    match_context = repo.get_match_context(home, away, league)
+    match_context = repo.get_match_context(home, away, league_name)
     stats = match_context.get("stats", {})
     
-    # 執行陣容分析 (Lineup Model)
+    # 陣容分析
     print(f"👕 [1.5/4] 分析首發名單評分 (Lineup Rating)...", flush=True)
     lineup_prob = repo.get_lineup_prediction(home, away)
     if lineup_prob:
         print(f"   👥 基於首發球員評分的主勝率: {lineup_prob:.1%}")
     else:
-        print("   ⚠️ 未找到首發名單 JSON，跳過球員級別分析。")
+        print("   ⚠️ 未找到首發名單 JSON，跳過。")
 
-    # 數學模型運算
+    # 數學運算
     h_exp = stats.get("home_weighted_xg", 1.2)
     a_exp = stats.get("away_weighted_xg", 1.0)
     
-    # (B) Dixon-Coles 模型
     dc_model = DixonColesModel(h_exp, a_exp)
     dc_probs = dc_model.calculate_probabilities()
     
-    # (C) 蒙地卡羅模擬
     mc_sim = MCSim_v2(h_exp, a_exp)
     mc_probs = mc_sim.run_simulation()
     
-    # 打包數學結果給 AI
     math_results = {
         "dixon_coles": dc_probs,
         "monte_carlo": mc_probs,
@@ -85,15 +96,15 @@ def main():
         "expected_goals": {"home": h_exp, "away": a_exp}
     }
     
-    # 顯示部分數學指標
     glicko = match_context.get("glicko", {})
     print(f"   ℹ️ 進球期望值: {home} {h_exp:.2f} - {a_exp:.2f} {away}")
     print(f"   🏆 Glicko-2 勝率: {glicko.get('win_prob', 0):.1%}")
     print(f"   🎲 [MonteCarlo] 主: {mc_probs['mc_home_win']:.1%} | 大 2.5: {mc_probs['mc_over_2.5']:.1%}")
 
-    # 3. 讀取全盤口賠率
-    print(f"\n📈 [2/4] 讀取全盤口即時賠率...", flush=True)
-    all_markets = odds_fetcher.get_real_odds(league, home, away)
+    # 4. 讀取全盤口賠率 (使用 API Key)
+    print(f"\n📈 [2/4] 連線 API 讀取即時賠率...", flush=True)
+    # 這裡傳入 league_key (例如 soccer_epl)
+    all_markets = odds_fetcher.get_real_odds(league_key, home, away)
     
     odds_summary_text = ""
     if all_markets:
@@ -111,15 +122,14 @@ def main():
         print("   ⚠️ 無有效賠率數據")
         odds_summary_text = "No Odds Data Available"
 
-    # 4. Grok 搜尋 (情報獲取)
+    # 5. Grok 搜尋
     print(f"\n🤖 [3/4] 請求 Grok 聯網搜尋市場情報...", flush=True)
     grok_input = odds_summary_text[:1500]
     grok_reaction = llm.search_and_analyze_market_reaction(f"{home} vs {away}", grok_input)
-    
     print("\n--------- 🤖 Grok 市場觀點 ---------", flush=True)
-    print(grok_reaction  + "..." if len(grok_reaction) > 200 else grok_reaction, flush=True)
+    print(grok_reaction[:200] + "..." if len(grok_reaction) > 200 else grok_reaction, flush=True)
 
-    # 5. ChatGPT 決策 (決策中樞)
+    # 6. ChatGPT 決策
     print(f"\n🧠 [4/4] ChatGPT 綜合決策...", flush=True)
     odds_data_package = {
         "full_market_odds": odds_summary_text,
@@ -140,7 +150,7 @@ def main():
     
     print(f"分析理由: {rec.get('reasoning')}", flush=True)
 
-    # 6. 資金計算 (智能匹配升級版)
+    # 7. 資金計算
     if "No Bet" in str(rec_market) or "Error" in str(rec_market):
         print("\n🚫 系統建議觀望 (No Bet)，跳過資金計算。")
         input("\n執行完畢，請按 Enter 離開...")
@@ -156,16 +166,12 @@ def main():
             for s_name, stats in selections.items():
                 if stats['max']:
                     candidates.append({
-                        "market": m_name,
-                        "selection": s_name,
-                        "odds": stats['max'][-1].decimal_odds,
-                        "key_str": f"{m_name} {s_name}".lower()
+                        "market": m_name, "selection": s_name,
+                        "odds": stats['max'][-1].decimal_odds, "key_str": f"{m_name} {s_name}".lower()
                     })
         
         target_str = f"{rec_market} {rec_selection}".lower()
-        # 修正 Regex: 處理可能沒有數字的情況
         rec_nums = re.findall(r"[-+]?\d*\.\d+|[-+]?\d+", str(rec_market))
-        
         best_match = None
         highest_score = 0.0
         
@@ -179,9 +185,7 @@ def main():
             if not nums_valid: continue
             
             score = difflib.SequenceMatcher(None, target_str, cand['key_str']).ratio()
-            if str(rec_selection).lower() in cand['selection'].lower():
-                score += 0.2
-            
+            if str(rec_selection).lower() in cand['selection'].lower(): score += 0.2
             if score > highest_score:
                 highest_score = score
                 best_match = cand
@@ -190,9 +194,6 @@ def main():
             target_odds = best_match['odds']
             target_label = f"{best_match['market']} - {best_match['selection']} (Max)"
             print(f"   ✅ 自動匹配賠率: {target_label} @ {target_odds}")
-        else:
-            print(f"   ⚠️ 自動匹配失敗 (最高相似度: {highest_score:.2f})")
-            print(f"      AI 推薦: {rec_market} {rec_selection}")
 
     if not target_odds:
         try:
@@ -208,7 +209,7 @@ def main():
         if stake_info["stake"] > 0:
             print(f"      >>> 建議下注: ${stake_info['stake']:.2f} (EV: {stake_info['ev']:.3f})")
             if input("\n💾 記錄注單到 Excel? (y/n): ").lower() == 'y':
-                match_info = {"league": league, "home": home, "away": away}
+                match_info = {"league": league_name, "home": home, "away": away}
                 bet_info = {"market": rec_market, "selection": rec_selection, "odds": target_odds, "model_probability": prob}
                 logger.log_bet(match_info, bet_info, stake_info)
                 logger.show_stats()

@@ -1,6 +1,6 @@
 # 1. Define Links
 $links = @(
-     "https://www.oddsportal.com/football/germany/bundesliga/vfb-stuttgart-union-berlin-lrCyogAk/#1X2;2"
+     "https://www.oddsportal.com/football/austria/bundesliga/salzburg-austria-vienna-0Am5kHXo/#1X2;2"
      )
 
 # 2. Define File Paths

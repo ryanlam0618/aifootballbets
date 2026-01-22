@@ -6,17 +6,34 @@ import ast
 import json
 import pickle
 import difflib
-import requests  # 新增 requests 用於 API 連線
+import requests
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Any
 from dataclasses import dataclass
 from config import settings
 
-# ⚠️ 注意：頂層不要匯入 math_models，避免與 app.py 產生循環引用
+# --- 聯賽選單配置 (The Odds API Keys) ---
+LEAGUE_OPTIONS = {
+    "1": {"name": "Premier League (England)", "key": "soccer_epl"},
+    "2": {"name": "La Liga (Spain)", "key": "soccer_spain_la_liga"},
+    "3": {"name": "Bundesliga (Germany)", "key": "soccer_germany_bundesliga"},
+    "4": {"name": "Serie A (Italy)", "key": "soccer_italy_serie_a"},
+    "5": {"name": "Ligue 1 (France)", "key": "soccer_france_ligue_one"},
+    "6": {"name": "Championship (England)", "key": "soccer_efl_champ"},
+    "7": {"name": "Eredivisie (Netherlands)", "key": "soccer_netherlands_eredivisie"},
+    "8": {"name": "Primeira Liga (Portugal)", "key": "soccer_portugal_primeira_liga"},
+    "9": {"name": "UEFA Champions League", "key": "soccer_uefa_champs_league"},
+    "10": {"name": "UEFA Europa League", "key": "soccer_uefa_europa_league"},
+    "11": {"name": "MLS (USA)", "key": "soccer_usa_mls"},
+    "12": {"name": "Série A (Brazil)", "key": "soccer_brazil_campeonato"},
+    "13": {"name": "Super League (China)", "key": "soccer_china_superleague"},
+    "14": {"name": "J League (Japan)", "key": "soccer_japan_j_league"},
+    "15": {"name": "A-League (Australia)", "key": "soccer_australia_aleague"},
+    "16": {"name": "Allsvenskan (Sweden)", "key": "soccer_sweden_allsvenskan"},
+    "17": {"name": "Super Lig (Turkey)", "key": "soccer_turkey_super_league"}
+}
 
-# ==========================================
-# 1. 歷史數據儲存庫 (HistoryRepo)
-# ==========================================
+# --- 1. 歷史數據儲存庫 ---
 class HistoryRepo:
     def __init__(self, csv_path: str):
         self.df = None
@@ -29,7 +46,6 @@ class HistoryRepo:
             self.ranking_system = Glicko2System() 
             self.lineup_model_class = LineupModel
         except ImportError:
-            print("⚠️ Warning: math_models_v2 not found. Trying v1...")
             try:
                 from math_models import EloSystem
                 self.ranking_system = EloSystem()
@@ -93,31 +109,22 @@ class HistoryRepo:
         data_dir = os.path.dirname(settings.HISTORY_CSV_PATH)
         if not os.path.exists(data_dir): return None
         
-        candidates = []
-        for root, dirs, files in os.walk(data_dir):
-            for file in files:
-                if file.endswith(".json") and "lineup" in file.lower():
-                    candidates.append(os.path.join(root, file))
-        
+        candidates = [f for f in os.listdir(data_dir) if f.endswith(".json") and "lineup" in f.lower()]
         best_score = 0.0
         best_candidate = None
         
         h_input = home_team.lower().replace(".", "").strip()
         a_input = away_team.lower().replace(".", "").strip()
         
-        for f_path in candidates:
-            f_name = os.path.basename(f_path)
-            clean_name = f_name.lower().replace("lineup_", "").replace(".json", "").replace("_", " ")
-            
+        for f in candidates:
+            clean_name = f.lower().replace("lineup_", "").replace(".json", "").replace("_", " ")
             score = 0.0
             if " vs " in clean_name:
                 parts = clean_name.split(" vs ")
-                # 比對主客隊名稱相似度
                 s1 = difflib.SequenceMatcher(None, h_input, parts[0]).ratio()
                 s2 = difflib.SequenceMatcher(None, a_input, parts[1]).ratio()
                 score = (s1 + s2) / 2
                 
-                # 嘗試反向比對 (防呆)
                 s1_rev = difflib.SequenceMatcher(None, h_input, parts[1]).ratio()
                 s2_rev = difflib.SequenceMatcher(None, a_input, parts[0]).ratio()
                 score = max(score, (s1_rev + s2_rev) / 2)
@@ -126,10 +133,9 @@ class HistoryRepo:
             
             if score > best_score:
                 best_score = score
-                best_candidate = f_path
+                best_candidate = f
         
-        # 門檻值 0.5
-        return best_candidate if best_candidate and best_score > 0.5 else None
+        return os.path.join(data_dir, best_candidate) if best_candidate and best_score > 0.5 else None
 
     def get_lineup_data(self, home_team, away_team):
         target_file = self._find_lineup_file(home_team, away_team)
@@ -217,34 +223,34 @@ class HistoryRepo:
 class OddsPoint:
     time_offset: str; decimal_odds: float; bookmaker: str = "Aggregated"
 
-# 結構: Market -> Selection -> {max:[], min:[], avg:[]}
 OddsDataStructure = Dict[str, Dict[str, Dict[str, List[OddsPoint]]]]
 
 class RealOddsFetcher:
     def __init__(self):
-        # 請確保在 config.py 中設定了 ODDS_API_KEY (非 OpenAI Key)
-        # 申請地址: https://the-odds-api.com/
         self.api_key = getattr(settings, 'ODDS_API_KEY', '') 
         self.base_url = "https://api.the-odds-api.com/v4/sports"
 
-    def get_real_odds(self, league: str, home: str, away: str) -> OddsDataStructure:
+    def get_real_odds(self, league_key: str, home: str, away: str) -> OddsDataStructure:
+        """
+        league_key: 必須是 API 支援的 key (如 'soccer_epl')
+        """
         print(f"🌍 連線 The Odds API 獲取即時賠率...")
         
         if not self.api_key:
-            print("⚠️ 錯誤: 未設定 ODDS_API_KEY。請在 config.py 設定。將使用模擬數據。")
-            return self._generate_simulation_aggregated()
+            print("⚠️ 錯誤: 未設定 ODDS_API_KEY。請在 config.py 設定。")
+            return {}
 
-        # 1. 取得對應的 Sport Key
-        sport_key = self._get_sport_key(league)
-        print(f"   目標聯賽: {league} -> API Key: {sport_key}")
+        # 如果傳入的不是 key，嘗試轉換 (容錯)
+        if not league_key.startswith('soccer_'):
+            league_key = self._get_sport_key(league_key)
+            
+        print(f"   目標聯賽 Key: {league_key}")
 
-        # 2. 發送請求
-        # markets: h2h (1x2), spreads (讓球), totals (大小球)
         try:
-            url = f"{self.base_url}/{sport_key}/odds"
+            url = f"{self.base_url}/{league_key}/odds"
             params = {
                 'apiKey': self.api_key,
-                'regions': 'eu,uk', # 歐洲與英國盤口
+                'regions': 'eu,uk',
                 'markets': 'h2h,spreads,totals', 
                 'oddsFormat': 'decimal'
             }
@@ -252,91 +258,73 @@ class RealOddsFetcher:
             
             if response.status_code != 200:
                 print(f"❌ API 錯誤 ({response.status_code}): {response.text}")
-                return self._generate_simulation_aggregated()
+                return {}
             
             data = response.json()
             
-            # 3. 尋找目標比賽
+            # 尋找比賽
             target_match = None
-            h_input = home.lower()
+            h_in = home.lower()
+            a_in = away.lower()
             
-            # 簡單模糊比對 API 回傳的比賽
             for match in data:
-                api_home = match.get('home_team', '').lower()
-                api_away = match.get('away_team', '').lower()
-                
-                # 比對主隊名稱是否包含
-                if h_input in api_home or api_home in h_input:
-                    # 雙重確認客隊
-                    if away.lower()[:4] in api_away: 
-                        target_match = match
-                        break
+                m_h = match.get('home_team', '').lower()
+                m_a = match.get('away_team', '').lower()
+                if (h_in in m_h or m_h in h_in) and (a_in in m_a or m_a in a_in):
+                    target_match = match
+                    break
             
             if target_match:
                 print(f"✅ 找到比賽 (API): {target_match['home_team']} vs {target_match['away_team']}")
                 return self._process_api_response(target_match)
             else:
-                print(f"⚠️ API 回傳中找不到 '{home}' 的比賽。可能尚未開盤或名稱差異過大。")
-                return self._generate_simulation_aggregated()
+                print(f"⚠️ API 回傳中找不到 '{home} vs {away}' 的比賽。")
+                return {}
 
         except Exception as e:
-            print(f"❌ 連線例外錯誤: {e}")
-            return self._generate_simulation_aggregated()
+            print(f"❌ 連線例外: {e}")
+            return {}
 
     def _get_sport_key(self, league_name: str) -> str:
-        """將用戶輸入的聯賽名稱轉換為 The Odds API 的 Key"""
-        l = league_name.lower()
-        if 'premier' in l or 'epl' in l: return 'soccer_epl'
-        if 'liga' in l or 'spain' in l: return 'soccer_spain_la_liga'
-        if 'serie a' in l or 'italy' in l: return 'soccer_italy_serie_a'
-        if 'bundesliga' in l or 'germany' in l: return 'soccer_germany_bundesliga'
-        if 'ligue 1' in l or 'france' in l: return 'soccer_france_ligue_one'
-        if 'champion' in l: return 'soccer_uefa_champs_league'
-        return 'soccer_epl' # 預設
+        # 簡單的 fallback，防止 app.py 傳錯
+        for key, val in LEAGUE_OPTIONS.items():
+            if val["name"] == league_name:
+                return val["key"]
+        return 'soccer_epl' 
 
     def _process_api_response(self, match_data) -> OddsDataStructure:
-        """解析 API JSON 並轉換為內部格式"""
         all_markets = {}
         bookmakers = match_data.get('bookmakers', [])
-        
-        # 暫存結構: { "Market Name": { "Selection": [odds1, odds2...] } }
         temp_data = {}
 
         for bk in bookmakers:
             for market in bk.get('markets', []):
-                key = market['key'] # h2h, spreads, totals
-                
+                key = market['key']
                 for outcome in market['outcomes']:
                     name = outcome['name']
                     price = outcome['price']
-                    point = outcome.get('point') # 讓球數或大小球數
+                    point = outcome.get('point')
 
-                    # 標準化市場名稱與選項
-                    market_name = ""
-                    selection_name = ""
+                    market_name, selection_name = "", ""
 
                     if key == 'h2h':
                         market_name = "1x2"
-                        selection_name = "Home" if name == match_data['home_team'] else ("Away" if name == match_data['away_team'] else "Draw")
-                    
+                        if name == match_data['home_team']: selection_name = "Home"
+                        elif name == match_data['away_team']: selection_name = "Away"
+                        else: selection_name = "Draw"
                     elif key == 'spreads':
-                        # The Odds API 的 point 是相對於客隊的，或是主隊的，需小心處理
-                        # 通常 point 為負代表讓球
                         p_str = f"{point}" if point < 0 else f"+{point}"
                         market_name = f"Asian Handicap {p_str}" 
-                        # API 這裡 name 也是隊名
                         selection_name = "Home" if name == match_data['home_team'] else "Away"
-                    
                     elif key == 'totals':
                         market_name = f"Over/Under {point}"
-                        selection_name = name # Over / Under
+                        selection_name = name 
 
                     if market_name and selection_name:
                         if market_name not in temp_data: temp_data[market_name] = {}
                         if selection_name not in temp_data[market_name]: temp_data[market_name][selection_name] = []
                         temp_data[market_name][selection_name].append(price)
 
-        # 計算統計值 (Max, Min, Avg)
         for m_name, selections in temp_data.items():
             market_stats = {}
             for s_name, prices in selections.items():
@@ -350,10 +338,6 @@ class RealOddsFetcher:
                 all_markets[m_name] = market_stats
 
         return all_markets
-
-    def _generate_simulation_aggregated(self):
-        # 回傳空字典或簡單模擬，避免程式崩潰
-        return {}
 
 class OddsAnalyzer:
     def analyze_movement(self, h): return {}
