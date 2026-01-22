@@ -6,7 +6,7 @@ from datetime import datetime
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from config import settings
-from networking_llm import NetworkedLLM
+from src.networking_llm import NetworkedLLM
 
 # 強制輸出編碼
 sys.stdout.reconfigure(encoding='utf-8')

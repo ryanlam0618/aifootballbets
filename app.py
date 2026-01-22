@@ -10,11 +10,11 @@ sys.stdout.reconfigure(encoding='utf-8')
 try:
     from config import settings
     # 匯入 LEAGUE_OPTIONS
-    from data_modules import HistoryRepo, RealOddsFetcher, OddsPoint, LEAGUE_OPTIONS
-    from llm_clients import llm
-    from finance import calculate_kelly_stake, ExcelLogger
-    from math_models import PoissonModel, MonteCarloSimulator, DixonColesModel
-    from math_models_v2 import OptimizedDixonColes, MonteCarloSimulator as MCSim_v2
+    from src.data_modules import HistoryRepo, RealOddsFetcher, OddsPoint, LEAGUE_OPTIONS
+    from src.llm_clients import llm
+    from src.finance import calculate_kelly_stake, ExcelLogger
+    from src.math_models import PoissonModel, MonteCarloSimulator, DixonColesModel
+    from src.math_models_v2 import OptimizedDixonColes, MonteCarloSimulator as MCSim_v2
 except ImportError as e:
     print(f"❌ 模組載入失敗: {e}", flush=True)
     sys.exit(1)

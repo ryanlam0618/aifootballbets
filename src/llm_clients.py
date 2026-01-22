@@ -2,7 +2,7 @@ import json
 import re
 from openai import OpenAI
 from config import settings
-from networking_llm import NetworkedLLM
+from src.networking_llm import NetworkedLLM
 
 class LLMOrchestrator:
     def _get_client(self, api_key):

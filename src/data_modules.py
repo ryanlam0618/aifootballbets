@@ -111,12 +111,12 @@ class HistoryRepo:
         
         # 延遲匯入 math_models_v2
         try:
-            from math_models_v2 import Glicko2System, LineupModel
+            from src.math_models_v2 import Glicko2System, LineupModel
             self.ranking_system = Glicko2System() 
             self.lineup_model_class = LineupModel
         except ImportError:
             try:
-                from math_models import EloSystem
+                from src.math_models import EloSystem
                 self.ranking_system = EloSystem()
             except: pass
 
