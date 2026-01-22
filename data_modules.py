@@ -14,23 +14,92 @@ from config import settings
 
 # --- 聯賽選單配置 (The Odds API Keys) ---
 LEAGUE_OPTIONS = {
+    # 五大聯賽
     "1": {"name": "Premier League (England)", "key": "soccer_epl"},
     "2": {"name": "La Liga (Spain)", "key": "soccer_spain_la_liga"},
     "3": {"name": "Bundesliga (Germany)", "key": "soccer_germany_bundesliga"},
     "4": {"name": "Serie A (Italy)", "key": "soccer_italy_serie_a"},
     "5": {"name": "Ligue 1 (France)", "key": "soccer_france_ligue_one"},
-    "6": {"name": "Championship (England)", "key": "soccer_efl_champ"},
-    "7": {"name": "Eredivisie (Netherlands)", "key": "soccer_netherlands_eredivisie"},
-    "8": {"name": "Primeira Liga (Portugal)", "key": "soccer_portugal_primeira_liga"},
-    "9": {"name": "UEFA Champions League", "key": "soccer_uefa_champs_league"},
-    "10": {"name": "UEFA Europa League", "key": "soccer_uefa_europa_league"},
-    "11": {"name": "MLS (USA)", "key": "soccer_usa_mls"},
-    "12": {"name": "Série A (Brazil)", "key": "soccer_brazil_campeonato"},
-    "13": {"name": "Super League (China)", "key": "soccer_china_superleague"},
-    "14": {"name": "J League (Japan)", "key": "soccer_japan_j_league"},
-    "15": {"name": "A-League (Australia)", "key": "soccer_australia_aleague"},
-    "16": {"name": "Allsvenskan (Sweden)", "key": "soccer_sweden_allsvenskan"},
-    "17": {"name": "Super Lig (Turkey)", "key": "soccer_turkey_super_league"}
+    
+    # 歐洲杯賽
+    "6": {"name": "UEFA Champions League", "key": "soccer_uefa_champs_league"},
+    "7": {"name": "UEFA Europa League", "key": "soccer_uefa_europa_league"},
+    "8": {"name": "UEFA Europa Conference League", "key": "soccer_uefa_europa_conference_league"},
+    "9": {"name": "UEFA Champions League Qualification", "key": "soccer_uefa_champs_league_qualification"},
+    "10": {"name": "UEFA Nations League", "key": "soccer_uefa_nations_league"},
+    "11": {"name": "UEFA Euro Championship", "key": "soccer_uefa_european_championship"},
+    "12": {"name": "UEFA Euro Qualification", "key": "soccer_uefa_euro_qualification"},
+    "13": {"name": "UEFA Women's Champions League", "key": "soccer_uefa_champs_league_women"},
+    
+    # 英格蘭聯賽
+    "14": {"name": "Championship (England)", "key": "soccer_efl_champ"},
+    "15": {"name": "League 1 (England)", "key": "soccer_england_league1"},
+    "16": {"name": "League 2 (England)", "key": "soccer_england_league2"},
+    "17": {"name": "EFL Cup (England)", "key": "soccer_england_efl_cup"},
+    "18": {"name": "FA Cup (England)", "key": "soccer_fa_cup"},
+    
+    # 西班牙聯賽
+    "19": {"name": "La Liga 2 (Spain)", "key": "soccer_spain_segunda_division"},
+    
+    # 德國聯賽
+    "20": {"name": "Bundesliga 2 (Germany)", "key": "soccer_germany_bundesliga2"},
+    "21": {"name": "3. Liga (Germany)", "key": "soccer_germany_liga3"},
+    
+    # 義大利聯賽
+    "22": {"name": "Serie B (Italy)", "key": "soccer_italy_serie_b"},
+    
+    # 法國聯賽
+    "23": {"name": "Ligue 2 (France)", "key": "soccer_france_ligue_two"},
+    
+    # 其他歐洲主要聯賽
+    "24": {"name": "Eredivisie (Netherlands)", "key": "soccer_netherlands_eredivisie"},
+    "25": {"name": "Primeira Liga (Portugal)", "key": "soccer_portugal_primeira_liga"},
+    "26": {"name": "Premiership (Scotland)", "key": "soccer_spl"},
+    "27": {"name": "Belgium First Division", "key": "soccer_belgium_first_div"},
+    "28": {"name": "Allsvenskan (Sweden)", "key": "soccer_sweden_allsvenskan"},
+    "29": {"name": "Superettan (Sweden)", "key": "soccer_sweden_superettan"},
+    "30": {"name": "Super Lig (Turkey)", "key": "soccer_turkey_super_league"},
+    "31": {"name": "Austrian Bundesliga", "key": "soccer_austria_bundesliga"},
+    "32": {"name": "Swiss Superleague", "key": "soccer_switzerland_superleague"},
+    "33": {"name": "Denmark Superliga", "key": "soccer_denmark_superliga"},
+    "34": {"name": "Super League (Greece)", "key": "soccer_greece_super_league"},
+    "35": {"name": "Premier League (Russia)", "key": "soccer_russia_premier_league"},
+    "36": {"name": "Ekstraklasa (Poland)", "key": "soccer_poland_ekstraklasa"},
+    "37": {"name": "Eliteserien (Norway)", "key": "soccer_norway_eliteserien"},
+    "38": {"name": "Veikkausliiga (Finland)", "key": "soccer_finland_veikkausliiga"},
+    "39": {"name": "League of Ireland", "key": "soccer_league_of_ireland"},
+    
+    # 美洲聯賽
+    "40": {"name": "MLS (USA)", "key": "soccer_usa_mls"},
+    "41": {"name": "Liga MX (Mexico)", "key": "soccer_mexico_ligamx"},
+    "42": {"name": "Série A (Brazil)", "key": "soccer_brazil_campeonato"},
+    "43": {"name": "Série B (Brazil)", "key": "soccer_brazil_serie_b"},
+    "44": {"name": "Primera División (Argentina)", "key": "soccer_argentina_primera_division"},
+    "45": {"name": "Primera División (Chile)", "key": "soccer_chile_campeonato"},
+    "46": {"name": "Copa América", "key": "soccer_conmebol_copa_america"},
+    "47": {"name": "Copa Libertadores", "key": "soccer_conmebol_copa_libertadores"},
+    "48": {"name": "Copa Sudamericana", "key": "soccer_conmebol_copa_sudamericana"},
+    "49": {"name": "CONCACAF Gold Cup", "key": "soccer_concacaf_gold_cup"},
+    "50": {"name": "CONCACAF Leagues Cup", "key": "soccer_concacaf_leagues_cup"},
+    
+    # 亞洲聯賽
+    "51": {"name": "Super League (China)", "key": "soccer_china_superleague"},
+    "52": {"name": "J League (Japan)", "key": "soccer_japan_j_league"},
+    "53": {"name": "K League 1 (South Korea)", "key": "soccer_korea_kleague1"},
+    
+    # 大洋洲聯賽
+    "54": {"name": "A-League (Australia)", "key": "soccer_australia_aleague"},
+    
+    # 非洲聯賽
+    "55": {"name": "Africa Cup of Nations", "key": "soccer_africa_cup_of_nations"},
+    
+    # 國際賽事
+    "56": {"name": "FIFA World Cup", "key": "soccer_fifa_world_cup"},
+    "57": {"name": "FIFA World Cup Winner", "key": "soccer_fifa_world_cup_winner"},
+    "58": {"name": "FIFA World Cup Qualifiers - Europe", "key": "soccer_fifa_world_cup_qualifiers_europe"},
+    "59": {"name": "FIFA World Cup Qualifiers - South America", "key": "soccer_fifa_world_cup_qualifiers_south_america"},
+    "60": {"name": "FIFA Women's World Cup", "key": "soccer_fifa_world_cup_womens"},
+    "61": {"name": "FIFA Club World Cup", "key": "soccer_fifa_club_world_cup"}
 }
 
 # --- 1. 歷史數據儲存庫 ---
