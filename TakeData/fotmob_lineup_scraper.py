@@ -3,15 +3,90 @@ import json
 import time
 import os
 from datetime import datetime
+import difflib
 
 class FotMobLineupHarvester:
-    def __init__(self, match_id):
+    def __init__(self, match_id=None):
         self.match_id = match_id
-        self.api_url = f"https://www.fotmob.com/api/matchDetails?matchId={match_id}"
         self.headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Referer": "https://www.fotmob.com/"
         }
+        if match_id:
+            self.api_url = f"https://www.fotmob.com/api/matchDetails?matchId={match_id}"
+        else:
+            self.api_url = None
+
+    @staticmethod
+    def search_match_id(home_team, away_team, league_key=None):
+        """
+        搜索比賽 ID
+        Args:
+            home_team: 主隊名稱
+            away_team: 客隊名稱
+            league_key: 聯賽代碼 (可選)
+        Returns:
+            match_id (str) 或 None
+        """
+        try:
+            search_url = "https://www.fotmob.com/api/searchAll"
+            search_query = f"{home_team} {away_team}"
+            
+            params = {
+                "query": search_query,
+                "type": "match"
+            }
+            
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Referer": "https://www.fotmob.com/"
+            }
+            
+            print(f"🔍 正在搜索比賽: {home_team} vs {away_team}...")
+            response = requests.get(search_url, params=params, headers=headers, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                matches = data.get('matches', [])
+                
+                if matches:
+                    # 尋找最相符的比賽
+                    best_match = None
+                    best_score = 0
+                    
+                    for match in matches:
+                        home = match.get('home', {}).get('name', '').lower()
+                        away = match.get('away', {}).get('name', '').lower()
+                        
+                        home_input = home_team.lower()
+                        away_input = away_team.lower()
+                        
+                        # 計算相似度
+                        home_score = difflib.SequenceMatcher(None, home_input, home).ratio()
+                        away_score = difflib.SequenceMatcher(None, away_input, away).ratio()
+                        total_score = (home_score + away_score) / 2
+                        
+                        if total_score > best_score:
+                            best_score = total_score
+                            best_match = match
+                    
+                    if best_match and best_score > 0.6:
+                        match_id = best_match.get('id')
+                        print(f"✅ 找到比賽: {best_match.get('home', {}).get('name')} vs {best_match.get('away', {}).get('name')} (ID: {match_id})")
+                        return str(match_id)
+                    else:
+                        print(f"⚠️ 未找到相符的比賽")
+                        return None
+                else:
+                    print(f"⚠️ 搜索無結果")
+                    return None
+            else:
+                print(f"❌ 搜索 API 失敗: {response.status_code}")
+                return None
+                
+        except Exception as e:
+            print(f"⚠️ 搜索錯誤: {e}")
+            return None
 
     def fetch_data(self):
         try:
@@ -75,6 +150,51 @@ class FotMobLineupHarvester:
         except Exception as e:
             print(f"❌ 解析數據時發生錯誤: {e}")
             return None
+
+    def fetch_lineup(self, save_to_file=True):
+        """
+        直接爬取陣容數據
+        Args:
+            save_to_file: 是否保存到文件
+        Returns:
+            parsed_lineup (dict) 或 None
+        """
+        raw_data = self.fetch_data()
+        
+        if not raw_data:
+            return None
+        
+        if 'general' not in raw_data:
+            print("⚠️ API 回傳無效或 Match ID 錯誤")
+            return None
+        
+        clean_lineup = self.parse_lineup(raw_data)
+        
+        if clean_lineup and save_to_file:
+            save_folder = r"C:\Users\Ryan\python\.vscode\fb_ai_bets\data"
+            
+            if not os.path.exists(save_folder):
+                try:
+                    os.makedirs(save_folder)
+                    print(f"📁 已建立資料夾: {save_folder}")
+                except OSError as e:
+                    print(f"❌ 無法建立資料夾: {e}")
+                    return clean_lineup
+            
+            home_name = clean_lineup['home_team']['name']
+            away_name = clean_lineup['away_team']['name']
+            
+            safe_home = home_name.replace(" ", "_")
+            safe_away = away_name.replace(" ", "_")
+            filename = f"lineup_{safe_home}_vs_{safe_away}.json"
+            full_path = os.path.join(save_folder, filename)
+            
+            with open(full_path, 'w', encoding='utf-8') as f:
+                json.dump(clean_lineup, f, ensure_ascii=False, indent=4)
+            
+            print(f"💾 檔案已保存至: {full_path}")
+        
+        return clean_lineup
 
     def run(self, interval=60):
         print(f"🚀 啟動監控 (Match ID: {self.match_id})，每 {interval} 秒檢查一次...")

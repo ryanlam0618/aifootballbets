@@ -15,6 +15,7 @@ try:
     from src.finance import calculate_kelly_stake, ExcelLogger
     from src.math_models import PoissonModel, MonteCarloSimulator, DixonColesModel
     from src.math_models_v2 import OptimizedDixonColes, MonteCarloSimulator as MCSim_v2
+    from TakeData.fotmob_lineup_scraper import FotMobLineupHarvester
 except ImportError as e:
     print(f"❌ 模組載入失敗: {e}", flush=True)
     sys.exit(1)
@@ -63,6 +64,28 @@ def main():
     repo = HistoryRepo(settings.HISTORY_CSV_PATH)
     odds_fetcher = RealOddsFetcher()
     logger = ExcelLogger()
+
+    # 2.5 爬取 FotMob 陣容
+    print(f"\n👕 [1.2/4] 正在爬取 FotMob 陣容...", flush=True)
+    try:
+        # 搜索比賽 ID
+        match_id = FotMobLineupHarvester.search_match_id(home, away, league_key)
+        
+        if match_id:
+            # 爬取陣容
+            harvester = FotMobLineupHarvester(match_id)
+            lineup_data = harvester.fetch_lineup(save_to_file=True)
+            
+            if lineup_data:
+                print(f"   ✅ 成功爬取陣容: {lineup_data['home_team']['name']} vs {lineup_data['away_team']['name']}", flush=True)
+                print(f"      主隊陣容: {len(lineup_data['home_team']['starters'])} 人", flush=True)
+                print(f"      客隊陣容: {len(lineup_data['away_team']['starters'])} 人", flush=True)
+            else:
+                print(f"   ⚠️ 無法解析陣容數據", flush=True)
+        else:
+            print(f"   ⚠️ 未找到比賽 ID，跳過陣容爬取", flush=True)
+    except Exception as e:
+        print(f"   ⚠️ 陣容爬取出錯: {e}", flush=True)
 
     # 3. 獲取數據 & 數學模型 (傳入 league_name 給歷史數據模組顯示用)
     print(f"\n🔍 [1/4] 執行 Glicko-2 回測與機器學習預測...", flush=True)
