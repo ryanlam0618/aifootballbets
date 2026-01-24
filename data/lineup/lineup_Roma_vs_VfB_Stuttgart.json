@@ -1,0 +1,175 @@
+{
+    "match_id": "4947775",
+    "match_time": "Thu, Jan 22, 2026, 20:00 UTC",
+    "timestamp": "2026-01-24 03:23:48",
+    "home_team": {
+        "name": "Roma",
+        "id": 8686,
+        "formation": "3-5-2",
+        "starters": [
+            {
+                "id": 768474,
+                "name": "Mile Svilar",
+                "number": "99",
+                "position_id": 11,
+                "rating": 8.8
+            },
+            {
+                "id": 867225,
+                "name": "Mehmet Zeki Celik",
+                "number": "19",
+                "position_id": 33,
+                "rating": 6.8
+            },
+            {
+                "id": 1511063,
+                "name": "Jan Ziolkowski",
+                "number": "24",
+                "position_id": 35,
+                "rating": 7.5
+            },
+            {
+                "id": 1386006,
+                "name": "Daniele Ghilardi",
+                "number": "87",
+                "position_id": 37,
+                "rating": 8
+            },
+            {
+                "id": 1180321,
+                "name": "Devyne Rensch",
+                "number": "2",
+                "position_id": 71,
+                "rating": 7.4
+            },
+            {
+                "id": 1016132,
+                "name": "Kouadio Koné",
+                "number": "17",
+                "position_id": 73,
+                "rating": 6.8
+            },
+            {
+                "id": 1451196,
+                "name": "Niccolo Pisilli",
+                "number": "61",
+                "position_id": 75,
+                "rating": 9.1
+            },
+            {
+                "id": 540307,
+                "name": "Lorenzo Pellegrini",
+                "number": "7",
+                "position_id": 77,
+                "rating": 6.3
+            },
+            {
+                "id": 671529,
+                "name": "Konstantinos Tsimikas",
+                "number": "12",
+                "position_id": 79,
+                "rating": 7
+            },
+            {
+                "id": 1280082,
+                "name": "Matias Soulé",
+                "number": "18",
+                "position_id": 104,
+                "rating": 7.9
+            },
+            {
+                "id": 1068482,
+                "name": "Evan Ferguson",
+                "number": "11",
+                "position_id": 106,
+                "rating": 7.1
+            }
+        ],
+        "coach": "Gian Piero Gasperini"
+    },
+    "away_team": {
+        "name": "VfB Stuttgart",
+        "id": 10269,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 554534,
+                "name": "Alexander Nübel",
+                "number": "33",
+                "position_id": 11,
+                "rating": 5.6
+            },
+            {
+                "id": 1192406,
+                "name": "Lorenz Assignon",
+                "number": "22",
+                "position_id": 32,
+                "rating": 5.9
+            },
+            {
+                "id": 1487877,
+                "name": "Finn Jeltsch",
+                "number": "29",
+                "position_id": 34,
+                "rating": 6.6
+            },
+            {
+                "id": 867080,
+                "name": "Jeff Chabot",
+                "number": "24",
+                "position_id": 36,
+                "rating": 6.7
+            },
+            {
+                "id": 1125187,
+                "name": "Ramon Hendriks",
+                "number": "3",
+                "position_id": 38,
+                "rating": 6
+            },
+            {
+                "id": 684983,
+                "name": "Atakan Karazor",
+                "number": "16",
+                "position_id": 64,
+                "rating": 7.1
+            },
+            {
+                "id": 1586552,
+                "name": "Chema Andres",
+                "number": "30",
+                "position_id": 66,
+                "rating": 6.7
+            },
+            {
+                "id": 1074968,
+                "name": "Jamie Leweling",
+                "number": "18",
+                "position_id": 83,
+                "rating": 6.1
+            },
+            {
+                "id": 892679,
+                "name": "Chris Führich",
+                "number": "10",
+                "position_id": 85,
+                "rating": 6.4
+            },
+            {
+                "id": 614384,
+                "name": "Maximilian Mittelstaedt",
+                "number": "7",
+                "position_id": 87,
+                "rating": 7
+            },
+            {
+                "id": 661519,
+                "name": "Deniz Undav",
+                "number": "26",
+                "position_id": 115,
+                "rating": 5.8
+            }
+        ],
+        "coach": "Sebastian Hoeness"
+    }
+}

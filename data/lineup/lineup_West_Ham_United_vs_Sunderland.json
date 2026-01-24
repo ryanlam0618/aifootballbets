@@ -1,0 +1,175 @@
+{
+    "match_id": "4813604",
+    "match_time": "Sat, Jan 24, 2026, 12:30 UTC",
+    "timestamp": "2026-01-24 20:54:29",
+    "home_team": {
+        "name": "West Ham United",
+        "id": 8654,
+        "formation": "4-4-1-1",
+        "starters": [
+            {
+                "id": 210164,
+                "name": "Alphonse Areola",
+                "number": "23",
+                "position_id": 11,
+                "rating": 6.3
+            },
+            {
+                "id": 760320,
+                "name": "Aaron Wan-Bissaka",
+                "number": "29",
+                "position_id": 32,
+                "rating": 7
+            },
+            {
+                "id": 719219,
+                "name": "Konstantinos Mavropanos",
+                "number": "15",
+                "position_id": 34,
+                "rating": 6.5
+            },
+            {
+                "id": 955214,
+                "name": "Jean-Clair Todibo",
+                "number": "25",
+                "position_id": 36,
+                "rating": 6.3
+            },
+            {
+                "id": 1315319,
+                "name": "Oliver Scarles",
+                "number": "30",
+                "position_id": 38,
+                "rating": 6.5
+            },
+            {
+                "id": 523825,
+                "name": "Jarrod Bowen",
+                "number": "20",
+                "position_id": 72,
+                "rating": 6.9
+            },
+            {
+                "id": 524437,
+                "name": "Tomas Soucek",
+                "number": "28",
+                "position_id": 74,
+                "rating": 6.3
+            },
+            {
+                "id": 1356312,
+                "name": "Mateus Fernandes",
+                "number": "18",
+                "position_id": 76,
+                "rating": 6.8
+            },
+            {
+                "id": 941213,
+                "name": "Crysencio Summerville",
+                "number": "7",
+                "position_id": 78,
+                "rating": 7.6
+            },
+            {
+                "id": 1227326,
+                "name": "Pablo",
+                "number": "19",
+                "position_id": 95,
+                "rating": 6.1
+            },
+            {
+                "id": 823658,
+                "name": "Valentin Castellanos",
+                "number": "11",
+                "position_id": 115,
+                "rating": 6.2
+            }
+        ],
+        "coach": "Nuno Espirito Santo"
+    },
+    "away_team": {
+        "name": "Sunderland",
+        "id": 8472,
+        "formation": "4-4-2",
+        "starters": [
+            {
+                "id": 1125720,
+                "name": "Robin Roefs",
+                "number": "22",
+                "position_id": 11,
+                "rating": 5.3
+            },
+            {
+                "id": 602304,
+                "name": "Nordi Mukiele",
+                "number": "20",
+                "position_id": 32,
+                "rating": 6.2
+            },
+            {
+                "id": 974268,
+                "name": "Daniel Ballard",
+                "number": "5",
+                "position_id": 34,
+                "rating": 6.5
+            },
+            {
+                "id": 751998,
+                "name": "Omar Alderete",
+                "number": "15",
+                "position_id": 36,
+                "rating": 6.6
+            },
+            {
+                "id": 600524,
+                "name": "Reinildo",
+                "number": "17",
+                "position_id": 38,
+                "rating": 6.3
+            },
+            {
+                "id": 1067763,
+                "name": "Trai Hume",
+                "number": "32",
+                "position_id": 72,
+                "rating": 6.1
+            },
+            {
+                "id": 1359649,
+                "name": "Noah Sadiki",
+                "number": "27",
+                "position_id": 74,
+                "rating": 6.2
+            },
+            {
+                "id": 1049999,
+                "name": "Enzo Le Fee",
+                "number": "28",
+                "position_id": 76,
+                "rating": 6.4
+            },
+            {
+                "id": 1123947,
+                "name": "Romaine Mundle",
+                "number": "14",
+                "position_id": 78,
+                "rating": 5.6
+            },
+            {
+                "id": 1391052,
+                "name": "Eliezer Mayenda",
+                "number": "12",
+                "position_id": 104,
+                "rating": 5.9
+            },
+            {
+                "id": 940446,
+                "name": "Brian Brobbey",
+                "number": "9",
+                "position_id": 106,
+                "rating": 6.2
+            }
+        ],
+        "coach": "Regis Le Bris"
+    }
+}

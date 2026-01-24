@@ -1,6 +1,11 @@
 from openai import OpenAI
-from config import settings
 import sys
+import os
+
+# 將專案根目錄添加到 sys.path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from config import settings
 
 # 強制顯示輸出
 sys.stdout.reconfigure(encoding='utf-8')

@@ -2,8 +2,8 @@ import sys
 import os
 from datetime import datetime
 
-# 確保可以匯入專案模組
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# 確保可以匯入專案模組（添加到專案根目錄）
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import settings
 from src.networking_llm import NetworkedLLM

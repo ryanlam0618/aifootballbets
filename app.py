@@ -20,6 +20,74 @@ except ImportError as e:
     print(f"❌ 模組載入失敗: {e}", flush=True)
     sys.exit(1)
 
+def find_lineup_file(home_team, away_team, data_folder="data"):
+    """
+    查找陣容 JSON 檔案
+    Args:
+        home_team: 主隊名稱
+        away_team: 客隊名稱
+        data_folder: 資料夾路徑
+    Returns:
+        lineup_data (dict) 或 None
+    """
+    import glob
+
+    # 清理隊名中的特殊字符
+    def clean_team_name(name):
+        # 移除常見的擴展字符，保持簡單的字母數字和底線
+        import unicodedata
+        name = unicodedata.normalize('NFKD', name)
+        # 只保留字母數字和底線
+        import re
+        name = re.sub(r'[^a-zA-Z0-9\s]', '', name)
+        return name.strip().replace(" ", "_")
+
+    home_clean = clean_team_name(home_team)
+    away_clean = clean_team_name(away_team)
+
+    # 優先嘗試精確匹配 (主隊 vs 客隊)
+    exact_pattern = f"{data_folder}/lineup/lineup_{home_clean}_vs_{away_clean}.json"
+    exact_matches = glob.glob(exact_pattern)
+    if exact_matches:
+        with open(exact_matches[0], 'r', encoding='utf-8') as f:
+            return json.load(f)
+
+    # 嘗試反向匹配 (客隊 vs 主隊)
+    reverse_pattern = f"{data_folder}/lineup/lineup_{away_clean}_vs_{home_clean}.json"
+    reverse_matches = glob.glob(reverse_pattern)
+    if reverse_matches:
+        with open(reverse_matches[0], 'r', encoding='utf-8') as f:
+            return json.load(f)
+
+    # 模糊搜索 - 遍歷所有檔案找匹配的
+    all_files = glob.glob(f"{data_folder}/lineup/*.json")
+    for filepath in all_files:
+        filename = os.path.basename(filepath)
+        # 提取檔名中的隊名
+        # 格式: lineup_HomeName_vs_AwayName.json
+        match = re.match(r'lineup_(.+?)_vs_(.+?)\.json', filename)
+        if match:
+            file_home = match.group(1)
+            file_away = match.group(2)
+
+            
+
+            # 檢查是否與輸入的隊名匹配
+            file_home_clean = clean_team_name(file_home)
+            file_away_clean = clean_team_name(file_away)
+
+            # 使用 difflib 計算相似度
+            home_score = difflib.SequenceMatcher(None, home_clean.lower(), file_home_clean.lower()).ratio()
+            away_score = difflib.SequenceMatcher(None, away_clean.lower(), file_away_clean.lower()).ratio()
+            total_score = (home_score + away_score) / 2
+
+            if total_score > 0.6:
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+
+    return None
+
+
 def main():
     print("========================================", flush=True)
     print("⚽ AI 足球分析系統 v6.0 (API Integrated)", flush=True)
@@ -65,27 +133,16 @@ def main():
     odds_fetcher = RealOddsFetcher()
     logger = ExcelLogger()
 
-    # 2.5 爬取 FotMob 陣容
-    print(f"\n👕 [1.2/4] 正在爬取 FotMob 陣容...", flush=True)
-    try:
-        # 搜索比賽 ID
-        match_id = FotMobLineupHarvester.search_match_id(home, away, league_key)
-        
-        if match_id:
-            # 爬取陣容
-            harvester = FotMobLineupHarvester(match_id)
-            lineup_data = harvester.fetch_lineup(save_to_file=True)
-            
-            if lineup_data:
-                print(f"   ✅ 成功爬取陣容: {lineup_data['home_team']['name']} vs {lineup_data['away_team']['name']}", flush=True)
-                print(f"      主隊陣容: {len(lineup_data['home_team']['starters'])} 人", flush=True)
-                print(f"      客隊陣容: {len(lineup_data['away_team']['starters'])} 人", flush=True)
-            else:
-                print(f"   ⚠️ 無法解析陣容數據", flush=True)
-        else:
-            print(f"   ⚠️ 未找到比賽 ID，跳過陣容爬取", flush=True)
-    except Exception as e:
-        print(f"   ⚠️ 陣容爬取出錯: {e}", flush=True)
+    # 2.5 讀取本地陣容檔案
+    print(f"\n👕 [1.2/4] 正在讀取本地陣容資料...", flush=True)
+    lineup_data = find_lineup_file(home, away)
+
+    if lineup_data:
+        print(f"   ✅ 成功讀取陣容: {lineup_data['home_team']['name']} vs {lineup_data['away_team']['name']}", flush=True)
+        print(f"      主隊陣容: {len(lineup_data['home_team']['starters'])} 人", flush=True)
+        print(f"      客隊陣容: {len(lineup_data['away_team']['starters'])} 人", flush=True)
+    else:
+        print(f"   ⚠️ 未找到本地陣容檔案，將跳過陣容分析", flush=True)
 
     # 3. 獲取數據 & 數學模型 (傳入 league_name 給歷史數據模組顯示用)
     print(f"\n🔍 [1/4] 執行 Glicko-2 回測與機器學習預測...", flush=True)

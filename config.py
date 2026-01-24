@@ -46,7 +46,7 @@ class Settings:
     # --- 模型名稱設定 ---
     # 必須使用標準名稱
     MODEL_GEMINI = "gemini-3-pro-preview"  
-    MODEL_GROK = "grok-4.1"
+    MODEL_GROK = "grok-4"
     MODEL_GPT = "gpt-5.2"
 
 settings = Settings()

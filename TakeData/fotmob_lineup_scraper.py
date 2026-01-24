@@ -171,7 +171,7 @@ class FotMobLineupHarvester:
         clean_lineup = self.parse_lineup(raw_data)
         
         if clean_lineup and save_to_file:
-            save_folder = r"C:\Users\Ryan\python\.vscode\fb_ai_bets\data"
+            save_folder = r"C:\Users\Ryan\python\.vscode\fb_ai_bets\data\lineup"
             
             if not os.path.exists(save_folder):
                 try:
@@ -251,7 +251,7 @@ class FotMobLineupHarvester:
 
 if __name__ == "__main__":
     
-    MATCH_ID = "4947808"  # 替換為您想監控的比賽 ID
+    MATCH_ID = "4813595"  # 替換為您想監控的比賽 ID
     
     bot = FotMobLineupHarvester(MATCH_ID)
     bot.run(interval=60)
