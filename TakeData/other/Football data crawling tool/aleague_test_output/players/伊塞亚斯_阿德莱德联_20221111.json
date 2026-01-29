@@ -1,0 +1,74 @@
+{
+  "match_info": {
+    "date": "2022-11-11",
+    "home_team": "阿德莱德联",
+    "away_team": "墨尔本胜利",
+    "score": "3-0",
+    "season": "2022-2023"
+  },
+  "player_info": {
+    "name": "伊塞亚斯",
+    "team": "阿德莱德联",
+    "number": "8",
+    "position": "",
+    "rating": "",
+    "is_home": true
+  },
+  "regular": {
+    "number": "8",
+    "position": "",
+    "rating": "",
+    "key_events": "72'",
+    "minutes_played": "90",
+    "is_motm": "0",
+    "substituted_in": "0",
+    "substituted_out": "0"
+  },
+  "attacking": {
+    "goals": "0",
+    "assists": "1",
+    "shots": "0",
+    "shots_on_target": "0",
+    "key_passes": "0",
+    "big_chances_missed": "0",
+    "shots_from_set_pieces": "0",
+    "goals_from_open_play": "0",
+    "penalties_scored": "0",
+    "hit_woodwork": "0"
+  },
+  "defensive": {
+    "tackles": "0",
+    "interceptions": "0",
+    "clearances": "0",
+    "headed_clearances": "0",
+    "blocks": "0",
+    "aerial_duels_won": "0",
+    "aerial_duels_lost": "0",
+    "duels_won": "0",
+    "duels_lost": "0",
+    "fouls_committed": "0",
+    "fouls_drawn": "0",
+    "yellow_cards": "0",
+    "red_cards": "0",
+    "own_goals": "0",
+    "errors_leading_to_goal": "0"
+  },
+  "passing": {
+    "passes": "0",
+    "passes_completed": "0",
+    "pass_accuracy": "0",
+    "key_passes": "0",
+    "crosses": "0",
+    "crosses_completed": "0",
+    "through_balls": "0",
+    "through_balls_completed": "0",
+    "long_passes": "0",
+    "long_passes_completed": "0",
+    "short_passes": "0",
+    "short_passes_completed": "0",
+    "backward_passes": "0",
+    "assists": "1",
+    "second_assists": "0",
+    "chances_created": "0"
+  }
+}

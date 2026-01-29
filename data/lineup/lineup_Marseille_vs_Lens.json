@@ -1,0 +1,175 @@
+{
+    "match_id": "4830624",
+    "match_time": "Sat, Jan 24, 2026, 20:05 UTC",
+    "timestamp": "2026-01-26 03:33:07",
+    "home_team": {
+        "name": "Marseille",
+        "id": 8592,
+        "formation": "3-4-2-1",
+        "starters": [
+            {
+                "id": 245555,
+                "name": "Geronimo Rulli",
+                "number": "1",
+                "position_id": 11,
+                "rating": 6.8
+            },
+            {
+                "id": 958464,
+                "name": "Leonardo Balerdi",
+                "number": "5",
+                "position_id": 33,
+                "rating": 7
+            },
+            {
+                "id": 617310,
+                "name": "Nayef Aguerd",
+                "number": "21",
+                "position_id": 35,
+                "rating": 7.2
+            },
+            {
+                "id": 812652,
+                "name": "Facundo Medina",
+                "number": "32",
+                "position_id": 37,
+                "rating": 7.4
+            },
+            {
+                "id": 889536,
+                "name": "Timothy Weah",
+                "number": "22",
+                "position_id": 62,
+                "rating": 7.9
+            },
+            {
+                "id": 266523,
+                "name": "Pierre-Emile Højbjerg",
+                "number": "23",
+                "position_id": 64,
+                "rating": 7.6
+            },
+            {
+                "id": 970563,
+                "name": "Quinten Timber",
+                "number": "27",
+                "position_id": 66,
+                "rating": 7
+            },
+            {
+                "id": 1265963,
+                "name": "Igor Paixao",
+                "number": "14",
+                "position_id": 68,
+                "rating": 7.9
+            },
+            {
+                "id": 1254234,
+                "name": "Ethan Nwaneri",
+                "number": "11",
+                "position_id": 84,
+                "rating": 7.9
+            },
+            {
+                "id": 875672,
+                "name": "Hamed Traorè",
+                "number": "20",
+                "position_id": 86,
+                "rating": 6.7
+            },
+            {
+                "id": 844437,
+                "name": "Amine Gouiri",
+                "number": "9",
+                "position_id": 105,
+                "rating": 8.9
+            }
+        ],
+        "coach": "Roberto De Zerbi"
+    },
+    "away_team": {
+        "name": "Lens",
+        "id": 8588,
+        "formation": "3-4-2-1",
+        "starters": [
+            {
+                "id": 1390336,
+                "name": "Robin Risser",
+                "number": "40",
+                "position_id": 11,
+                "rating": 5.6
+            },
+            {
+                "id": 1406645,
+                "name": "Pierre Ganiou",
+                "number": "25",
+                "position_id": 33,
+                "rating": 6.2
+            },
+            {
+                "id": 782502,
+                "name": "Malang Sarr",
+                "number": "20",
+                "position_id": 35,
+                "rating": 7
+            },
+            {
+                "id": 660326,
+                "name": "Matthieu Udol",
+                "number": "14",
+                "position_id": 37,
+                "rating": 5.4
+            },
+            {
+                "id": 1002617,
+                "name": "Saud Abdulhamid",
+                "number": "23",
+                "position_id": 62,
+                "rating": 6.3
+            },
+            {
+                "id": 317062,
+                "name": "Adrien Thomasson",
+                "number": "28",
+                "position_id": 64,
+                "rating": 6.6
+            },
+            {
+                "id": 1185211,
+                "name": "Mamadou Sangare",
+                "number": "8",
+                "position_id": 66,
+                "rating": 7.9
+            },
+            {
+                "id": 561046,
+                "name": "Ruben Aguilar",
+                "number": "2",
+                "position_id": 68,
+                "rating": 6.6
+            },
+            {
+                "id": 254308,
+                "name": "Florian Thauvin",
+                "number": "10",
+                "position_id": 84,
+                "rating": 6.6
+            },
+            {
+                "id": 445856,
+                "name": "Wesley Said",
+                "number": "22",
+                "position_id": 86,
+                "rating": 6.6
+            },
+            {
+                "id": 637746,
+                "name": "Odsonne Edouard",
+                "number": "11",
+                "position_id": 105,
+                "rating": 6.6
+            }
+        ],
+        "coach": "Pierre Sage"
+    }
+}

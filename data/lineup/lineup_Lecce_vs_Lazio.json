@@ -1,0 +1,175 @@
+{
+    "match_id": "4803254",
+    "match_time": "Sat, Jan 24, 2026, 19:45 UTC",
+    "timestamp": "2026-01-25 03:44:03",
+    "home_team": {
+        "name": "Lecce",
+        "id": 9888,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 362200,
+                "name": "Wladimiro Falcone",
+                "number": "30",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 1306664,
+                "name": "Danilo Veiga",
+                "number": "17",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 1185260,
+                "name": "Jamil Siebert",
+                "number": "5",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 1574492,
+                "name": "Tiago Gabriel",
+                "number": "44",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 879065,
+                "name": "Antonino Gallo",
+                "number": "25",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 762028,
+                "name": "Ylber Ramadani",
+                "number": "20",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 664587,
+                "name": "Lassana Coulibaly",
+                "number": "29",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 1039403,
+                "name": "Santiago Pierotti",
+                "number": "50",
+                "position_id": 83,
+                "rating": null
+            },
+            {
+                "id": 1202114,
+                "name": "Omri Gandelman",
+                "number": "16",
+                "position_id": 85,
+                "rating": null
+            },
+            {
+                "id": 896377,
+                "name": "Lameck Banda",
+                "number": "19",
+                "position_id": 87,
+                "rating": null
+            },
+            {
+                "id": 1178314,
+                "name": "Nikola Stulic",
+                "number": "9",
+                "position_id": 115,
+                "rating": null
+            }
+        ],
+        "coach": "Eusebio Di Francesco"
+    },
+    "away_team": {
+        "name": "Lazio",
+        "id": 8543,
+        "formation": "4-3-3",
+        "starters": [
+            {
+                "id": 364822,
+                "name": "Ivan Provedel",
+                "number": "94",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 662205,
+                "name": "Manuel Lazzari",
+                "number": "29",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 1106074,
+                "name": "Mario Gila",
+                "number": "34",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 362195,
+                "name": "Alessio Romagnoli",
+                "number": "13",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 478447,
+                "name": "Adam Marusic",
+                "number": "77",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 970565,
+                "name": "Kenneth Taylor",
+                "number": "24",
+                "position_id": 73,
+                "rating": null
+            },
+            {
+                "id": 206322,
+                "name": "Matias Vecino",
+                "number": "5",
+                "position_id": 75,
+                "rating": null
+            },
+            {
+                "id": 651435,
+                "name": "Toma Basic",
+                "number": "26",
+                "position_id": 77,
+                "rating": null
+            },
+            {
+                "id": 1146500,
+                "name": "Matteo Cancellieri",
+                "number": "22",
+                "position_id": 103,
+                "rating": null
+            },
+            {
+                "id": 972120,
+                "name": "Boulaye Dia",
+                "number": "19",
+                "position_id": 105,
+                "rating": null
+            },
+            {
+                "id": 541555,
+                "name": "Mattia Zaccagni",
+                "number": "10",
+                "position_id": 107,
+                "rating": null
+            }
+        ],
+        "coach": "Maurizio Sarri"
+    }
+}

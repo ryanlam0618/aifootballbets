@@ -28,7 +28,7 @@ class Settings:
         EXCEL_FILEPATH = os.path.join(BASE_DIR, EXCEL_FILENAME)
 
     # --- 資金管理設定 ---
-    INITIAL_BANKROLL = 1000
+    INITIAL_BANKROLL = 500
     KELLY_FRACTION = 0.75 # Kelly 投注比例
     MIN_EDGE = 0.09 # 最小期望值 (Edge) 門檻
 

@@ -1,0 +1,175 @@
+{
+    "match_id": "4813595",
+    "match_time": "Sat, Jan 24, 2026, 17:30 UTC",
+    "timestamp": "2026-01-25 01:12:36",
+    "home_team": {
+        "name": "AFC Bournemouth",
+        "id": 8678,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 1067256,
+                "name": "Djordje Petrovic",
+                "number": "1",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 160447,
+                "name": "Adam Smith",
+                "number": "15",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 959407,
+                "name": "James Hill",
+                "number": "23",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 785411,
+                "name": "Marcos Senesi",
+                "number": "5",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 1177358,
+                "name": "Adrien Truffert",
+                "number": "3",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 1233655,
+                "name": "Alex Scott",
+                "number": "8",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 562724,
+                "name": "Lewis Cook",
+                "number": "4",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 1526689,
+                "name": "Alex Jimenez",
+                "number": "20",
+                "position_id": 83,
+                "rating": null
+            },
+            {
+                "id": 1460534,
+                "name": "Eli Junior Kroupi",
+                "number": "22",
+                "position_id": 85,
+                "rating": null
+            },
+            {
+                "id": 1079557,
+                "name": "Amine Adli",
+                "number": "21",
+                "position_id": 87,
+                "rating": null
+            },
+            {
+                "id": 1098096,
+                "name": "Evanilson",
+                "number": "9",
+                "position_id": 115,
+                "rating": null
+            }
+        ],
+        "coach": "Andoni Iraola"
+    },
+    "away_team": {
+        "name": "Liverpool",
+        "id": 8650,
+        "formation": "4-2-2-2",
+        "starters": [
+            {
+                "id": 319784,
+                "name": "Alisson Becker",
+                "number": "1",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 966018,
+                "name": "Jeremie Frimpong",
+                "number": "30",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 568571,
+                "name": "Joseph Gomez",
+                "number": "2",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 209405,
+                "name": "Virgil van Dijk",
+                "number": "4",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 1195281,
+                "name": "Milos Kerkez",
+                "number": "6",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 956683,
+                "name": "Ryan Gravenberch",
+                "number": "38",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 831489,
+                "name": "Alexis Mac Allister",
+                "number": "10",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 846005,
+                "name": "Dominik Szoboszlai",
+                "number": "8",
+                "position_id": 82,
+                "rating": null
+            },
+            {
+                "id": 1152455,
+                "name": "Florian Wirtz",
+                "number": "7",
+                "position_id": 88,
+                "rating": null
+            },
+            {
+                "id": 292462,
+                "name": "Mohamed Salah",
+                "number": "11",
+                "position_id": 104,
+                "rating": null
+            },
+            {
+                "id": 806552,
+                "name": "Cody Gakpo",
+                "number": "18",
+                "position_id": 106,
+                "rating": null
+            }
+        ],
+        "coach": "Arne Slot"
+    }
+}

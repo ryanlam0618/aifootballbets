@@ -251,7 +251,7 @@ class FotMobLineupHarvester:
 
 if __name__ == "__main__":
     
-    MATCH_ID = "4813595"  # 替換為您想監控的比賽 ID
+    MATCH_ID = "4947113"  # 替換為您想監控的比賽 ID
     
     bot = FotMobLineupHarvester(MATCH_ID)
     bot.run(interval=60)
