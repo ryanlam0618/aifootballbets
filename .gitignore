@@ -16,14 +16,17 @@ parts/
 sdist/
 var/
 wheels/
+pip-wheel-metadata/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
 # Virtual Environment
 venv/
-env/
 ENV/
+env/
 .venv
 
 # IDE
@@ -33,31 +36,19 @@ ENV/
 *.swo
 *~
 
-# Environment Variables
-.env
-.env.local
-
-# Data Files
-*.csv
-*.xlsx
-*.xls
-!requirements.txt
-
-# Model Files
-*.pkl
-*.h5
-*.model
-
-# Logs
-*.log
-
 # OS
 .DS_Store
 Thumbs.db
 
-# Project Specific
-data/*.csv
-data/*.json
-!data/.gitkeep
-Betting_Records*.xlsx
-xgb_model.pkl
+# Data Files (large, sensitive)
+*.csv
+*.xlsx
+*.json
+!src/*.pkl
+!data/lineup/*.json
+
+# Logs
+*.log
+
+# API Keys (should not be committed)
+config.py

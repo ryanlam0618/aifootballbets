@@ -1,0 +1,175 @@
+{
+    "match_id": "4947891",
+    "match_time": "Thu, Jan 29, 2026, 20:00 UTC",
+    "timestamp": "2026-01-31 21:03:53",
+    "home_team": {
+        "name": "VfB Stuttgart",
+        "id": 10269,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 522236,
+                "name": "Fabian Bredlow",
+                "number": "1",
+                "position_id": 11,
+                "rating": 5.4
+            },
+            {
+                "id": 1192406,
+                "name": "Lorenz Assignon",
+                "number": "22",
+                "position_id": 32,
+                "rating": 7.4
+            },
+            {
+                "id": 1487877,
+                "name": "Finn Jeltsch",
+                "number": "29",
+                "position_id": 34,
+                "rating": 7.3
+            },
+            {
+                "id": 867080,
+                "name": "Jeff Chabot",
+                "number": "24",
+                "position_id": 36,
+                "rating": 7
+            },
+            {
+                "id": 614384,
+                "name": "Maximilian Mittelstaedt",
+                "number": "7",
+                "position_id": 38,
+                "rating": 7.1
+            },
+            {
+                "id": 1586552,
+                "name": "Chema Andres",
+                "number": "30",
+                "position_id": 64,
+                "rating": 8.1
+            },
+            {
+                "id": 1071186,
+                "name": "Angelo Stiller",
+                "number": "6",
+                "position_id": 66,
+                "rating": 6.3
+            },
+            {
+                "id": 1388070,
+                "name": "Badredine Bouanani",
+                "number": "27",
+                "position_id": 83,
+                "rating": 7.7
+            },
+            {
+                "id": 661519,
+                "name": "Deniz Undav",
+                "number": "26",
+                "position_id": 85,
+                "rating": 8.4
+            },
+            {
+                "id": 892679,
+                "name": "Chris Führich",
+                "number": "10",
+                "position_id": 87,
+                "rating": 7.5
+            },
+            {
+                "id": 840241,
+                "name": "Ermedin Demirovic",
+                "number": "9",
+                "position_id": 115,
+                "rating": 8.2
+            }
+        ],
+        "coach": "Sebastian Hoeness"
+    },
+    "away_team": {
+        "name": "Young Boys",
+        "id": 10192,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 1107298,
+                "name": "Marvin Keller",
+                "number": "1",
+                "position_id": 11,
+                "rating": 5.9
+            },
+            {
+                "id": 575778,
+                "name": "Saidy Janko",
+                "number": "17",
+                "position_id": 32,
+                "rating": 6.2
+            },
+            {
+                "id": 493185,
+                "name": "Gregory Wüthrich",
+                "number": "5",
+                "position_id": 34,
+                "rating": 6.8
+            },
+            {
+                "id": 659742,
+                "name": "Sandro Lauper",
+                "number": "30",
+                "position_id": 36,
+                "rating": 6.7
+            },
+            {
+                "id": 176680,
+                "name": "Loris Benito",
+                "number": "23",
+                "position_id": 38,
+                "rating": 6.1
+            },
+            {
+                "id": 1057426,
+                "name": "Armin Gigovic",
+                "number": "37",
+                "position_id": 64,
+                "rating": 7.5
+            },
+            {
+                "id": 451335,
+                "name": "Edimilson Fernandes",
+                "number": "6",
+                "position_id": 66,
+                "rating": 7.4
+            },
+            {
+                "id": 618774,
+                "name": "Christian Fassnacht",
+                "number": "16",
+                "position_id": 83,
+                "rating": 6.7
+            },
+            {
+                "id": 1203528,
+                "name": "Alvyn Sanches",
+                "number": "10",
+                "position_id": 85,
+                "rating": 7.2
+            },
+            {
+                "id": 1187691,
+                "name": "Joel Monteiro",
+                "number": "77",
+                "position_id": 87,
+                "rating": 6.5
+            },
+            {
+                "id": 581132,
+                "name": "Chris Bedia",
+                "number": "29",
+                "position_id": 115,
+                "rating": 6.5
+            }
+        ],
+        "coach": "Gerardo Seoane"
+    }
+}

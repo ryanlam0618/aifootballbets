@@ -1,0 +1,175 @@
+{
+    "match_id": "4803257",
+    "match_time": "Mon, Jan 26, 2026, 19:45 UTC",
+    "timestamp": "2026-01-27 03:09:01",
+    "home_team": {
+        "name": "Hellas Verona",
+        "id": 9876,
+        "formation": "3-5-2",
+        "starters": [
+            {
+                "id": 364515,
+                "name": "Simone Perilli",
+                "number": "34",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 1367915,
+                "name": "Tobias Slotsager",
+                "number": "19",
+                "position_id": 33,
+                "rating": null
+            },
+            {
+                "id": 776594,
+                "name": "Victor Nelsson",
+                "number": "15",
+                "position_id": 35,
+                "rating": null
+            },
+            {
+                "id": 769167,
+                "name": "Enzo Ebosse",
+                "number": "23",
+                "position_id": 37,
+                "rating": null
+            },
+            {
+                "id": 769335,
+                "name": "Pol Lirola",
+                "number": "14",
+                "position_id": 71,
+                "rating": null
+            },
+            {
+                "id": 667790,
+                "name": "Suat Serdar",
+                "number": "8",
+                "position_id": 73,
+                "rating": null
+            },
+            {
+                "id": 485634,
+                "name": "Roberto Gagliardini",
+                "number": "63",
+                "position_id": 75,
+                "rating": null
+            },
+            {
+                "id": 767013,
+                "name": "Antoine Bernede",
+                "number": "24",
+                "position_id": 77,
+                "rating": null
+            },
+            {
+                "id": 921594,
+                "name": "Domagoj Bradaric",
+                "number": "12",
+                "position_id": 79,
+                "rating": null
+            },
+            {
+                "id": 1368557,
+                "name": "Gift Orban",
+                "number": "16",
+                "position_id": 104,
+                "rating": null
+            },
+            {
+                "id": 1156568,
+                "name": "Amin Sarr",
+                "number": "9",
+                "position_id": 106,
+                "rating": null
+            }
+        ],
+        "coach": "Paolo Zanetti"
+    },
+    "away_team": {
+        "name": "Udinese",
+        "id": 8600,
+        "formation": "3-4-2-1",
+        "starters": [
+            {
+                "id": 1091193,
+                "name": "Maduka Okoye",
+                "number": "40",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 1258292,
+                "name": "Nicolo Bertola",
+                "number": "13",
+                "position_id": 33,
+                "rating": null
+            },
+            {
+                "id": 1190029,
+                "name": "Thomas Kristensen",
+                "number": "31",
+                "position_id": 35,
+                "rating": null
+            },
+            {
+                "id": 866708,
+                "name": "Oumar Solet",
+                "number": "28",
+                "position_id": 37,
+                "rating": null
+            },
+            {
+                "id": 916710,
+                "name": "Alessandro Zanoli",
+                "number": "59",
+                "position_id": 62,
+                "rating": null
+            },
+            {
+                "id": 1399969,
+                "name": "Lennon Miller",
+                "number": "38",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 322003,
+                "name": "Jesper Karlström",
+                "number": "8",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 982633,
+                "name": "Jordan Zemura",
+                "number": "33",
+                "position_id": 68,
+                "rating": null
+            },
+            {
+                "id": 1428426,
+                "name": "Arthur Atta",
+                "number": "14",
+                "position_id": 84,
+                "rating": null
+            },
+            {
+                "id": 934156,
+                "name": "Jurgen Ekkelenkamp",
+                "number": "32",
+                "position_id": 86,
+                "rating": null
+            },
+            {
+                "id": 724368,
+                "name": "Keinan Davis",
+                "number": "9",
+                "position_id": 105,
+                "rating": null
+            }
+        ],
+        "coach": "Kosta Runjaic"
+    }
+}

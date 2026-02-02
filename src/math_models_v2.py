@@ -27,10 +27,35 @@ class Glicko2System:
     def _E(self, mu, mu_j, phi_j):
         return 1 / (1 + math.exp(-self._g(phi_j) * (mu - mu_j)))
 
-    def update_ratings(self, home, away, h_goals, a_goals):
+    def update_ratings(self, home, away, h_goals, a_goals, xg_home=None, xg_away=None):
+        """
+        更新評分系統
+
+        Args:
+            home: 主隊名稱
+            away: 客隊名稱
+            h_goals: 主隊進球
+            a_goals: 客隊進球
+            xg_home: 主隊 xG (可選，用於加權更新)
+            xg_away: 客隊 xG (可選，用於加權更新)
+        """
         if h_goals > a_goals: s_h = 1; s_a = 0
         elif h_goals == a_goals: s_h = 0.5; s_a = 0.5
         else: s_h = 0; s_a = 1
+
+        # 如果有 xG 數據，計算加權結果
+        # xG 越高，表示球隊實際表現比預期好/壞
+        if xg_home is not None and xg_away is not None:
+            # 計算 xG 差異
+            xg_diff = xg_home - xg_away
+            goal_diff = h_goals - a_goals
+
+            # 如果進球數與 xG 預期不符，調整結果權重
+            # 例如：xG 領先但輸球，可能表示運氣不佳，給予部分積分
+            if (xg_diff > 0.3 and s_h == 0):  # xG 領先但輸球
+                s_h = 0.3  # 降低懲罰
+            elif (xg_diff < -0.3 and s_h == 1):  # xG 落後但贏球
+                s_h = 0.7  # 降低獎勵
 
         def scale_down(r, rd):
             return (r - 1500) / 173.7178, rd / 173.7178

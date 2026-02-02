@@ -1,0 +1,175 @@
+{
+    "match_id": "4829492",
+    "match_time": "Sat, Jan 31, 2026, 14:30 UTC",
+    "timestamp": "2026-01-31 22:26:56",
+    "home_team": {
+        "name": "RB Leipzig",
+        "id": 178475,
+        "formation": "4-3-3",
+        "starters": [
+            {
+                "id": 151001,
+                "name": "Péter Gulácsi",
+                "number": "1",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 883087,
+                "name": "Ridle Baku",
+                "number": "17",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 278856,
+                "name": "Willi Orban",
+                "number": "4",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 1173788,
+                "name": "El Chadaille Bitshiabu",
+                "number": "5",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 806669,
+                "name": "David Raum",
+                "number": "22",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 620027,
+                "name": "Xaver Schlager",
+                "number": "24",
+                "position_id": 73,
+                "rating": null
+            },
+            {
+                "id": 1024672,
+                "name": "Nicolas Seiwald",
+                "number": "13",
+                "position_id": 75,
+                "rating": null
+            },
+            {
+                "id": 1248482,
+                "name": "Antonio Nusa",
+                "number": "7",
+                "position_id": 77,
+                "rating": null
+            },
+            {
+                "id": 1735453,
+                "name": "Yan Diomande",
+                "number": "49",
+                "position_id": 103,
+                "rating": null
+            },
+            {
+                "id": 1314412,
+                "name": "Romulo Cruz",
+                "number": "40",
+                "position_id": 105,
+                "rating": null
+            },
+            {
+                "id": 1482294,
+                "name": "Conrad Harder",
+                "number": "11",
+                "position_id": 107,
+                "rating": null
+            }
+        ],
+        "coach": "Ole Werner"
+    },
+    "away_team": {
+        "name": "Mainz 05",
+        "id": 9905,
+        "formation": "3-5-2",
+        "starters": [
+            {
+                "id": 212873,
+                "name": "Daniel Batz",
+                "number": "33",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 557325,
+                "name": "Stefan Posch",
+                "number": "4",
+                "position_id": 33,
+                "rating": null
+            },
+            {
+                "id": 193901,
+                "name": "Stefan Bell",
+                "number": "16",
+                "position_id": 35,
+                "rating": null
+            },
+            {
+                "id": 1800401,
+                "name": "Kacper Potulski",
+                "number": "48",
+                "position_id": 37,
+                "rating": null
+            },
+            {
+                "id": 240537,
+                "name": "Danny da Costa",
+                "number": "21",
+                "position_id": 71,
+                "rating": null
+            },
+            {
+                "id": 614449,
+                "name": "Nadiem Amiri",
+                "number": "10",
+                "position_id": 73,
+                "rating": null
+            },
+            {
+                "id": 1033111,
+                "name": "Kaishu Sano",
+                "number": "6",
+                "position_id": 75,
+                "rating": null
+            },
+            {
+                "id": 523749,
+                "name": "Jae-Sung Lee",
+                "number": "7",
+                "position_id": 77,
+                "rating": null
+            },
+            {
+                "id": 275034,
+                "name": "Silvan Widmer",
+                "number": "30",
+                "position_id": 79,
+                "rating": null
+            },
+            {
+                "id": 686315,
+                "name": "Phillip Tietz",
+                "number": "20",
+                "position_id": 104,
+                "rating": null
+            },
+            {
+                "id": 1185568,
+                "name": "Benedict Hollerbach",
+                "number": "17",
+                "position_id": 106,
+                "rating": null
+            }
+        ],
+        "coach": "Urs Fischer"
+    }
+}

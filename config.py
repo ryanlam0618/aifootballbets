@@ -35,13 +35,16 @@ class Settings:
 
     # --- API 設定 (OpenAI 兼容模式) ---
     # 根據你的服務商文件，這是 API 網址
-    API_BASE_URL = os.getenv("API_BASE_URL", "https://api.gptbest.vip/v1")  
-    NETWORK_API_URL = os.getenv("NETWORK_API_URL", "https://api.gptbest.vip/v1")
+    API_BASE_URL = os.getenv("API_BASE_URL", "https://api.whatai.cc/v1")  
+    NETWORK_API_URL = os.getenv("NETWORK_API_URL", "https://api.whatai.cc/v1")
 
     # --- API Keys ---
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "sk-XnFA4k0EMp5IspVxLOSVAOAnb2OGWQ2MB2uaB9yfOXrneXV8")
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "sk-NBQeAvgttqd13O48F1OjjPXgh01sy0z8jucmwN8gNMwRmVMe")
     GROK_API_KEY = os.getenv("GROK_API_KEY", "sk-brT8h5Bd3KKVJyNyn5s963vUTGDe5Pz4RUrzPUsTcqvxVTsn")
+
+    # API-Football Key (傷停數據)
+    API_FOOTBALL_KEY = "147e3f1218fa63de077c346ddac4f5ad"
 
     # --- 模型名稱設定 ---
     # 必須使用標準名稱

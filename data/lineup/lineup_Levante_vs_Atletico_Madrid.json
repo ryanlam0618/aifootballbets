@@ -1,0 +1,175 @@
+{
+    "match_id": "4837325",
+    "match_time": "Sat, Jan 31, 2026, 17:30 UTC",
+    "timestamp": "2026-02-01 00:59:11",
+    "home_team": {
+        "name": "Levante",
+        "id": 8581,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 185644,
+                "name": "Mathew Ryan",
+                "number": "13",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 443966,
+                "name": "Jeremy Toljan",
+                "number": "22",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 952528,
+                "name": "Adrián De La Fuente",
+                "number": "4",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 1605748,
+                "name": "Matias Moreno",
+                "number": "2",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 1412942,
+                "name": "Alan Matturro",
+                "number": "3",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 1335102,
+                "name": "Ugo Raghouber",
+                "number": "14",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 923298,
+                "name": "Pablo Martinez",
+                "number": "10",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 1875615,
+                "name": "Kareem Tunde",
+                "number": "26",
+                "position_id": 83,
+                "rating": null
+            },
+            {
+                "id": 1209980,
+                "name": "Carlos Álvarez",
+                "number": "24",
+                "position_id": 85,
+                "rating": null
+            },
+            {
+                "id": 1082930,
+                "name": "Iker Losada",
+                "number": "18",
+                "position_id": 87,
+                "rating": null
+            },
+            {
+                "id": 1209441,
+                "name": "Ivan Romero",
+                "number": "9",
+                "position_id": 115,
+                "rating": null
+            }
+        ],
+        "coach": "Luis Castro"
+    },
+    "away_team": {
+        "name": "Atletico Madrid",
+        "id": 9906,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 177126,
+                "name": "Jan Oblak",
+                "number": "13",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 726345,
+                "name": "Nahuel Molina",
+                "number": "16",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 609516,
+                "name": "Robin Le Normand",
+                "number": "24",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 488412,
+                "name": "Clément Lenglet",
+                "number": "15",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 1051097,
+                "name": "Matteo Ruggeri",
+                "number": "3",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 1173678,
+                "name": "Johnny Cardoso",
+                "number": "5",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 1338192,
+                "name": "Pablo Barrios",
+                "number": "8",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 602563,
+                "name": "Marcos Llorente",
+                "number": "14",
+                "position_id": 83,
+                "rating": null
+            },
+            {
+                "id": 955271,
+                "name": "Thiago Almada",
+                "number": "11",
+                "position_id": 85,
+                "rating": null
+            },
+            {
+                "id": 841672,
+                "name": "Nicolás González",
+                "number": "23",
+                "position_id": 87,
+                "rating": null
+            },
+            {
+                "id": 440330,
+                "name": "Alexander Sørloth",
+                "number": "9",
+                "position_id": 115,
+                "rating": null
+            }
+        ],
+        "coach": "Diego Simeone"
+    }
+}

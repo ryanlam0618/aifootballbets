@@ -1,0 +1,175 @@
+{
+    "match_id": "4829490",
+    "match_time": "Sat, Jan 31, 2026, 17:30 UTC",
+    "timestamp": "2026-02-01 03:41:25",
+    "home_team": {
+        "name": "Hamburger SV",
+        "id": 9790,
+        "formation": "3-5-2",
+        "starters": [
+            {
+                "id": 406501,
+                "name": "Daniel Heuer Fernandes",
+                "number": "1",
+                "position_id": 11,
+                "rating": 7.7
+            },
+            {
+                "id": 1018564,
+                "name": "Nicolas Capaldo",
+                "number": "24",
+                "position_id": 33,
+                "rating": 7.3
+            },
+            {
+                "id": 1413996,
+                "name": "Luka Vuskovic",
+                "number": "44",
+                "position_id": 35,
+                "rating": 7.4
+            },
+            {
+                "id": 1383070,
+                "name": "Daniel Elfadli",
+                "number": "8",
+                "position_id": 37,
+                "rating": 6.7
+            },
+            {
+                "id": 763998,
+                "name": "Bakery Jatta",
+                "number": "18",
+                "position_id": 71,
+                "rating": 6.2
+            },
+            {
+                "id": 901495,
+                "name": "Albert Sambi Lokonga",
+                "number": "6",
+                "position_id": 73,
+                "rating": 7.4
+            },
+            {
+                "id": 1188890,
+                "name": "Nicolai Remberg",
+                "number": "21",
+                "position_id": 75,
+                "rating": 7.4
+            },
+            {
+                "id": 759817,
+                "name": "Miro Muheim",
+                "number": "28",
+                "position_id": 77,
+                "rating": 7.6
+            },
+            {
+                "id": 1242757,
+                "name": "William Mikelbrencis",
+                "number": "2",
+                "position_id": 79,
+                "rating": 7.3
+            },
+            {
+                "id": 1121170,
+                "name": "Ransford Königsdörffer",
+                "number": "11",
+                "position_id": 104,
+                "rating": 6.4
+            },
+            {
+                "id": 1025462,
+                "name": "Fabio Vieira",
+                "number": "20",
+                "position_id": 106,
+                "rating": 8
+            }
+        ],
+        "coach": "Merlin Polzin"
+    },
+    "away_team": {
+        "name": "Bayern München",
+        "id": 9823,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 27299,
+                "name": "Manuel Neuer",
+                "number": "1",
+                "position_id": 11,
+                "rating": 6.7
+            },
+            {
+                "id": 950824,
+                "name": "Josip Stanisic",
+                "number": "44",
+                "position_id": 32,
+                "rating": 6.6
+            },
+            {
+                "id": 658554,
+                "name": "Dayot Upamecano",
+                "number": "2",
+                "position_id": 34,
+                "rating": 7.3
+            },
+            {
+                "id": 828159,
+                "name": "Min-Jae Kim",
+                "number": "3",
+                "position_id": 36,
+                "rating": 6.5
+            },
+            {
+                "id": 751202,
+                "name": "Alphonso Davies",
+                "number": "19",
+                "position_id": 38,
+                "rating": 7.4
+            },
+            {
+                "id": 460632,
+                "name": "Joshua Kimmich",
+                "number": "6",
+                "position_id": 64,
+                "rating": 8.3
+            },
+            {
+                "id": 1473580,
+                "name": "Aleksandar Pavlovic",
+                "number": "45",
+                "position_id": 66,
+                "rating": 7.5
+            },
+            {
+                "id": 1029063,
+                "name": "Michael Olise",
+                "number": "17",
+                "position_id": 83,
+                "rating": 7.5
+            },
+            {
+                "id": 1737700,
+                "name": "Lennart Karl",
+                "number": "42",
+                "position_id": 85,
+                "rating": 6.4
+            },
+            {
+                "id": 385437,
+                "name": "Serge Gnabry",
+                "number": "7",
+                "position_id": 87,
+                "rating": 7.2
+            },
+            {
+                "id": 194165,
+                "name": "Harry Kane",
+                "number": "9",
+                "position_id": 115,
+                "rating": 7.9
+            }
+        ],
+        "coach": "Vincent Kompany"
+    }
+}

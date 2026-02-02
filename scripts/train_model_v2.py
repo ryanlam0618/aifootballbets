@@ -58,7 +58,7 @@ conditions = [
 df['result'] = np.select(conditions, [0, 1, 2])
 
 # 計算滾動平均 (Rolling Means)
-def calculate_rolling_stats(df, team_col, goals_col, xg_col=None, windows=[3, 5, 10]):
+def calculate_rolling_stats(df, team_col, goals_col, xg_col=None, windows=[5, 10]):
     for window in windows:
         df[f'rolling_{window}_{goals_col}'] = df.groupby(team_col)[goals_col].transform(
             lambda x: x.rolling(window=window, min_periods=1).mean()
@@ -85,7 +85,20 @@ try:
 except:
     df['league_home_adv'] = 0
 
-# 選擇特徵欄位 - 基本版
+# 球隊實力評分 (基於歷史戰績)
+def calculate_team_strength(df, team_col, result_col, prefix='strength', windows=[10]):
+    for window in windows:
+        col_name = f'{prefix}_{window}_{team_col[:3]}'
+        df[col_name] = df.groupby(team_col)[result_col].transform(
+            lambda x: x.rolling(window=window, min_periods=1).mean()
+        )
+    return df
+
+df = calculate_team_strength(df, 'home_team', 'result', 'home_str', [10])
+df = calculate_team_strength(df, 'away_team', 'result', 'away_str', [10])
+df['strength_diff'] = df['home_str_10_hom'] - df['away_str_10_awa'].fillna(0.5)
+
+# 選擇特徵欄位 - 完整版 (不依賴半場比分)
 features = [
     'home_advantage',
     'league_home_adv',
@@ -97,14 +110,7 @@ features = [
 
 # 添加 xG 特徵 (如果可用)
 if 'rolling_5_xg' in df.columns:
-    features.extend(['rolling_5_xg', 'rolling_10_xg'])
-if 'rolling_5_xga' in df.columns:
-    features.extend(['rolling_5_xga', 'rolling_10_xga'])
-
-# 添加半場比分特徵 (如果可用)
-if 'ht_home_goals' in df.columns:
-    df['ht_goals_diff'] = df['ht_home_goals'] - df['ht_away_goals']
-    features.append('ht_goals_diff')
+    features.extend(['rolling_5_xg', 'rolling_10_xg', 'rolling_5_xga', 'rolling_10_xga'])
 
 target = 'result'
 
@@ -130,7 +136,6 @@ model = XGBClassifier(
     colsample_bytree=0.8,
     reg_alpha=0.1,
     reg_lambda=1,
-    use_label_encoder=False,
     eval_metric='mlogloss',
     random_state=42
 )
@@ -153,7 +158,7 @@ print(f"Cross-Entropy Loss: {ce:.4f}")
 # 特徵重要性
 print(f"\nFeature Importance:")
 importance = model.feature_importances_
-for feat, imp in sorted(zip(features, importance), key=lambda x: -x[1])[:10]:
+for feat, imp in sorted(zip(features, importance), key=lambda x: -x[1])[:15]:
     print(f"  {feat}: {imp:.4f}")
 
 model_path = os.path.join(os.path.dirname(__file__), "xgb_model.pkl")

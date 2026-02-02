@@ -1,0 +1,175 @@
+{
+    "match_id": "4813606",
+    "match_time": "Sat, Jan 31, 2026, 15:00 UTC",
+    "timestamp": "2026-01-31 22:24:55",
+    "home_team": {
+        "name": "Brighton & Hove Albion",
+        "id": 10204,
+        "formation": "4-3-3",
+        "starters": [
+            {
+                "id": 1131987,
+                "name": "Bart Verbruggen",
+                "number": "1",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 774448,
+                "name": "Ferdi Kadioglu",
+                "number": "24",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 974618,
+                "name": "Jan Paul van Hecke",
+                "number": "6",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 201690,
+                "name": "Lewis Dunk",
+                "number": "5",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 1134871,
+                "name": "Maxim De Cuyper",
+                "number": "29",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 1168311,
+                "name": "Yasin Ayari",
+                "number": "26",
+                "position_id": 73,
+                "rating": null
+            },
+            {
+                "id": 1352713,
+                "name": "Carlos Baleba",
+                "number": "17",
+                "position_id": 75,
+                "rating": null
+            },
+            {
+                "id": 167008,
+                "name": "Pascal Gross",
+                "number": "30",
+                "position_id": 77,
+                "rating": null
+            },
+            {
+                "id": 956925,
+                "name": "Georginio Rutter",
+                "number": "10",
+                "position_id": 103,
+                "rating": null
+            },
+            {
+                "id": 113836,
+                "name": "Danny Welbeck",
+                "number": "18",
+                "position_id": 105,
+                "rating": null
+            },
+            {
+                "id": 862608,
+                "name": "Kaoru Mitoma",
+                "number": "22",
+                "position_id": 107,
+                "rating": null
+            }
+        ],
+        "coach": "Fabian Hürzeler"
+    },
+    "away_team": {
+        "name": "Everton",
+        "id": 8668,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 303919,
+                "name": "Jordan Pickford",
+                "number": "1",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 1098607,
+                "name": "Jake O'Brien",
+                "number": "15",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 243138,
+                "name": "James Tarkowski",
+                "number": "6",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 290410,
+                "name": "Michael Keane",
+                "number": "5",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 1030829,
+                "name": "Jarrad Branthwaite",
+                "number": "32",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 950474,
+                "name": "James Garner",
+                "number": "37",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 179410,
+                "name": "Idrissa Gana Gueye",
+                "number": "27",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 1559637,
+                "name": "Harrison Armstrong",
+                "number": "45",
+                "position_id": 83,
+                "rating": null
+            },
+            {
+                "id": 886016,
+                "name": "Kiernan Dewsbury-Hall",
+                "number": "22",
+                "position_id": 85,
+                "rating": null
+            },
+            {
+                "id": 965764,
+                "name": "Iliman Ndiaye",
+                "number": "10",
+                "position_id": 87,
+                "rating": null
+            },
+            {
+                "id": 1398392,
+                "name": "Thierno Barry",
+                "number": "11",
+                "position_id": 115,
+                "rating": null
+            }
+        ],
+        "coach": "David Moyes"
+    }
+}

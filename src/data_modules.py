@@ -153,7 +153,7 @@ class HistoryRepo:
                         rename_dict[col] = standard_col
                         break
             self.df.rename(columns=rename_dict, inplace=True)
-            self.df["date"] = pd.to_datetime(self.df["date"], dayfirst=True, errors='coerce')
+            self.df["date"] = pd.to_datetime(self.df["date"], errors='coerce')
             self.df = self.df.dropna(subset=["date"]).sort_values("date")
 
             if self.ranking_system: self._calculate_rankings()
@@ -166,8 +166,13 @@ class HistoryRepo:
         valid_rows = self.df.dropna(subset=['home_goals', 'away_goals', 'home_team', 'away_team'])
         for _, row in valid_rows.iterrows():
             try:
+                # 優先使用 xG 數據計算評分
+                xg_home = row.get('xG') if 'xG' in row.index else None
+                xg_away = row.get('xGA') if 'xGA' in row.index else None
+                
                 self.ranking_system.update_ratings(
-                    row['home_team'], row['away_team'], int(row['home_goals']), int(row['away_goals'])
+                    row['home_team'], row['away_team'], int(row['home_goals']), int(row['away_goals']),
+                    xg_home, xg_away
                 )
             except: continue
 
@@ -230,7 +235,14 @@ class HistoryRepo:
     def get_match_context(self, home: str, away: str, league: str) -> Dict:
         if self.df is None or self.df.empty: self._create_mock_data()
         
-        all_teams = list(set(self.df['home_team'].unique().astype(str).tolist() + self.df['away_team'].unique().astype(str).tolist()))
+        # 確保列是字符串類型
+        self.df['home_team'] = self.df['home_team'].astype(str)
+        self.df['away_team'] = self.df['away_team'].astype(str)
+        
+        all_teams = list(set(
+            self.df['home_team'].unique().tolist() + 
+            self.df['away_team'].unique().tolist()
+        ))
         real_home = self._fuzzy_match_team(home, all_teams)
         real_away = self._fuzzy_match_team(away, all_teams)
         
@@ -258,19 +270,68 @@ class HistoryRepo:
         a_games = tmp[(tmp["hl"] == away_s) | (tmp["al"] == away_s)].sort_values("date").tail(10)
         h2h = tmp[((tmp["hl"] == home_s) & (tmp["al"] == away_s)) | ((tmp["hl"] == away_s) & (tmp["al"] == home_s))].tail(5)
         
-        def get_avg(games, team_l):
+        def get_avg(games, team_l, use_xg=True):
             if games.empty: return 1.2
             goals = []
             weights = []
+            
             for i, (_, row) in enumerate(games.iterrows()):
-                g = row["home_goals"] if row["hl"] == team_l else row["away_goals"]
+                # 優先使用 xG, 否則使用實際進球
+                if use_xg and 'xG' in games.columns and pd.notna(row.get('xG')) and pd.notna(row.get('xGA')):
+                    g = row['xG'] if row['hl'] == team_l else row['xGA']
+                else:
+                    g = row["home_goals"] if row["hl"] == team_l else row["away_goals"]
                 goals.append(g)
                 weights.append(i + 1)
+            
             return np.average(goals, weights=weights) if weights else 1.2
+
+        def get_avg_xg(games, team_l):
+            """計算球隊的平均 xG (支援新舊格式)"""
+            if games.empty:
+                return {'xg_for': 1.2, 'xg_against': 1.2}
+            
+            xg_for = []
+            xg_against = []
+            
+            for _, row in games.iterrows():
+                # 嘗試從新格式獲取 xG
+                has_xg = 'xG' in games.columns and pd.notna(row.get('xG'))
+                has_xga = 'xGA' in games.columns and pd.notna(row.get('xGA'))
+                
+                if row["hl"] == team_l:
+                    if has_xg:
+                        xg_for.append(row['xG'])
+                    else:
+                        xg_for.append(row["home_goals"])
+                    
+                    if has_xga:
+                        xg_against.append(row['xGA'])
+                    else:
+                        xg_against.append(row["away_goals"])
+                else:
+                    if has_xga:
+                        xg_for.append(row['xGA'])
+                    else:
+                        xg_for.append(row["away_goals"])
+                    
+                    if has_xg:
+                        xg_against.append(row['xG'])
+                    else:
+                        xg_against.append(row["home_goals"])
+            
+            return {
+                'xg_for': np.mean(xg_for) if xg_for else 1.2,
+                'xg_against': np.mean(xg_against) if xg_against else 1.2
+            }
 
         home_w_avg = get_avg(h_games, home_s)
         away_w_avg = get_avg(a_games, away_s)
-        
+
+        # 計算 xG 數據 (新功能)
+        home_xg = get_avg_xg(h_games, home_s)
+        away_xg = get_avg_xg(a_games, away_s)
+
         cols = ["date", "league", "home_team", "away_team", "home_goals", "away_goals"]
         avail_cols = [c for c in cols if c in h_games.columns]
         lineup_json = self.get_lineup_data(home, away)
@@ -279,7 +340,16 @@ class HistoryRepo:
             "home_last_5": h_games[avail_cols].tail(5).to_dict(orient="records"),
             "away_last_5": a_games[avail_cols].tail(5).to_dict(orient="records"),
             "h2h": h2h[avail_cols].to_dict(orient="records"),
-            "stats": {"home_weighted_xg": home_w_avg, "away_weighted_xg": away_w_avg, "league": league},
+            "stats": {
+                "home_weighted_xg": home_w_avg,
+                "away_weighted_xg": away_w_avg,
+                "league": league,
+                # 新增 xG 數據
+                "home_xg_for": home_xg['xg_for'],
+                "home_xg_against": home_xg['xg_against'],
+                "away_xg_for": away_xg['xg_for'],
+                "away_xg_against": away_xg['xg_against'],
+            },
             "glicko": ranking_info,
             "elo": ranking_info,
             "lineup": lineup_json

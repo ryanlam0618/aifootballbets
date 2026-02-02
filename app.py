@@ -15,6 +15,7 @@ try:
     from src.finance import calculate_kelly_stake, ExcelLogger
     from src.math_models import PoissonModel, MonteCarloSimulator, DixonColesModel
     from src.math_models_v2 import OptimizedDixonColes, MonteCarloSimulator as MCSim_v2
+    from src.injury_api import InjuryDataAggregator, get_injury_report
     from TakeData.fotmob_lineup_scraper import FotMobLineupHarvester
 except ImportError as e:
     print(f"❌ 模組載入失敗: {e}", flush=True)
@@ -144,6 +145,34 @@ def main():
     else:
         print(f"   ⚠️ 未找到本地陣容檔案，將跳過陣容分析", flush=True)
 
+    # 2.6 獲取傷停數據 (P0 功能 - 使用真實 API 數據)
+    print(f"\n🏥 [1.3/4] 正在獲取傷停數據 (API-Football)...", flush=True)
+    injury_aggregator = InjuryDataAggregator()
+    injury_report = injury_aggregator.get_match_injury_report(home, away)
+
+    home_injury = injury_report['home']
+    away_injury = injury_report['away']
+
+    print(f"   {home}:")
+    print(f"      - 傷病: {len(home_injury['injuries'])} 人")
+    print(f"      - 停賽: {len(home_injury['suspensions'])} 人")
+    print(f"      - 影響分數: {home_injury['total_impact']:.1f}")
+    if home_injury['key_players']:
+        print(f"      - ⚠️ 核心球員傷停: {', '.join(home_injury['key_players'])}")
+
+    print(f"   {away}:")
+    print(f"      - 傷病: {len(away_injury['injuries'])} 人")
+    print(f"      - 停賽: {len(away_injury['suspensions'])} 人")
+    print(f"      - 影響分數: {away_injury['total_impact']:.1f}")
+    if away_injury['key_players']:
+        print(f"      - ⚠️ 核心球員傷停: {', '.join(away_injury['key_players'])}")
+
+    # 計算傷停影響差異
+    injury_impact_diff = injury_report['impact_diff']
+    print(f"\n   📊 傷停影響差異: {injury_impact_diff:+.1f} (正數表示主隊有利)")
+    if abs(injury_impact_diff) > 5:
+        print(f"   ⚠️ 傷停影響顯著！", flush=True)
+
     # 3. 獲取數據 & 數學模型 (傳入 league_name 給歷史數據模組顯示用)
     print(f"\n🔍 [1/4] 執行 Glicko-2 回測與機器學習預測...", flush=True)
     match_context = repo.get_match_context(home, away, league_name)
@@ -157,27 +186,45 @@ def main():
     else:
         print("   ⚠️ 未找到首發名單 JSON，跳過。")
 
-    # 數學運算
+    # 數學運算 (包含傷停影響調整)
     h_exp = stats.get("home_weighted_xg", 1.2)
     a_exp = stats.get("away_weighted_xg", 1.0)
-    
-    dc_model = DixonColesModel(h_exp, a_exp)
+
+    # 傷停影響調整 (根據傷停影響分數調整xG)
+    injury_factor = 0.02  # 每單位影響分數調整 2%
+    h_exp_adj = h_exp * (1 - injury_impact_diff * injury_factor) if injury_impact_diff >= 0 else h_exp * (1 + abs(injury_impact_diff) * injury_factor)
+    a_exp_adj = a_exp * (1 + injury_impact_diff * injury_factor) if injury_impact_diff >= 0 else a_exp * (1 - abs(injury_impact_diff) * injury_factor)
+
+    # 確保調整後的值合理
+    h_exp_adj = max(0.5, min(3.5, h_exp_adj))
+    a_exp_adj = max(0.5, min(3.5, a_exp_adj))
+
+    print(f"\n   📈 傷停影響調整後的xG:")
+    print(f"      原始: {home} {h_exp:.2f} - {a_exp:.2f} {away}")
+    print(f"      調整: {home} {h_exp_adj:.2f} - {a_exp_adj:.2f} {away} (傷停調整: {injury_impact_diff:+.1f})")
+
+    dc_model = DixonColesModel(h_exp_adj, a_exp_adj)
     dc_probs = dc_model.calculate_probabilities()
-    
-    mc_sim = MCSim_v2(h_exp, a_exp)
+
+    mc_sim = MCSim_v2(h_exp_adj, a_exp_adj)
     mc_probs = mc_sim.run_simulation()
-    
+
     math_results = {
         "dixon_coles": dc_probs,
         "monte_carlo": mc_probs,
         "elo": match_context.get("elo", "No Data"),
         "glicko": match_context.get("glicko", "No Data"),
         "lineup_prob": lineup_prob,
-        "expected_goals": {"home": h_exp, "away": a_exp}
+        "expected_goals": {"home": h_exp_adj, "away": a_exp_adj},
+        "injury_impact": {
+            "home": home_injury['total_impact'],
+            "away": away_injury['total_impact'],
+            "diff": injury_impact_diff
+        }
     }
-    
+
     glicko = match_context.get("glicko", {})
-    print(f"   ℹ️ 進球期望值: {home} {h_exp:.2f} - {a_exp:.2f} {away}")
+    print(f"   ℹ️ 傷停調整後進球期望: {home} {h_exp_adj:.2f} - {a_exp_adj:.2f} {away}")
     print(f"   🏆 Glicko-2 勝率: {glicko.get('win_prob', 0):.1%}")
     print(f"   🎲 [MonteCarlo] 主: {mc_probs['mc_home_win']:.1%} | 大 2.5: {mc_probs['mc_over_2.5']:.1%}")
 
@@ -288,7 +335,7 @@ def main():
         print(f"   [{target_label}] 賠率 {target_odds}:")
         if stake_info["stake"] > 0:
             print(f"      >>> 建議下注: ${stake_info['stake']:.2f} (EV: {stake_info['ev']:.3f})")
-            if input("\n💾 記錄注單到 Excel? (y/n): ").lower() == 'y':
+            if input("\n[?] 記錄注單到 Excel? (y/n): ").lower() == 'y':
                 match_info = {"league": league_name, "home": home, "away": away}
                 bet_info = {"market": rec_market, "selection": rec_selection, "odds": target_odds, "model_probability": prob}
                 logger.log_bet(match_info, bet_info, stake_info)

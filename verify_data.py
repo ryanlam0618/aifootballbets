@@ -1,24 +1,27 @@
 import sys
-import pandas as pd
 sys.stdout.reconfigure(encoding='utf-8')
 
-# 讀取合并後的數據
-df = pd.read_csv('c:/Users/Ryan/python/.vscode/fb_ai_bets/data/big_five_history.csv', encoding='utf-8-sig', low_memory=False)
+import pandas as pd
+
+DATA_DIR = r'c:\Users\Ryan\python\.vscode\fb_ai_bets\data'
+df = pd.read_csv(f'{DATA_DIR}/big_five_history.csv', encoding='utf-8-sig', low_memory=False)
 
 print('=' * 60)
-print('數據合并結果驗證')
+print('Database Statistics Summary')
 print('=' * 60)
 
-print(f'\n總記錄數: {len(df)}')
-print(f'\n按聯賽分布:')
-print(df['Div'].value_counts())
+print(f'\nTotal Matches: {len(df):,}')
 
-print(f'\n按賽季分布:')
-print(df['Season'].value_counts().head(10))
+print('\nLeagues:')
+for league, count in df['Div'].value_counts().items():
+    print(f'   {league}: {count:,}')
 
-print(f'\n最近10場比賽:')
-print(df[['Date', 'Div', 'HomeTeam', 'AwayTeam', 'FTHG', 'FTAG']].head(10))
+print('\nAvailable Columns:')
+print(df.columns.tolist())
 
-print(f'\n範例球隊名稱:')
-print(df['HomeTeam'].unique()[:20])
+print('\nNew Fields Sample (MatchPlayerData):')
+new_cols = ['HT_HG', 'HT_AG', 'HomeCorners', 'AwayCorners', 'HomeShots', 'AwayShots', 'HomeShotsOn', 'AwayShotsOn']
+sample = df[df['SourceType'] == 'matchplayer'][new_cols].head(3)
+print(sample.to_string())
 
+print('\nDone!')
