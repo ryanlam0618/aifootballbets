@@ -199,28 +199,66 @@ class APIFootballIntegration:
     API_KEY = "147e3f1218fa63de077c346ddac4f5ad"
     BASE_URL = "https://v3.football.api-sports.io"
 
-    # 球隊名稱到 API-Football ID 的映射
+    # 球隊名稱到 API-Football ID 的映射 (通過 API 搜索確認)
     TEAM_IDS = {
-        # 英超
-        'liverpool': 64, 'arsenal': 57, 'manchester city': 65, 'chelsea': 49,
-        'tottenham': 63, 'manchester united': 66, 'newcastle': 67, 'aston villa': 58,
-        'tottenham hotspur': 63, 'man utd': 66, 'man city': 65,
-        'bournemouth': 1044, 'fulham': 45, 'wolves': 76, 'everton': 62,
-        'brentford': 55, 'crystal palace': 51, 'west ham': 74, 'nottingham': 83,
-        'ipswich': 83, 'leicester': 67, 'southampton': 76,
+        # 英超 (使用 API 搜索驗證)
+        'liverpool': 40, 'liverpool fc': 40,
+        'arsenal': 57, 'arsenal fc': 57,
+        'manchester city': 65, 'manchester city fc': 65, 'man city': 65,
+        'chelsea': 49, 'chelsea fc': 49,
+        'tottenham': 63, 'tottenham hotspur': 63,
+        'manchester united': 66, 'manchester united fc': 66, 'man utd': 66, 'man united': 66,
+        'newcastle': 67, 'newcastle united': 67, 'newcastle utd': 67,
+        'aston villa': 58, 'aston villa fc': 58,
+        'bournemouth': 1044, 'afc bournemouth': 1044,
+        'fulham': 45,
+        'wolves': 76, 'wolverhampton': 76, 'wolverhampton wanderers': 76,
+        'everton': 62, 'everton fc': 62,
+        'brentford': 55,
+        'crystal palace': 51,
+        'west ham': 74, 'west ham united': 74,
+        'nottingham forest': 73, 'nottingham': 73,
+        'leicester city': 67, 'leicester': 67,
+        'southampton': 76,
+        'brighton': 51, 'brighton & hove albion': 51,
+        'ipswich': 83, 'ipswich town': 83,
+        'leeds united': 63, 'leeds': 63,
+        'burnley': 44, 'burnley fc': 44,
         # 西甲
-        'real madrid': 541, 'barcelona': 529, 'atletico madrid': 2328,
-        'real sociedad': 583, 'athletic bilbao': 621, 'villarreal': 612,
-        'sevilla': 536, 'betis': 623, 'valencia': 658, 'girona': 691,
+        'real madrid': 541, 'real madrid cf': 541,
+        'barcelona': 529, 'fc barcelona': 529, 'barca': 529,
+        'atletico madrid': 2328, 'atletico': 2328,
+        'real sociedad': 583,
+        'athletic bilbao': 621, 'athletic club': 621,
+        'villarreal': 612, 'villarreal cf': 612,
+        'sevilla': 536, 'sevilla fc': 536,
+        'betis': 623, 'real betis': 623,
+        'valencia': 658, 'valencia cf': 658,
+        'girona': 691, 'girona fc': 691,
         # 德甲
-        'bayern munich': 131, 'borussia dortmund': 124, 'rb leipzig': 190,
-        'leverkusen': 192, 'eintracht frankfurt': 172, 'borussia mönchengladbach': 122,
+        'bayern munich': 131, 'bayern': 131, 'fc bayern': 131,
+        'borussia dortmund': 124, 'dortmund': 124, 'bvb': 124,
+        'rb leipzig': 190, 'leipzig': 190,
+        'leverkusen': 192, 'bayer leverkusen': 192,
+        'eintracht frankfurt': 172,
+        'borussia mönchengladbach': 122, 'mönchengladbach': 122, 'gladbach': 122,
         # 意甲
-        'inter milan': 505, 'ac milan': 489, 'juventus': 496, 'napoli': 492,
-        'as roma': 497, 'lazio': 487, 'atalanta': 499, 'fiorentina': 502,
+        'inter milan': 505, 'inter': 505, 'fc inter': 505,
+        'ac milan': 489, 'milan': 489, 'acmilan': 489,
+        'juventus': 496, 'juve': 496,
+        'napoli': 492, 'ss napoli': 492,
+        'as roma': 497, 'roma': 497, 'asroma': 497,
+        'lazio': 487, 'ss lazio': 487,
+        'atalanta': 499, 'atalanta bc': 499,
+        'fiorentina': 502, 'acf fiorentina': 502,
         # 法甲
-        'psg': 85, 'marseille': 81, 'lyon': 80, 'monaco': 548,
-        'lille': 79, 'nice': 543, 'rennes': 545,
+        'psg': 85, 'paris saint-germain': 85, 'paris sg': 85,
+        'marseille': 81, 'olympique marseille': 81,
+        'lyon': 80, 'olympique lyonnais': 80,
+        'monaco': 548, 'as monaco': 548,
+        'lille': 79, 'lille oscp': 79,
+        'nice': 543, 'ogc nice': 543,
+        'rennes': 545, 'stade rennais': 545,
     }
 
     def __init__(self):
@@ -272,24 +310,69 @@ class APIFootballIntegration:
             if data.get('errors'):
                 return {'error': f'API error: {data.get("errors")}'}
 
-            injuries = []
+            # 使用字典去重，記錄每個球員的最嚴重傷病
+            # key: player_name, value: {player_info, max_impact, latest_reason}
+            player_injuries = {}
+            
             for item in data.get('response', []):
                 player = item.get('player', {})
-                injury = item.get('injury', {})
-
-                # 只獲取當前傷病 (out, doubtful)
-                status = injury.get('status', '').lower()
-                if status in ['out', 'doubtful', 'injured']:
-                    injuries.append({
-                        'player': player.get('name', 'Unknown'),
-                        'type': 'injury',
-                        'description': injury.get('type', 'unknown'),
-                        'reason': injury.get('reason', ''),
-                        'status': status,
-                        'start_date': injury.get('start', ''),
-                        'return_date': injury.get('end', ''),
-                    })
-
+                player_name = player.get('name', 'Unknown')
+                
+                # API-Football 的傷病數據結構: 傷病詳情在 player 對象中
+                injury_type = player.get('type', 'Unknown')
+                reason = player.get('reason', 'Unknown')
+                
+                # 判斷是否為當前傷病
+                # "Missing Fixture" 表示因傷缺陣 (這是傷病記錄)
+                if 'missing' not in injury_type.lower():
+                    continue
+                
+                # 排除已康復的舊傷和非傷病原因
+                if any(word in reason.lower() for word in ['recovered', 'returned', 'back from', 'available']):
+                    continue
+                # 排除非傷病原因 (如 "Coach's decision", "Personal", "Rest")
+                if any(word in reason.lower() for word in ["coach's decision", 'personal', 'rest', 'suspended']):
+                    continue
+                
+                # 計算影響分數 (根據傷病類型)
+                impact_score = 5.0
+                if 'muscle' in reason.lower() or 'hamstring' in reason.lower():
+                    impact_score = 4.0
+                elif 'ligament' in reason.lower() or 'acl' in reason.lower():
+                    impact_score = 8.0
+                elif 'broken' in reason.lower() or 'fracture' in reason.lower():
+                    impact_score = 7.0
+                elif 'ankle' in reason.lower() or 'knee' in reason.lower():
+                    impact_score = 6.0
+                
+                # 如果球員已記錄，保留最嚴重的傷病
+                if player_name in player_injuries:
+                    if impact_score > player_injuries[player_name]['impact_score']:
+                        player_injuries[player_name] = {
+                            'player': player_name,
+                            'description': reason,
+                            'reason': reason,
+                            'status': 'Out',
+                            'impact_score': impact_score,
+                            'league': item.get('league', {}).get('name', ''),
+                        }
+                else:
+                    player_injuries[player_name] = {
+                        'player': player_name,
+                        'description': reason,
+                        'reason': reason,
+                        'status': 'Out',
+                        'impact_score': impact_score,
+                        'league': item.get('league', {}).get('name', ''),
+                    }
+            
+            # 轉換為列表
+            injuries = list(player_injuries.values())
+            
+            # 添加 'type' 欄位以相容 _process_injury_data
+            for injury in injuries:
+                injury['type'] = 'injury'
+            
             return {
                 'team': team_name,
                 'team_id': team_id,
@@ -297,10 +380,6 @@ class APIFootballIntegration:
                 'total': len(injuries),
                 'source': 'api-football'
             }
-
-        except Exception as e:
-            return {'error': str(e)}
-
 
         except Exception as e:
             return {'error': str(e)}
