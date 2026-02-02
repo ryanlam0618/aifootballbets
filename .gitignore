@@ -61,3 +61,6 @@ data/*.json
 !data/.gitkeep
 Betting_Records*.xlsx
 xgb_model.pkl
+
+# Large external tools
+TakeData/other/Football data crawling tool/
