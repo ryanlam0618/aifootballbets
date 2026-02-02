@@ -280,7 +280,7 @@ class HistoryRepo:
                 if use_xg and 'xG' in games.columns and pd.notna(row.get('xG')) and pd.notna(row.get('xGA')):
                     g = row['xG'] if row['hl'] == team_l else row['xGA']
                 else:
-                    g = row["home_goals"] if row["hl"] == team_l else row["away_goals"]
+                g = row["home_goals"] if row["hl"] == team_l else row["away_goals"]
                 goals.append(g)
                 weights.append(i + 1)
             
@@ -331,7 +331,7 @@ class HistoryRepo:
         # 計算 xG 數據 (新功能)
         home_xg = get_avg_xg(h_games, home_s)
         away_xg = get_avg_xg(a_games, away_s)
-
+        
         cols = ["date", "league", "home_team", "away_team", "home_goals", "away_goals"]
         avail_cols = [c for c in cols if c in h_games.columns]
         lineup_json = self.get_lineup_data(home, away)

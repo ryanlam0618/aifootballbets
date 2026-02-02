@@ -1,0 +1,175 @@
+{
+    "match_id": "4837320",
+    "match_time": "Sun, Feb 1, 2026, 20:00 UTC",
+    "timestamp": "2026-02-02 03:01:41",
+    "home_team": {
+        "name": "Athletic Club",
+        "id": 8315,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 660625,
+                "name": "Unai Simon",
+                "number": "1",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 1037537,
+                "name": "Jesus Areso",
+                "number": "12",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 1191407,
+                "name": "Aitor Paredes",
+                "number": "4",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 80295,
+                "name": "Yuri Berchiche",
+                "number": "17",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 1331249,
+                "name": "Adama Boiro",
+                "number": "19",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 1425769,
+                "name": "Alejandro Rego",
+                "number": "30",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 1553099,
+                "name": "Mikel Jauregizar",
+                "number": "18",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 574629,
+                "name": "Alex Berenguer",
+                "number": "7",
+                "position_id": 83,
+                "rating": null
+            },
+            {
+                "id": 1436270,
+                "name": "Unai Gomez",
+                "number": "20",
+                "position_id": 85,
+                "rating": null
+            },
+            {
+                "id": 1202110,
+                "name": "Nico Williams",
+                "number": "10",
+                "position_id": 87,
+                "rating": null
+            },
+            {
+                "id": 711231,
+                "name": "Gorka Guruzeta",
+                "number": "11",
+                "position_id": 115,
+                "rating": null
+            }
+        ],
+        "coach": "Ernesto Valverde"
+    },
+    "away_team": {
+        "name": "Real Sociedad",
+        "id": 8560,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 616539,
+                "name": "Alex Remiro",
+                "number": "1",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 1249284,
+                "name": "Jon Aramburu",
+                "number": "2",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 1523234,
+                "name": "Jon Martin",
+                "number": "31",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 698653,
+                "name": "Igor Zubeldia",
+                "number": "5",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 844477,
+                "name": "Sergio Gomez",
+                "number": "17",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 708890,
+                "name": "Carlos Soler",
+                "number": "18",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 1323827,
+                "name": "Jon Gorrotxategi",
+                "number": "4",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 536455,
+                "name": "Goncalo Guedes",
+                "number": "11",
+                "position_id": 83,
+                "rating": null
+            },
+            {
+                "id": 959597,
+                "name": "Luka Sucic",
+                "number": "24",
+                "position_id": 85,
+                "rating": null
+            },
+            {
+                "id": 1293912,
+                "name": "Pablo Marin",
+                "number": "28",
+                "position_id": 87,
+                "rating": null
+            },
+            {
+                "id": 678234,
+                "name": "Mikel Oyarzabal",
+                "number": "10",
+                "position_id": 115,
+                "rating": null
+            }
+        ],
+        "coach": "Pellegrino Matarazzo"
+    }
+}

@@ -1,0 +1,175 @@
+{
+    "match_id": "4830636",
+    "match_time": "Sun, Feb 1, 2026, 19:45 UTC",
+    "timestamp": "2026-02-02 03:19:40",
+    "home_team": {
+        "name": "Strasbourg",
+        "id": 9848,
+        "formation": "3-4-2-1",
+        "starters": [
+            {
+                "id": 1319972,
+                "name": "Mike Penders",
+                "number": "39",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 1395704,
+                "name": "Guéla Doué",
+                "number": "22",
+                "position_id": 33,
+                "rating": null
+            },
+            {
+                "id": 1178332,
+                "name": "Ismaël Doukouré",
+                "number": "6",
+                "position_id": 35,
+                "rating": null
+            },
+            {
+                "id": 1426170,
+                "name": "Mamadou Sarr",
+                "number": "23",
+                "position_id": 37,
+                "rating": null
+            },
+            {
+                "id": 1342754,
+                "name": "Diego Moreira",
+                "number": "7",
+                "position_id": 62,
+                "rating": null
+            },
+            {
+                "id": 1343053,
+                "name": "Abdoul Ouattara",
+                "number": "42",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 1598170,
+                "name": "Samir El Mourabet",
+                "number": "29",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 672469,
+                "name": "Ben Chilwell",
+                "number": "3",
+                "position_id": 68,
+                "rating": null
+            },
+            {
+                "id": 1302715,
+                "name": "Martial Godo",
+                "number": "20",
+                "position_id": 84,
+                "rating": null
+            },
+            {
+                "id": 1073742,
+                "name": "Julio Enciso",
+                "number": "19",
+                "position_id": 86,
+                "rating": null
+            },
+            {
+                "id": 1408580,
+                "name": "Joaquin Panichelli",
+                "number": "9",
+                "position_id": 105,
+                "rating": null
+            }
+        ],
+        "coach": "Gary O'Neil"
+    },
+    "away_team": {
+        "name": "Paris Saint-Germain",
+        "id": 9847,
+        "formation": "4-3-3",
+        "starters": [
+            {
+                "id": 800880,
+                "name": "Matvey Safonov",
+                "number": "39",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 770881,
+                "name": "Achraf Hakimi",
+                "number": "2",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 267365,
+                "name": "Marquinhos",
+                "number": "5",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 1137670,
+                "name": "Willian Pacho",
+                "number": "51",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 1158945,
+                "name": "Nuno Mendes",
+                "number": "25",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 1342757,
+                "name": "Joao Neves",
+                "number": "87",
+                "position_id": 73,
+                "rating": null
+            },
+            {
+                "id": 1061249,
+                "name": "Vitinha",
+                "number": "17",
+                "position_id": 75,
+                "rating": null
+            },
+            {
+                "id": 1367615,
+                "name": "Warren Zaire-Emery",
+                "number": "33",
+                "position_id": 77,
+                "rating": null
+            },
+            {
+                "id": 1574189,
+                "name": "Senny Mayulu",
+                "number": "24",
+                "position_id": 103,
+                "rating": null
+            },
+            {
+                "id": 1593857,
+                "name": "Ibrahim Mbaye",
+                "number": "49",
+                "position_id": 105,
+                "rating": null
+            },
+            {
+                "id": 1297165,
+                "name": "Bradley Barcola",
+                "number": "29",
+                "position_id": 107,
+                "rating": null
+            }
+        ],
+        "coach": "Luis Enrique"
+    }
+}

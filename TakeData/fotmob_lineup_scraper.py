@@ -193,8 +193,47 @@ class FotMobLineupHarvester:
                 json.dump(clean_lineup, f, ensure_ascii=False, indent=4)
             
             print(f"💾 檔案已保存至: {full_path}")
-        
+
         return clean_lineup
+
+    @staticmethod
+    def get_lineup_by_teams(home_team, away_team, save_to_file=True):
+        """
+        通過球隊名稱自動獲取陣容 (便捷方法)
+
+        Args:
+            home_team: 主隊名稱 (如 "Liverpool")
+            away_team: 客隊名稱 (如 "Arsenal")
+            save_to_file: 是否保存到文件
+
+        Returns:
+            parsed_lineup (dict) 或 None
+        """
+        print(f"\n{'='*50}")
+        print(f"⚽ 自動獲取陣容: {home_team} vs {away_team}")
+        print(f"{'='*50}")
+
+        # 步驟 1: 搜索比賽 ID
+        print(f"\n[步驟 1/3] 搜索比賽 ID...")
+        match_id = FotMobLineupHarvester.search_match_id(home_team, away_team)
+
+        if not match_id:
+            print(f"❌ 無法找到比賽，請確認球隊名稱是否正確")
+            return None
+
+        # 步驟 2: 獲取陣容數據
+        print(f"\n[步驟 2/3] 獲取陣容數據...")
+        harvester = FotMobLineupHarvester(match_id)
+        lineup = harvester.fetch_lineup(save_to_file=save_to_file)
+
+        if lineup:
+            print(f"\n[步驟 3/3] 陣容信息:")
+            print(f"   主隊: {lineup['home_team']['name']} ({lineup['home_team']['formation']})")
+            print(f"   客隊: {lineup['away_team']['name']} ({lineup['away_team']['formation']})")
+            print(f"   主隊球員數: {len(lineup['home_team']['starters'])}")
+            print(f"   客隊球員數: {len(lineup['away_team']['starters'])}")
+
+        return lineup
 
     def run(self, interval=60):
         print(f"🚀 啟動監控 (Match ID: {self.match_id})，每 {interval} 秒檢查一次...")
@@ -249,9 +288,17 @@ class FotMobLineupHarvester:
             
             time.sleep(interval)
 
+
 if __name__ == "__main__":
-    
-    MATCH_ID = "4830636"  # 替換為您想監控的比賽 ID
-    
-    bot = FotMobLineupHarvester(MATCH_ID)
-    bot.run(interval=60)
+
+    # 方法 1: 直接輸入球隊名稱 (推薦)
+    print("使用方法: 直接輸入球隊名稱自動獲取陣容")
+    lineup = FotMobLineupHarvester.get_lineup_by_teams("Liverpool", "Arsenal")
+
+    if lineup:
+        print(f"\n成功獲取陣容！")
+
+    # 方法 2: 手動輸入 Match ID
+    # MATCH_ID = "4830636"
+    # bot = FotMobLineupHarvester(MATCH_ID)
+    # bot.run(interval=60)
