@@ -246,6 +246,93 @@ class HistoryRepo:
             return self.lineup_model_class(data).predict_win_prob()
         return None
 
+    def _get_h2h_stats(self, h2h_df, home_s, away_s):
+        """計算 Head-to-Head 統計"""
+        if h2h_df.empty:
+            return {
+                'h2h_wins_home': 0,
+                'h2h_ways': 0,
+                'h2h_wins_away': 0,
+                'h2h_avg_goals': 0,
+                'h2h_games': 0
+            }
+        
+        wins_home = 0
+        ways = 0
+        wins_away = 0
+        total_goals = 0
+        
+        for _, row in h2h_df.iterrows():
+            hg = row['home_goals'] if pd.notna(row['home_goals']) else 0
+            ag = row['away_goals'] if pd.notna(row['away_goals']) else 0
+            total_goals += hg + ag
+            
+            # 判斷實際主客隊的結果
+            # 如果輸入的 home_s 是當時的主隊
+            if row['hl'] == home_s:
+                if hg > ag: wins_home += 1
+                elif hg == ag: ways += 1
+                else: wins_away += 1
+            else:  # home_s 是當時的客隊
+                if ag > hg: wins_home += 1
+                elif hg == ag: ways += 1
+                else: wins_away += 1
+        
+        return {
+            'h2h_wins_home': wins_home,
+            'h2h_ways': ways,
+            'h2h_wins_away': wins_away,
+            'h2h_avg_goals': round(total_goals / len(h2h_df), 2) if len(h2h_df) > 0 else 0,
+            'h2h_games': len(h2h_df)
+        }
+    
+    def _get_recent_form(self, games_df, team_s):
+        """計算最近 5 場狀態 (3分/勝, 1分/和, 0分/敗)"""
+        if games_df.empty:
+            return {'points': 0, 'wins': 0, 'draws': 0, 'losses': 0, 'goals_for': 0, 'goals_against': 0}
+        
+        points, wins, draws, losses = 0, 0, 0, 0
+        goals_for, goals_against = 0, 0
+        
+        # 只看最近 5 場
+        recent = games_df.tail(5)
+        
+        for _, row in recent.iterrows():
+            hg = row['home_goals'] if pd.notna(row['home_goals']) else 0
+            ag = row['away_goals'] if pd.notna(row['away_goals']) else 0
+            
+            if row['hl'] == team_s:
+                goals_for += hg
+                goals_against += ag
+                if hg > ag:
+                    wins += 1
+                    points += 3
+                elif hg == ag:
+                    draws += 1
+                    points += 1
+                else:
+                    losses += 1
+            else:
+                goals_for += ag
+                goals_against += hg
+                if ag > hg:
+                    wins += 1
+                    points += 3
+                elif hg == ag:
+                    draws += 1
+                    points += 1
+                else:
+                    losses += 1
+        
+        return {
+            'points': points,
+            'wins': wins,
+            'draws': draws,
+            'losses': losses,
+            'goals_for': goals_for,
+            'goals_against': goals_against
+        }
+
     def _fuzzy_match_team(self, input_name: str, all_teams: List[str]) -> str:
         matches = difflib.get_close_matches(input_name, all_teams, n=1, cutoff=0.6)
         return matches[0] if matches else input_name
@@ -286,7 +373,14 @@ class HistoryRepo:
         
         h_games = tmp[(tmp["hl"] == home_s) | (tmp["al"] == home_s)].sort_values("date").tail(10)
         a_games = tmp[(tmp["hl"] == away_s) | (tmp["al"] == away_s)].sort_values("date").tail(10)
-        h2h = tmp[((tmp["hl"] == home_s) & (tmp["al"] == away_s)) | ((tmp["hl"] == away_s) & (tmp["al"] == home_s))].tail(5)
+        h2h = tmp[((tmp["hl"] == home_s) & (tmp["al"] == away_s)) | ((tmp["hl"] == away_s) & (tmp["al"] == home_s))].tail(10)
+
+        # ========== Head-to-Head 統計 ==========
+        h2h_stats = self._get_h2h_stats(h2h, home_s, away_s)
+        
+        # ========== 最近狀態 ==========
+        home_form = self._get_recent_form(h_games, home_s)
+        away_form = self._get_recent_form(a_games, away_s)
         
         def get_avg(games, team_l, use_xg=True):
             if games.empty: return 1.2
@@ -358,6 +452,9 @@ class HistoryRepo:
             "home_last_5": h_games[avail_cols].tail(5).to_dict(orient="records"),
             "away_last_5": a_games[avail_cols].tail(5).to_dict(orient="records"),
             "h2h": h2h[avail_cols].to_dict(orient="records"),
+            "h2h_stats": h2h_stats,
+            "home_form": home_form,
+            "away_form": away_form,
             "stats": {
                 "home_weighted_xg": home_w_avg,
                 "away_weighted_xg": away_w_avg,
