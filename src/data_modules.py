@@ -181,35 +181,53 @@ class HistoryRepo:
 
     def _find_lineup_file(self, home_team, away_team):
         data_dir = os.path.dirname(settings.HISTORY_CSV_PATH)
-        if not os.path.exists(data_dir): return None
+        lineup_dir = os.path.join(data_dir, "lineup")
         
-        candidates = [f for f in os.listdir(data_dir) if f.endswith(".json") and "lineup" in f.lower()]
+        # 搜索多個目錄
+        search_dirs = []
+        if os.path.exists(lineup_dir):
+            search_dirs.append(lineup_dir)
+        if os.path.exists(data_dir):
+            search_dirs.append(data_dir)
+        
+        if not search_dirs:
+            return None
+        
+        candidates = []
+        for search_dir in search_dirs:
+            if os.path.exists(search_dir):
+                for f in os.listdir(search_dir):
+                    if f.endswith(".json") and "lineup" in f.lower():
+                        candidates.append(os.path.join(search_dir, f))
+        
         best_score = 0.0
         best_candidate = None
         
-        h_input = home_team.lower().replace(".", "").strip()
-        a_input = away_team.lower().replace(".", "").strip()
+        h_input = home_team.lower().replace(".", "").replace(" ", "").strip()
+        a_input = away_team.lower().replace(".", "").replace(" ", "").strip()
         
-        for f in candidates:
-            clean_name = f.lower().replace("lineup_", "").replace(".json", "").replace("_", " ")
+        for filepath in candidates:
+            filename = os.path.basename(filepath)
+            clean_name = filename.lower().replace("lineup_", "").replace(".json", "").replace("_", " ")
             score = 0.0
+            
             if " vs " in clean_name:
                 parts = clean_name.split(" vs ")
-                s1 = difflib.SequenceMatcher(None, h_input, parts[0]).ratio()
-                s2 = difflib.SequenceMatcher(None, a_input, parts[1]).ratio()
+                s1 = difflib.SequenceMatcher(None, h_input, parts[0].replace(" ", "")).ratio()
+                s2 = difflib.SequenceMatcher(None, a_input, parts[1].replace(" ", "")).ratio()
                 score = (s1 + s2) / 2
                 
-                s1_rev = difflib.SequenceMatcher(None, h_input, parts[1]).ratio()
-                s2_rev = difflib.SequenceMatcher(None, a_input, parts[0]).ratio()
+                s1_rev = difflib.SequenceMatcher(None, h_input, parts[1].replace(" ", "")).ratio()
+                s2_rev = difflib.SequenceMatcher(None, a_input, parts[0].replace(" ", "")).ratio()
                 score = max(score, (s1_rev + s2_rev) / 2)
             else:
-                score = difflib.SequenceMatcher(None, f"{h_input} {a_input}", clean_name).ratio()
+                score = difflib.SequenceMatcher(None, f"{h_input} {a_input}", clean_name.replace(" ", "")).ratio()
             
             if score > best_score:
                 best_score = score
-                best_candidate = f
+                best_candidate = filepath
         
-        return os.path.join(data_dir, best_candidate) if best_candidate and best_score > 0.5 else None
+        return best_candidate if best_candidate and best_score > 0.5 else None
 
     def get_lineup_data(self, home_team, away_team):
         target_file = self._find_lineup_file(home_team, away_team)
