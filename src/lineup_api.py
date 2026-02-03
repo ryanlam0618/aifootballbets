@@ -34,7 +34,7 @@ class APIFootballLineups:
     # 球隊名稱到 API-Football ID 的映射
     TEAM_IDS = {
         'liverpool': 40, 'liverpool fc': 40,
-        'arsenal': 57, 'arsenal fc': 57,
+        'arsenal': 42, 'arsenal fc': 42,
         'manchester city': 65, 'man city': 65,
         'chelsea': 49, 'chelsea fc': 49,
         'tottenham': 63, 'tottenham hotspur': 63,
@@ -134,15 +134,16 @@ class APIFootballLineups:
             if data.get('errors'):
                 return None
             
-            # 尋找對手匹配的比賽
+            # API-Football 返回的是直接列表，不需要 'fixtures' 嵌套
             for fixture in data.get('response', []):
-                fixtures = fixture.get('fixtures', [])
-                for f in fixtures:
-                    home = f.get('home', {}).get('name', '').lower()
-                    away = f.get('away', {}).get('name', '').lower()
-                    
-                    if home_team.lower() in home and away_team.lower() in away:
-                        return f.get('id')
+                teams = fixture.get('teams', {})
+                home = teams.get('home', {}).get('name', '').lower()
+                away = teams.get('away', {}).get('name', '').lower()
+                
+                # 檢查兩種方向
+                if (home_team.lower() in home and away_team.lower() in away) or \
+                   (away_team.lower() in home and home_team.lower() in away):
+                    return fixture.get('fixture', {}).get('id')
             
             return None
             
@@ -276,7 +277,7 @@ class FotMobLineups:
             print(f"   ⚠️ FotMob 搜索失敗: {e}")
             return None
     
-    def get_lineup_by_id(self, match_id: str, home_team: str, away_team: str) -> Optional[Dict]:
+    def get_lineup_by_id(self, match_id: str, home_team: str, away_team: str, date: str = None) -> Optional[Dict]:
         """通過 match ID 獲取陣容"""
         url = f"{self.BASE_URL}/api/matchDetails?matchId={match_id}"
         
@@ -326,6 +327,8 @@ class FotMobLineups:
                     'substitutes': lineup_root['awayTeam'].get('substitutes', [])
                 }
             }
+
+            return result
             
             return result
             
@@ -347,8 +350,9 @@ class LineupAggregator:
         獲取比賽陣容
 
         優先級:
-        1. API-Football (自動)
-        2. FotMob (手動輸入 match ID)
+        1. API-Football (需要高級訂閱)
+        2. FotMob API (已失效 - 端點已移除)
+        3. 手動輸入
 
         Args:
             home_team: 主隊名稱
@@ -364,7 +368,7 @@ class LineupAggregator:
         print(f"   [1/2] 獲取 {home_team} vs {away_team} 陣容...")
 
         # 優先使用 API-Football
-        print(f"   [嘗試 API-Football]")
+        print(f"   [嘗試 API-Football (需要高級訂閱)]")
         lineup = self.api_football.get_lineup(home_team, away_team, date_str)
 
         if lineup:
@@ -373,24 +377,10 @@ class LineupAggregator:
                 self._save_lineup(lineup)
             return lineup
 
-        # API-Football 失敗，等待用戶輸入 FotMob match ID
-        print(f"\n   [注意] API-Football 獲取失敗")
-        print(f"   ====== 手動獲取 FotMob ======")
-        print(f"   請按以下步驟操作:")
-        print(f"   1. 打開 https://www.fotmob.com")
-        print(f"   2. 搜索: {home_team} vs {away_team}")
-        print(f"   3. 點進比賽詳情，複製瀏覽器網址中的 matchId")
-        print(f"   (例如: https://www.fotmob.com/match/{matchId})")
-        print(f"   ========================")
-
-        match_id = input(f"\n   請輸入 FotMob match ID (直接按 Enter 跳過): ").strip()
-
-        if not match_id:
-            print(f"   [跳過] 略過陣容獲取")
-            return None
-
-        print(f"   [2/2] 正在通過 FotMob 獲取 (matchId: {match_id})...")
-        lineup = self.fotmob.get_lineup_by_id(match_id, home_team, away_team)
+        # API-Football 失敗，嘗試 FotMob
+        print(f"\n   [注意] API-Football 不可用")
+        print(f"   [嘗試 FotMob API...]")
+        lineup = self.fotmob.get_lineup(home_team, away_team, date_str)
 
         if lineup:
             print(f"   [OK] FotMob 成功獲取陣容!")
@@ -398,7 +388,45 @@ class LineupAggregator:
                 self._save_lineup(lineup)
             return lineup
 
-        print(f"   [錯誤] 無法獲取陣容數據")
+        # 所有 API 都失敗
+        print(f"\n   [警告] 無法自動獲取陣容數據")
+        print(f"   ====== 選項 ======")
+        print(f"   [1] 手動輸入陣容數據")
+        print(f"   [2] 跳過 (使用歷史平均評分)")
+        print(f"   =================")
+
+        choice = input(f"   請選擇 (1/2): ").strip()
+
+        if choice == "1":
+            print(f"   [手動輸入模式] 請提供以下格式的 JSON:")
+            print(f"""   {{
+    "home_team": {{"name": "Home", "formation": "4-3-3", "starters": [{{"name": "Player1", "position": "Midfielder"}}]}},
+    "away_team": {{"name": "Away", "formation": "4-4-2", "starters": [{{"name": "Player2", "position": "Forward"}}]}}
+   }}""")
+
+            json_str = input(f"   請輸入 JSON (直接按 Enter 跳過): ").strip()
+
+            if json_str:
+                try:
+                    import json
+                    lineup = {
+                        'match_id': 'manual',
+                        'date': date_str,
+                        'source': 'manual',
+                        'home_team': {},
+                        'away_team': {}
+                    }
+                    data = json.loads(json_str)
+                    lineup['home_team'] = data.get('home_team', {})
+                    lineup['away_team'] = data.get('away_team', {})
+                    print(f"   [OK] 手動輸入成功!")
+                    if auto_save:
+                        self._save_lineup(lineup)
+                    return lineup
+                except Exception as e:
+                    print(f"   [錯誤] JSON 解析失敗: {e}")
+
+        print(f"   [跳過] 略過陣容獲取，將使用歷史平均評分")
         return None
     
     def _save_lineup(self, lineup: Dict, save_folder: str = None):
