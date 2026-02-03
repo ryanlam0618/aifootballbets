@@ -280,7 +280,7 @@ class HistoryRepo:
                 if use_xg and 'xG' in games.columns and pd.notna(row.get('xG')) and pd.notna(row.get('xGA')):
                     g = row['xG'] if row['hl'] == team_l else row['xGA']
                 else:
-                g = row["home_goals"] if row["hl"] == team_l else row["away_goals"]
+                    g = row["home_goals"] if row["hl"] == team_l else row["away_goals"]
                 goals.append(g)
                 weights.append(i + 1)
             

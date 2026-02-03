@@ -276,13 +276,8 @@ class FotMobLineups:
             print(f"   ⚠️ FotMob 搜索失敗: {e}")
             return None
     
-    def get_lineup(self, home_team: str, away_team: str, date: str = None) -> Optional[Dict]:
-        """獲取陣容"""
-        match_id = self._search_match_id(home_team, away_team)
-        
-        if not match_id:
-            return None
-        
+    def get_lineup_by_id(self, match_id: str, home_team: str, away_team: str) -> Optional[Dict]:
+        """通過 match ID 獲取陣容"""
         url = f"{self.BASE_URL}/api/matchDetails?matchId={match_id}"
         
         try:
@@ -346,44 +341,87 @@ class LineupAggregator:
         self.api_football = APIFootballLineups()
         self.fotmob = FotMobLineups()
     
-    def get_lineup(self, home_team: str, away_team: str, date: str = None) -> Optional[Dict]:
+    def get_lineup(self, home_team: str, away_team: str, date: str = None,
+                   auto_save: bool = True) -> Optional[Dict]:
         """
         獲取比賽陣容
-        
+
         優先級:
-        1. API-Football (主要數據源)
-        2. FotMob (備用數據源)
-        
+        1. API-Football (自動)
+        2. FotMob (手動輸入 match ID)
+
         Args:
             home_team: 主隊名稱
             away_team: 客隊名稱
             date: 比賽日期 (可選)
-        
+            auto_save: 是否自動保存到文件
+
         Returns:
             Dict: 陣容數據 或 None
         """
         date_str = date or datetime.now().strftime('%Y-%m-%d')
-        
-        print(f"   🔍 獲取 {home_team} vs {away_team} 陣容...")
-        
+
+        print(f"   [1/2] 獲取 {home_team} vs {away_team} 陣容...")
+
         # 優先使用 API-Football
-        print(f"   📡 嘗試 API-Football...")
+        print(f"   [嘗試 API-Football]")
         lineup = self.api_football.get_lineup(home_team, away_team, date_str)
-        
+
         if lineup:
-            print(f"   ✅ API-Football 成功獲取陣容")
+            print(f"   [OK] API-Football 成功獲取陣容!")
+            if auto_save:
+                self._save_lineup(lineup)
             return lineup
-        
-        # 備用 FotMob
-        print(f"   🔄 API-Football 失敗，切換到 FotMob...")
-        lineup = self.fotmob.get_lineup(home_team, away_team, date_str)
-        
+
+        # API-Football 失敗，等待用戶輸入 FotMob match ID
+        print(f"\n   [注意] API-Football 獲取失敗")
+        print(f"   ====== 手動獲取 FotMob ======")
+        print(f"   請按以下步驟操作:")
+        print(f"   1. 打開 https://www.fotmob.com")
+        print(f"   2. 搜索: {home_team} vs {away_team}")
+        print(f"   3. 點進比賽詳情，複製瀏覽器網址中的 matchId")
+        print(f"   (例如: https://www.fotmob.com/match/{matchId})")
+        print(f"   ========================")
+
+        match_id = input(f"\n   請輸入 FotMob match ID (直接按 Enter 跳過): ").strip()
+
+        if not match_id:
+            print(f"   [跳過] 略過陣容獲取")
+            return None
+
+        print(f"   [2/2] 正在通過 FotMob 獲取 (matchId: {match_id})...")
+        lineup = self.fotmob.get_lineup_by_id(match_id, home_team, away_team)
+
         if lineup:
-            print(f"   ✅ FotMob 成功獲取陣容")
+            print(f"   [OK] FotMob 成功獲取陣容!")
+            if auto_save:
+                self._save_lineup(lineup)
             return lineup
-        
-        print(f"   ❌ 無法獲取陣容數據")
+
+        print(f"   [錯誤] 無法獲取陣容數據")
         return None
+    
+    def _save_lineup(self, lineup: Dict, save_folder: str = None):
+        """保存陣容到文件"""
+        if save_folder is None:
+            save_folder = r"C:\Users\Ryan\python\.vscode\fb_ai_bets\data\lineup"
+        
+        if not os.path.exists(save_folder):
+            os.makedirs(save_folder)
+            print(f"   [INFO] 已建立資料夾: {save_folder}")
+        
+        home_name = lineup['home_team']['name']
+        away_name = lineup['away_team']['name']
+        
+        safe_home = home_name.replace(" ", "_")
+        safe_away = away_name.replace(" ", "_")
+        filename = f"lineup_{safe_home}_vs_{safe_away}.json"
+        full_path = os.path.join(save_folder, filename)
+        
+        with open(full_path, 'w', encoding='utf-8') as f:
+            json.dump(lineup, f, ensure_ascii=False, indent=4)
+        
+        print(f"   [已保存] {full_path}")
     
     def get_player_ratings(self, home_team: str, away_team: str, date: str = None) -> Dict:
         """
