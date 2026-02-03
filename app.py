@@ -16,9 +16,9 @@ try:
     from src.math_models import PoissonModel, MonteCarloSimulator, DixonColesModel
     from src.math_models_v2 import OptimizedDixonColes, MonteCarloSimulator as MCSim_v2
     from src.injury_api import InjuryDataAggregator, get_injury_report
-    from TakeData.fotmob_lineup_scraper import FotMobLineupHarvester
+    from src.lineup_api import LineupAggregator, get_lineup
 except ImportError as e:
-    print(f"❌ 模組載入失敗: {e}", flush=True)
+    print(f"模組載入失敗: {e}", flush=True)
     sys.exit(1)
 
 def find_lineup_file(home_team, away_team, data_folder="data"):
@@ -134,19 +134,23 @@ def main():
     odds_fetcher = RealOddsFetcher()
     logger = ExcelLogger()
 
-    # 2.5 讀取本地陣容檔案
-    print(f"\n👕 [1.2/4] 正在讀取本地陣容資料...", flush=True)
+    # 2.5 讀取/獲取陣容數據
+    print(f"\n👕 [1.2/4] 正在獲取陣容數據...", flush=True)
+
+    # 首先嘗試讀取本地陣容檔案
     lineup_data = find_lineup_file(home, away)
 
     if lineup_data:
-        print(f"   ✅ 成功讀取陣容: {lineup_data['home_team']['name']} vs {lineup_data['away_team']['name']}", flush=True)
-        print(f"      主隊陣容: {len(lineup_data['home_team']['starters'])} 人", flush=True)
-        print(f"      客隊陣容: {len(lineup_data['away_team']['starters'])} 人", flush=True)
+        print(f"   [本地] 找到陣容檔案: {lineup_data['home_team']['name']} vs {lineup_data['away_team']['name']}")
+        print(f"      主隊陣容: {len(lineup_data['home_team']['starters'])} 人 | 客隊陣容: {len(lineup_data['away_team']['starters'])} 人")
     else:
-        print(f"   ⚠️ 未找到本地陣容檔案，將跳過陣容分析", flush=True)
+        # 本地沒有，嘗試從 API 獲取
+        print(f"   [API] 未找到本地檔案，嘗試 API 獲取...")
+        lineup_aggregator = LineupAggregator()
+        lineup_data = lineup_aggregator.get_lineup(home, away)
 
-    # 2.6 獲取傷停數據 (P0 功能 - 使用真實 API 數據)
-    print(f"\n🏥 [1.3/4] 正在獲取傷停數據 (API-Football)...", flush=True)
+    # 2.6 獲取傷停數據 (使用真實 API 數據)
+    print(f"\n[1.3/4] 正在獲取傷停數據 (API-Football)...", flush=True)
     injury_aggregator = InjuryDataAggregator()
     injury_report = injury_aggregator.get_match_injury_report(home, away)
 
@@ -158,20 +162,20 @@ def main():
     print(f"      - 停賽: {len(home_injury['suspensions'])} 人")
     print(f"      - 影響分數: {home_injury['total_impact']:.1f}")
     if home_injury['key_players']:
-        print(f"      - ⚠️ 核心球員傷停: {', '.join(home_injury['key_players'])}")
+        print(f"      - [警告] 核心球員傷停: {', '.join(home_injury['key_players'])}")
 
     print(f"   {away}:")
     print(f"      - 傷病: {len(away_injury['injuries'])} 人")
     print(f"      - 停賽: {len(away_injury['suspensions'])} 人")
     print(f"      - 影響分數: {away_injury['total_impact']:.1f}")
     if away_injury['key_players']:
-        print(f"      - ⚠️ 核心球員傷停: {', '.join(away_injury['key_players'])}")
+        print(f"      - [警告] 核心球員傷停: {', '.join(away_injury['key_players'])}")
 
     # 計算傷停影響差異
     injury_impact_diff = injury_report['impact_diff']
-    print(f"\n   📊 傷停影響差異: {injury_impact_diff:+.1f} (正數表示主隊有利)")
+    print(f"\n   [INFO] 傷停影響差異: {injury_impact_diff:+.1f} (正數表示主隊有利)")
     if abs(injury_impact_diff) > 5:
-        print(f"   ⚠️ 傷停影響顯著！", flush=True)
+        print(f"   [警告] 傷停影響顯著！", flush=True)
 
     # 3. 獲取數據 & 數學模型 (傳入 league_name 給歷史數據模組顯示用)
     print(f"\n🔍 [1/4] 執行 Glicko-2 回測與機器學習預測...", flush=True)
