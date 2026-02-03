@@ -404,7 +404,7 @@ class LineupAggregator:
         print(f"\n   [警告] 無法自動獲取陣容數據")
         print(f"   ====== 選項 ======")
         print(f"   [1] 手動輸入陣容數據")
-        print(f"   [2] 跳過 (使用歷史平均評分)")
+        print(f"   [2] 使用 FotMob Match ID 爬取陣容")
         print(f"   =================")
 
         choice = input(f"   請選擇 (1/2): ").strip()
@@ -437,6 +437,36 @@ class LineupAggregator:
                     return lineup
                 except Exception as e:
                     print(f"   [錯誤] JSON 解析失敗: {e}")
+
+        elif choice == "2":
+            # 使用 FotMob Lineup Scraper
+            try:
+                from TakeData.fotmob_lineup_scraper import FotMobLineupHarvester
+            except ImportError:
+                print(f"   [錯誤] 無法導入 FotMobLineupHarvester")
+                print(f"   [跳過] 略過陣容獲取，將使用歷史平均評分")
+                return None
+
+            match_id = input(f"   請輸入 FotMob Match ID (例如: 4830636): ").strip()
+
+            if not match_id:
+                print(f"   [跳過] 未輸入 Match ID")
+                return None
+
+            print(f"   [INFO] 正在使用 FotMob 爬取陣容...")
+            harvester = FotMobLineupHarvester(match_id)
+            lineup = harvester.fetch_lineup(save_to_file=bool(auto_save))
+
+            if lineup:
+                print(f"   [OK] FotMob 爬取成功!")
+                lineup['date'] = date_str
+                lineup['source'] = 'fotmob_manual'
+                if auto_save:
+                    self._save_lineup(lineup)
+                return lineup
+            else:
+                print(f"   [錯誤] FotMob 爬取失敗")
+                return None
 
         print(f"   [跳過] 略過陣容獲取，將使用歷史平均評分")
         return None
