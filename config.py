@@ -11,7 +11,7 @@ class Settings:
     GDRIVE_PATH = r"G:\我的雲端硬碟\AI" 
     
     # 歷史數據路徑
-    HISTORY_CSV_PATH = os.path.join(BASE_DIR, "data", "big_five_history.csv")
+    HISTORY_CSV_PATH = os.path.join(BASE_DIR, "data", "history_data.csv")
     
     # 賠率數據路徑 (讀取本地 odds.csv)
     ODDS_DATA_PATH = os.path.join(BASE_DIR, "data", "odds.csv")
