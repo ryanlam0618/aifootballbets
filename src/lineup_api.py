@@ -276,7 +276,19 @@ class FotMobLineups:
         except Exception as e:
             print(f"   ⚠️ FotMob 搜索失敗: {e}")
             return None
-    
+
+    def get_lineup(self, home_team: str, away_team: str, date: str = None) -> Optional[Dict]:
+        """獲取比賽陣容 (自動搜索 + 獲取)"""
+        # 先搜索 match ID
+        match_id = self._search_match_id(home_team, away_team)
+        
+        if not match_id:
+            print(f"   ⚠️ FotMob 找不到 {home_team} vs {away_team} 的比賽")
+            return None
+        
+        # 獲取陣容
+        return self.get_lineup_by_id(match_id, home_team, away_team, date)
+
     def get_lineup_by_id(self, match_id: str, home_team: str, away_team: str, date: str = None) -> Optional[Dict]:
         """通過 match ID 獲取陣容"""
         url = f"{self.BASE_URL}/api/matchDetails?matchId={match_id}"
