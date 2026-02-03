@@ -203,31 +203,48 @@ class HistoryRepo:
         best_score = 0.0
         best_candidate = None
         
+        # 標準化輸入球隊名稱
         h_input = home_team.lower().replace(".", "").replace(" ", "").strip()
-        a_input = away_team.lower().replace(".", "").replace(" ", "").strip()
+        a_input = away_team.lower().replace(" ", "").strip()
         
         for filepath in candidates:
             filename = os.path.basename(filepath)
             clean_name = filename.lower().replace("lineup_", "").replace(".json", "").replace("_", " ")
-            score = 0.0
             
-            if " vs " in clean_name:
-                parts = clean_name.split(" vs ")
-                s1 = difflib.SequenceMatcher(None, h_input, parts[0].replace(" ", "")).ratio()
-                s2 = difflib.SequenceMatcher(None, a_input, parts[1].replace(" ", "")).ratio()
-                score = (s1 + s2) / 2
+            if " vs " not in clean_name:
+                continue
                 
-                s1_rev = difflib.SequenceMatcher(None, h_input, parts[1].replace(" ", "")).ratio()
-                s2_rev = difflib.SequenceMatcher(None, a_input, parts[0].replace(" ", "")).ratio()
-                score = max(score, (s1_rev + s2_rev) / 2)
-            else:
-                score = difflib.SequenceMatcher(None, f"{h_input} {a_input}", clean_name.replace(" ", "")).ratio()
+            parts = clean_name.split(" vs ")
+            file_h = parts[0].replace(" ", "").strip()
+            file_a = parts[1].replace(" ", "").strip()
             
-            if score > best_score:
-                best_score = score
+            # 計算兩個方向的匹配分數
+            s1 = difflib.SequenceMatcher(None, h_input, file_h).ratio()
+            s2 = difflib.SequenceMatcher(None, a_input, file_a).ratio()
+            score_normal = (s1 + s2) / 2
+            
+            s1_rev = difflib.SequenceMatcher(None, h_input, file_a).ratio()
+            s2_rev = difflib.SequenceMatcher(None, a_input, file_h).ratio()
+            score_rev = (s1_rev + s2_rev) / 2
+            
+            # 選擇最佳方向
+            if score_normal >= score_rev:
+                final_score = score_normal
+                min_team_match = min(s1, s2)
+            else:
+                final_score = score_rev
+                min_team_match = min(s1_rev, s2_rev)
+            
+            # 完全匹配檢查 (兩個隊都 > 95% 匹配)
+            if score_normal > 0.95 and s1 > 0.95 and s2 > 0.95:
+                return filepath
+            
+            # 只接受兩個隊都有較高匹配度的結果
+            if final_score > best_score and min_team_match > 0.8:
+                best_score = final_score
                 best_candidate = filepath
         
-        return best_candidate if best_candidate and best_score > 0.5 else None
+        return best_candidate if best_candidate else None
 
     def get_lineup_data(self, home_team, away_team):
         target_file = self._find_lineup_file(home_team, away_team)
