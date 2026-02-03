@@ -71,18 +71,32 @@ def find_lineup_file(home_team, away_team, data_folder="data"):
             file_home = match.group(1)
             file_away = match.group(2)
 
-            
-
-            # 檢查是否與輸入的隊名匹配
+            # 清理檔案中的隊名
             file_home_clean = clean_team_name(file_home)
             file_away_clean = clean_team_name(file_away)
 
             # 使用 difflib 計算相似度
             home_score = difflib.SequenceMatcher(None, home_clean.lower(), file_home_clean.lower()).ratio()
             away_score = difflib.SequenceMatcher(None, away_clean.lower(), file_away_clean.lower()).ratio()
-            total_score = (home_score + away_score) / 2
+            
+            # 計算反向匹配分數（考慮主客隊互換的情況）
+            home_score_rev = difflib.SequenceMatcher(None, home_clean.lower(), file_away_clean.lower()).ratio()
+            away_score_rev = difflib.SequenceMatcher(None, away_clean.lower(), file_home_clean.lower()).ratio()
+            
+            # 選擇最佳匹配方向
+            score_normal = (home_score + away_score) / 2
+            score_rev = (home_score_rev + away_score_rev) / 2
+            
+            if score_normal >= score_rev:
+                final_score = score_normal
+                min_team_match = min(home_score, away_score)
+            else:
+                final_score = score_rev
+                min_team_match = min(home_score_rev, away_score_rev)
 
-            if total_score > 0.6:
+            # 關鍵修復：兩個隊都必須有較高匹配度 (>0.8)
+            # 這確保 "Arsenal vs Chelsea" 不會錯誤匹配到 "Arsenal vs Liverpool"
+            if final_score > 0.6 and min_team_match > 0.8:
                 with open(filepath, 'r', encoding='utf-8') as f:
                     return json.load(f)
 
