@@ -1,0 +1,177 @@
+{
+    "match_id": "5103358",
+    "match_time": "Tue, Feb 3, 2026, 20:00 UTC",
+    "timestamp": "2026-02-04 03:14:45",
+    "home_team": {
+        "name": "Arsenal",
+        "id": 9825,
+        "formation": "4-3-3",
+        "starters": [
+            {
+                "id": 317564,
+                "name": "Kepa Arrizabalaga",
+                "number": "13",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 942381,
+                "name": "Jurrien Timber",
+                "number": "12",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 955406,
+                "name": "William Saliba",
+                "number": "2",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 795179,
+                "name": "Gabriel",
+                "number": "6",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 1137667,
+                "name": "Piero Hincapié",
+                "number": "5",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 818975,
+                "name": "Eberechi Eze",
+                "number": "10",
+                "position_id": 73,
+                "rating": null
+            },
+            {
+                "id": 1031325,
+                "name": "Martin Zubimendi",
+                "number": "36",
+                "position_id": 75,
+                "rating": null
+            },
+            {
+                "id": 654096,
+                "name": "Declan Rice",
+                "number": "41",
+                "position_id": 77,
+                "rating": null
+            },
+            {
+                "id": 1084981,
+                "name": "Noni Madueke",
+                "number": "20",
+                "position_id": 103,
+                "rating": null
+            },
+            {
+                "id": 664500,
+                "name": "Viktor Gyökeres",
+                "number": "14",
+                "position_id": 105,
+                "rating": null
+            },
+            {
+                "id": 1021586,
+                "name": "Gabriel Martinelli",
+                "number": "11",
+                "position_id": 107,
+                "rating": null
+            }
+        ],
+        "coach": "Mikel Arteta"
+    },
+    "away_team": {
+        "name": "Chelsea",
+        "id": 8455,
+        "formation": "3-5-2",
+        "starters": [
+            {
+                "id": 789571,
+                "name": "Robert Sánchez",
+                "number": "1",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 917802,
+                "name": "Wesley Fofana",
+                "number": "29",
+                "position_id": 33,
+                "rating": null
+            },
+            {
+                "id": 793907,
+                "name": "Trevoh Chalobah",
+                "number": "23",
+                "position_id": 35,
+                "rating": null
+            },
+            {
+                "id": 1413846,
+                "name": "Jorrel Hato",
+                "number": "21",
+                "position_id": 37,
+                "rating": null
+            },
+            {
+                "id": 1197250,
+                "name": "Malo Gusto",
+                "number": "27",
+                "position_id": 71,
+                "rating": null
+            },
+            {
+                "id": 1137668,
+                "name": "Moisés Caicedo",
+                "number": "25",
+                "position_id": 73,
+                "rating": null
+            },
+            {
+                "id": 1372921,
+                "name": "Andrey Santos",
+                "number": "17",
+                "position_id": 75,
+                "rating": null
+            },
+            {
+                "id": 1137705,
+                "name": "Enzo Fernández",
+                "number": "8",
+                "position_id": 77,
+                "rating": null
+            },
+            {
+                "id": 873289,
+                "name": "Marc Cucurella",
+                "number": "3",
+                "position_id": 79,
+                "rating": null
+            },
+            {
+                "id": 1113903,
+                "name": "Liam Delap",
+                "number": "9",
+                "position_id": 104,
+                "rating": null
+            },
+            {
+                "id": 1021382,
+                "name": "Joao Pedro",
+                "number": "20",
+                "position_id": 106,
+                "rating": null
+            }
+        ],
+        "coach": "Liam Rosenior"
+    },
+    "date": "2026-02-04",
+    "source": "fotmob_manual"
+}

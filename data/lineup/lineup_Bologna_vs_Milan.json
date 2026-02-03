@@ -1,0 +1,177 @@
+{
+    "match_id": "4803258",
+    "match_time": "Tue, Feb 3, 2026, 19:45 UTC",
+    "timestamp": "2026-02-04 03:17:02",
+    "home_team": {
+        "name": "Bologna",
+        "id": 9857,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 793041,
+                "name": "Federico Ravaglia",
+                "number": "13",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 1080669,
+                "name": "Nadir Zortea",
+                "number": "20",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 814398,
+                "name": "Nicolo Casale",
+                "number": "16",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 935550,
+                "name": "Torbjørn Heggem",
+                "number": "14",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 873956,
+                "name": "Juan Miranda",
+                "number": "33",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 201704,
+                "name": "Remo Freuler",
+                "number": "8",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 888921,
+                "name": "Lewis Ferguson",
+                "number": "19",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 661761,
+                "name": "Riccardo Orsolini",
+                "number": "7",
+                "position_id": 83,
+                "rating": null
+            },
+            {
+                "id": 689680,
+                "name": "Jens Odgaard",
+                "number": "21",
+                "position_id": 85,
+                "rating": null
+            },
+            {
+                "id": 1113694,
+                "name": "Jonathan Rowe",
+                "number": "11",
+                "position_id": 87,
+                "rating": null
+            },
+            {
+                "id": 1282008,
+                "name": "Santiago Castro",
+                "number": "9",
+                "position_id": 115,
+                "rating": null
+            }
+        ],
+        "coach": "Vincenzo Italiano"
+    },
+    "away_team": {
+        "name": "Milan",
+        "id": 8564,
+        "formation": "3-5-1-1",
+        "starters": [
+            {
+                "id": 466439,
+                "name": "Mike Maignan",
+                "number": "16",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 1200630,
+                "name": "Koni De Winter",
+                "number": "5",
+                "position_id": 33,
+                "rating": null
+            },
+            {
+                "id": 844996,
+                "name": "Matteo Gabbia",
+                "number": "46",
+                "position_id": 35,
+                "rating": null
+            },
+            {
+                "id": 1048023,
+                "name": "Strahinja Pavlovic",
+                "number": "31",
+                "position_id": 37,
+                "rating": null
+            },
+            {
+                "id": 1595629,
+                "name": "Zachary Athekame",
+                "number": "24",
+                "position_id": 71,
+                "rating": null
+            },
+            {
+                "id": 954621,
+                "name": "Youssouf Fofana",
+                "number": "19",
+                "position_id": 73,
+                "rating": null
+            },
+            {
+                "id": 31097,
+                "name": "Luka Modric",
+                "number": "14",
+                "position_id": 75,
+                "rating": null
+            },
+            {
+                "id": 352879,
+                "name": "Adrien Rabiot",
+                "number": "12",
+                "position_id": 77,
+                "rating": null
+            },
+            {
+                "id": 1385856,
+                "name": "Davide Bartesaghi",
+                "number": "33",
+                "position_id": 79,
+                "rating": null
+            },
+            {
+                "id": 604982,
+                "name": "Ruben Loftus-Cheek",
+                "number": "8",
+                "position_id": 95,
+                "rating": null
+            },
+            {
+                "id": 704523,
+                "name": "Christopher Nkunku",
+                "number": "18",
+                "position_id": 115,
+                "rating": null
+            }
+        ],
+        "coach": "Massimiliano Allegri"
+    },
+    "date": "2026-02-04",
+    "source": "fotmob_manual"
+}

@@ -203,7 +203,7 @@ class APIFootballIntegration:
     TEAM_IDS = {
         # 英超 (使用 API 搜索驗證)
         'liverpool': 40, 'liverpool fc': 40,
-        'arsenal': 57, 'arsenal fc': 57,
+        'arsenal': 42, 'arsenal fc': 42,
         'manchester city': 65, 'manchester city fc': 65, 'man city': 65,
         'chelsea': 49, 'chelsea fc': 49,
         'tottenham': 63, 'tottenham hotspur': 63,
@@ -251,6 +251,7 @@ class APIFootballIntegration:
         'lazio': 487, 'ss lazio': 487,
         'atalanta': 499, 'atalanta bc': 499,
         'fiorentina': 502, 'acf fiorentina': 502,
+        'bologna': 1006, 'bologna fc': 1006,
         # 法甲
         'psg': 85, 'paris saint-germain': 85, 'paris sg': 85,
         'marseille': 81, 'olympique marseille': 81,
