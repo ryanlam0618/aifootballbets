@@ -15,6 +15,13 @@ try:
     from src.finance import calculate_kelly_stake, ExcelLogger
     from src.math_models import PoissonModel, MonteCarloSimulator, DixonColesModel
     from src.math_models_v2 import OptimizedDixonColes, MonteCarloSimulator as MCSim_v2
+    # 導入 v3 數學模型改進
+    from src.math_models_v3 import (
+        NegativeBinomialModel,           # 負二項分布進球模型
+        DynamicKEloSystem,              # 動態K因子 Elo
+        MonteCarloSimulatorV3,          # 蒙地卡羅模擬 V3
+        ConfidenceKelly                 # 信心度 Kelly
+    )
     from src.injury_api import InjuryDataAggregator, get_injury_report
     from src.lineup_api import LineupAggregator, get_lineup
 except ImportError as e:
@@ -227,10 +234,67 @@ def main():
     mc_sim = MCSim_v2(h_exp_adj, a_exp_adj)
     mc_probs = mc_sim.run_simulation()
 
+    # ========== [v3] 負二項分布進球模型 ==========
+    # 比 Poisson 更準確，處理進球過離散問題
+    print(f"\n   🎯 [v3] 負二項分布模型:")
+    nb_model = NegativeBinomialModel(h_exp_adj, a_exp_adj, dispersion=1.5, calibrate_dispersion=False)
+    nb_probs = nb_model.calculate_probabilities()
+    print(f"      主勝: {nb_probs['home_win']:.1%} | 和局: {nb_probs['draw']:.1%} | 客勝: {nb_probs['away_win']:.1%}")
+    print(f"      離散參數 (α): {nb_probs.get('dispersion', 1.5):.2f}")
+
+    # ========== [v3] 動態K因子 Elo 評分系統 ==========
+    # 比標準 Elo 更敏感，根據對手實力和比賽結果調整
+    print(f"\n   📈 [v3] 動態K Elo 評分:")
+    dynamic_elo = DynamicKEloSystem(base_k=20)
+    # 使用歷史數據更新評分
+    try:
+        valid_df = repo.df.dropna(subset=['home_goals', 'away_goals', 'home_team', 'away_team'])
+        for _, row in valid_df.tail(100).iterrows():
+            try:
+                dynamic_elo.update_ratings(
+                    row['home_team'], row['away_team'],
+                    int(row['home_goals']), int(row['away_goals'])
+                )
+            except:
+                continue
+    except:
+        pass
+    elo_home = dynamic_elo.get_rating(home)
+    elo_away = dynamic_elo.get_rating(away)
+    elo_win_prob = dynamic_elo.expected_win_prob(home, away)
+    print(f"      {home} 評分: {elo_home:.0f} | {away} 評分: {elo_away:.0f}")
+    print(f"      Elo 勝率預測: {elo_win_prob:.1%}")
+
+    # ========== [v3] 蒙地卡羅模擬 V3 ==========
+    # 使用 Gamma-Poisson 混合物，更穩定
+    print(f"\n   🎲 [v3] 蒙地卡羅模擬 (10,000次):")
+    mc_v3 = MonteCarloSimulatorV3(h_exp_adj, a_exp_adj, iterations=10000, use_nbinom=True, dispersion=1.5)
+    mc_v3_probs = mc_v3.run_simulation()
+    print(f"      主勝: {mc_v3_probs['mc_home_win']:.1%} | 和局: {mc_v3_probs['mc_draw']:.1%} | 客勝: {mc_v3_probs['mc_away_win']:.1%}")
+    print(f"      大2.5: {mc_v3_probs['mc_over_2.5']:.1%}")
+    print(f"      期望進球: {mc_v3_probs['expected_goals']['home']:.2f} - {mc_v3_probs['expected_goals']['away']:.2f}")
+
+    # 計算綜合勝率 (結合多個模型)
+    avg_v3_prob = (nb_probs['home_win'] + mc_v3_probs['mc_home_win'] + elo_win_prob) / 3
+    print(f"\n   📊 [v3] 綜合勝率: {avg_v3_prob:.1%}")
+
     math_results = {
         "dixon_coles": dc_probs,
         "monte_carlo": mc_probs,
-        "elo": match_context.get("elo", "No Data"),
+    # [v3] 新增模型結果
+        "negative_binomial": {
+            "home_win": nb_probs['home_win'],
+            "draw": nb_probs['draw'],
+            "away_win": nb_probs['away_win'],
+            "dispersion": nb_probs.get('dispersion', 1.5)
+        },
+        "dynamic_elo": {
+            "home_rating": elo_home,
+            "away_rating": elo_away,
+            "home_win_prob": elo_win_prob
+        },
+        "monte_carlo_v3": mc_v3_probs,
+        "avg_v3_prob": avg_v3_prob,
         "glicko": match_context.get("glicko", "No Data"),
         "lineup_prob": lineup_prob,
         "expected_goals": {"home": h_exp_adj, "away": a_exp_adj},
@@ -350,7 +414,45 @@ def main():
         prob = float(model_p) if isinstance(model_p, (int, float)) else 0
         stake_info = calculate_kelly_stake(prob, target_odds, settings.INITIAL_BANKROLL)
         
-        print(f"   [{target_label}] 賠率 {target_odds}:")
+        # ========== [v3] 信心度 Kelly 資金管理 ==========
+        print(f"\n   💰 [v3] 信心度 Kelly 資金管理:")
+        try:
+            # 嘗試使用 v3 信心度 Kelly
+            kelly_v3 = ConfidenceKelly(
+                base_fraction=0.5,  # 半Kelly
+                min_edge=0.08,       # 最小優勢 8%
+                initial_bankroll=settings.INITIAL_BANKROLL
+            )
+            
+            # 獲取市場隱含概率
+            market_prob = 1 / target_odds
+            
+            # 使用 v3 綜合勝率
+            v3_prob = avg_v3_prob if 'avg_v3_prob' in dir() else prob
+            
+            kelly_result = kelly_v3.calculate(
+                prob=v3_prob,
+                odds=target_odds,
+                confidence=0.7,  # 模型信心度
+                model_uncertainty=0.1,
+                market_prob=market_prob
+            )
+            
+            print(f"      [信心度 Kelly]")
+            print(f"         Kelly%: {kelly_result.kelly_pct:.2%}")
+            print(f"         信心度調整: {kelly_result.confidence_adj:.2%}")
+            print(f"         期望值: {kelly_result.ev:.3f}")
+            print(f"         優勢: {kelly_result.edge:.3f}")
+            print(f"         風險等級: {kelly_result.risk_level}")
+            print(f"         建議投注: ${kelly_result.stake:.2f}")
+            
+            # 保存信心度 Kelly 結果
+            kelly_v3_result = kelly_result.to_dict()
+        except Exception as e:
+            kelly_v3_result = stake_info
+            print(f"      [信心度 Kelly 計算失敗: {e}]")
+        
+        print(f"\n   [{target_label}] 賠率 {target_odds}:")
         if stake_info["stake"] > 0:
             print(f"      >>> 建議下注: ${stake_info['stake']:.2f} (EV: {stake_info['ev']:.3f})")
             if input("\n[?] 記錄注單到 Excel? (y/n): ").lower() == 'y':

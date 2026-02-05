@@ -1,12 +1,11 @@
 # 1. Define Links
 $links = @(
-     "https://www.oddsportal.com/football/austria/bundesliga/salzburg-austria-vienna-0Am5kHXo/#1X2;2"
+     "https://www.oddsportal.com/football/germany/regionalliga-west/wiedenbruck-rodinghausen-djheAVI5/#1X2;2"
      )
 
 # 2. Define File Paths
-$basePath = "c:\Users\Ryan\python\.vscode\fb_ai_bets\data"
-$finalFile = Join-Path -Path $basePath -ChildPath "odds.csv"
-$tempFile  = Join-Path -Path $basePath -ChildPath "temp_scrape.csv"
+$basePath = "C:\Users\Ryan\python\.vscode\fb_ai_bets\data\archive"
+$finalFile = Join-Path -Path $basePath -ChildPath "20260204_011810_odds.csv"
 
 # 3. Ensure Directory Exists
 if (-not (Test-Path $basePath)) { New-Item -ItemType Directory -Path $basePath | Out-Null }
@@ -28,7 +27,7 @@ for ($i = 0; $i -lt $links.Count; $i++) {
         --sport football `
         --match_links "$currentLink" `
         --format csv `
-        --markets "1x2,over_under_2,over_under_2_5,over_under_3,over_under_3_5,asian_handicap_-2,asian_handicap_-1_5,asian_handicap_-1,asian_handicap_-0_5,asian_handicap_-0_25,asian_handicap_+2,asian_handicap_+1_5,asian_handicap_+1,asian_handicap_+0_5,asian_handicap_0" `
+        --markets "1x2" `
         --scrape_odds_history `
         --file_path "$tempFile" `
         --concurrency_tasks 5 `

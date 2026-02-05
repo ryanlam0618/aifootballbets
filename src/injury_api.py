@@ -251,7 +251,7 @@ class APIFootballIntegration:
         'lazio': 487, 'ss lazio': 487,
         'atalanta': 499, 'atalanta bc': 499,
         'fiorentina': 502, 'acf fiorentina': 502,
-        'bologna': 1006, 'bologna fc': 1006,
+        'bologna': 500, 'bologna fc': 500,
         # 法甲
         'psg': 85, 'paris saint-germain': 85, 'paris sg': 85,
         'marseille': 81, 'olympique marseille': 81,
@@ -260,6 +260,8 @@ class APIFootballIntegration:
         'lille': 79, 'lille oscp': 79,
         'nice': 543, 'ogc nice': 543,
         'rennes': 545, 'stade rennais': 545,
+        #other leagues
+        'Albacete' : 722,
     }
 
     def __init__(self):

@@ -2,6 +2,7 @@ from openai import OpenAI
 from typing import List, Dict, Optional
 import time
 import httpx
+import json
 
 class NetworkedLLM:
     """
@@ -17,6 +18,27 @@ class NetworkedLLM:
             max_retries=2
         )
 
+    def _parse_api_error(self, error_msg: str) -> tuple:
+        """
+        解析 API 錯誤訊息，返回 (error_type, should_retry)
+        """
+        if "502" in error_msg or "Bad Gateway" in error_msg:
+            return ("502_Bad_Gateway", True)
+        elif "503" in error_msg or "Service Unavailable" in error_msg:
+            return ("503_Service_Unavailable", True)
+        elif "504" in error_msg or "Gateway Timeout" in error_msg:
+            return ("504_Gateway_Timeout", True)
+        elif "500" in error_msg or "Internal Error" in error_msg:
+            return ("500_Internal_Error", True)
+        elif "429" in error_msg or "rate" in error_msg.lower():
+            return ("429_Rate_Limit", True)
+        elif "RemoteDisconnected" in error_msg or "Connection aborted" in error_msg:
+            return ("Connection_Lost", True)
+        elif "authentication" in error_msg.lower() or "api_key" in error_msg.lower():
+            return ("Auth_Error", False)
+        else:
+            return ("Unknown", True)
+
     def chat_with_search(self, 
                         model: str, 
                         messages: List[Dict[str, str]], 
@@ -24,7 +46,9 @@ class NetworkedLLM:
         """
         發送對話請求，並透過 extra_body 傳遞非標準 tool 參數 (web_search)
         """
-        max_retries = 3
+        max_retries = 4  # 增加重試次數
+        base_delay = 2   # 基礎延遲秒數
+        
         for attempt in range(max_retries):
             try:
                 print(f"🌐 發送聯網請求給 {model} (嘗試 {attempt+1}/{max_retries})...")
@@ -71,14 +95,31 @@ class NetworkedLLM:
 
             except Exception as e:
                 error_msg = str(e)
-                if "RemoteDisconnected" in error_msg or "Connection aborted" in error_msg:
-                    print(f"⚠️ 連線不穩定 ({error_msg})")
-                else:
-                    print(f"❌ API 錯誤: {error_msg}")
+                error_type, should_retry = self._parse_api_error(error_msg)
                 
-                if attempt < max_retries - 1:
-                    time.sleep(3)
+                # 根據錯誤類型給出不同提示
+                if error_type == "502_Bad_Gateway":
+                    print(f"⚠️ 502 錯誤: 伺服器暫時無回應 (嘗試 {attempt+1}/{max_retries})")
+                elif error_type == "503_Service_Unavailable":
+                    print(f"⚠️ 503 錯誤: 服務暫時不可用 (嘗試 {attempt+1}/{max_retries})")
+                elif error_type == "504_Gateway_Timeout":
+                    print(f"⚠️ 504 錯誤: 閘道超時 (嘗試 {attempt+1}/{max_retries})")
+                elif error_type == "429_Rate_Limit":
+                    print(f"⚠️ 429 錯誤: 超過速率限制，延長等待時間...")
+                    time.sleep(10)  # Rate limit 需要更長等待
+                elif error_type == "Auth_Error":
+                    print(f"❌ API 認證錯誤，請檢查 API Key")
+                    return f"API Error: Authentication failed"
                 else:
-                    return f"Connection Failed: {error_msg}"
+                    print(f"⚠️ API 錯誤 ({error_type}): {error_msg[:100]}")
+                
+                if should_retry and attempt < max_retries - 1:
+                    # 指數退避策略
+                    delay = base_delay * (2 ** attempt) + (attempt * 1)
+                    print(f"⏳ 等待 {delay} 秒後重試...")
+                    time.sleep(delay)
+                else:
+                    print(f"❌ 已達最大重試次數 ({max_retries})，放棄請求")
+                    return f"API Error ({error_type}): {error_msg[:200]}"
         
         return "Error: Max retries exceeded"

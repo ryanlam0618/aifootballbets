@@ -76,11 +76,41 @@ class LLMOrchestrator:
         - 是否存在主力缺陣導致的誘盤或價值注機會？
         """
         
+        # 第一次嘗試：使用 web_search
+        print("🔍 [1/2] 嘗試聯網搜尋模式...")
         result = net_client.chat_with_search(
             model=settings.MODEL_GROK,
             messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": user_content}],
             search_enabled=True 
         )
+        
+        # 檢查是否需要備用（網路錯誤或回傳連接失敗）
+        if result and ("Connection Failed" in result or "API Error" in result or "Error:" in result):
+            print(f"⚠️ 聯網模式失敗，嘗試備用模式...")
+            
+            # 第二次嘗試：不使用 web_search
+            print("🔍 [2/2] 嘗試本地分析模式 (無網路搜尋)...")
+            simple_prompt = f"""
+            作為足球分析師，分析以下比賽：
+            
+            比賽：{match_info}
+            數據：{odds_text[:500]}
+            
+            請提供簡短分析（隊形、狀態、可能的投注方向）。
+            """
+            result = net_client.chat_with_search(
+                model=settings.MODEL_GROK,
+                messages=[{"role": "system", "content": "You are a helpful sports betting analyst."}, 
+                         {"role": "user", "content": simple_prompt}],
+                search_enabled=False  # 禁用 web_search
+            )
+            
+            if result and "Error:" not in result:
+                print("✅ 備用模式成功")
+                return f"[本地分析模式]\n{result}"
+            else:
+                return f"[⚠️ 網路不穩，無法獲取即時情報]\n基於歷史數據分析：{match_info}"
+        
         return result if result else "Grok 分析失敗。"
 
     def analyze_with_super_prompt(self, match_context: dict, odds_data_package: dict, math_model_results: dict) -> dict:
