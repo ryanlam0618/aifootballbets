@@ -399,8 +399,23 @@ class HistoryRepo:
         home_form = self._get_recent_form(h_games, home_s)
         away_form = self._get_recent_form(a_games, away_s)
         
+        # 計算聯賽平均值 (用於缺少數據時的回退值)
+        def get_league_xg_avg():
+            """計算聯賽平均 xG"""
+            if self.df is None or self.df.empty:
+                return 1.35  # 一般聯賽平均 xG
+            try:
+                if 'xG' in self.df.columns and 'xGA' in self.df.columns:
+                    valid = self.df.dropna(subset=['xG', 'xGA'])
+                    if not valid.empty:
+                        return float(valid['xG'].mean())
+            except: pass
+            return 1.35
+        
+        league_xg_avg = get_league_xg_avg()
+        
         def get_avg(games, team_l, use_xg=True):
-            if games.empty: return 1.2
+            if games.empty: return league_xg_avg
             goals = []
             weights = []
             
@@ -413,12 +428,12 @@ class HistoryRepo:
                 goals.append(g)
                 weights.append(i + 1)
             
-            return np.average(goals, weights=weights) if weights else 1.2
+            return np.average(goals, weights=weights) if weights else league_xg_avg
 
         def get_avg_xg(games, team_l):
             """計算球隊的平均 xG (支援新舊格式)"""
             if games.empty:
-                return {'xg_for': 1.2, 'xg_against': 1.2}
+                return {'xg_for': league_xg_avg, 'xg_against': league_xg_avg}
             
             xg_for = []
             xg_against = []
@@ -450,8 +465,8 @@ class HistoryRepo:
                         xg_against.append(row["home_goals"])
             
             return {
-                'xg_for': np.mean(xg_for) if xg_for else 1.2,
-                'xg_against': np.mean(xg_against) if xg_against else 1.2
+                'xg_for': np.mean(xg_for) if xg_for else league_xg_avg,
+                'xg_against': np.mean(xg_against) if xg_against else league_xg_avg
             }
 
         home_w_avg = get_avg(h_games, home_s)

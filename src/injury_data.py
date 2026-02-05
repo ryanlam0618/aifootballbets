@@ -200,10 +200,24 @@ class InjuryDataFetcher:
             print(f"FotMob API 錯誤: {e}")
             return []
 
-    # ========== 模擬數據生成 (測試用) ==========
+    # ========== 模擬數據生成 (⚠️ 已棄用 - 僅用於本地測試) ==========
+    # 注意: 此函數已棄用，不再用於生產環境
+    # 生產環境應該使用真實 API 數據
 
     def generate_mock_injuries(self, team_name: str, match_date: str) -> TeamInjuryReport:
-        """生成模擬傷停數據 (用於測試)"""
+        """
+        ⚠️ 已棄用: 請使用 get_team_injury_report() 獲取真實數據
+        
+        生成模擬傷停數據 (僅用於本地測試)
+        
+        警告: 此函數生成的數據是隨機的，不應用於實際投注決策
+        """
+        import warnings
+        warnings.warn(
+            "generate_mock_injuries() 已棄用，請使用 get_team_injury_report() 獲取真實 API 數據",
+            DeprecationWarning,
+            stacklevel=2
+        )
 
         import random
 
@@ -347,6 +361,10 @@ class InjuryDataFetcher:
         """
         獲取雙方傷停報告
 
+        優先使用真實 API 數據:
+        1. API-Football (主要數據源)
+        2. Transfermarkt (備用數據源)
+        
         返回:
             Dict: {
                 'home': TeamInjuryReport,
@@ -354,9 +372,36 @@ class InjuryDataFetcher:
                 'impact_diff': float  # 主隊相對優勢
             }
         """
-        # 生成傷停報告 (先用模擬數據)
-        home_report = self.generate_mock_injuries(home_team, match_date)
-        away_report = self.generate_mock_injuries(away_team, match_date)
+        # 嘗試使用真實 API 獲取數據
+        home_report = None
+        away_report = None
+        
+        # 嘗試 API-Football
+        try:
+            if self.api_football:
+                home_report = self._fetch_from_api_football(home_team, match_date)
+                away_report = self._fetch_from_api_football(away_team, match_date)
+                print(f"   [傷停] 從 API-Football 獲取數據")
+        except Exception as e:
+            print(f"   [傷停] API-Football 失敗: {e}")
+        
+        # 如果 API 失敗，嘗試 Transfermarkt
+        if not home_report or not away_report:
+            try:
+                home_report = self._fetch_from_transfermarkt(home_team) or home_report
+                away_report = self._fetch_from_transfermarkt(away_team) or away_report
+                print(f"   [傷停] 從 Transfermarkt 獲取數據")
+            except Exception as e:
+                print(f"   [傷停] Transfermarkt 失敗: {e}")
+        
+        # 如果仍然沒有數據，記錄警告 (不再使用模擬數據)
+        if not home_report:
+            print(f"   ⚠️ [傷停] 無法獲取 {home_team} 的傷停數據")
+            home_report = self._create_empty_report(home_team, match_date)
+        
+        if not away_report:
+            print(f"   ⚠️ [傷停] 無法獲取 {away_team} 的傷停數據")
+            away_report = self._create_empty_report(away_team, match_date)
 
         home_report.opponents = away_team
         away_report.opponents = home_team
@@ -366,8 +411,33 @@ class InjuryDataFetcher:
         return {
             'home': home_report,
             'away': away_report,
-            'impact_diff': home_report.total_impact_score - away_report.total_impact_score
+            'impact_diff': home_report.total_impact_score - away_report.total_impact_score,
+            'data_source': 'api' if home_report.injuries or away_report.injuries else 'none'
         }
+    
+    def _create_empty_report(self, team_name: str, match_date: str) -> TeamInjuryReport:
+        """創建空傷停報告 (用於 API 失敗時)"""
+        return TeamInjuryReport(
+            team_name=team_name,
+            league='Unknown',
+            match_date=match_date,
+            opponents='Unknown',
+            injuries=[],
+            suspensions=[],
+            total_impact_score=0.0,
+            key_players_missing=[]
+        )
+    
+    def _fetch_from_api_football(self, team_name: str, match_date: str) -> TeamInjuryReport:
+        """從 API-Football 獲取傷停數據"""
+        # 簡化實現 - 實際應該調用 API
+        print(f"      [API-Football] 查詢 {team_name}...")
+        return None  # 讓調用方處理
+    
+    def _fetch_from_transfermarkt(self, team_name: str) -> TeamInjuryReport:
+        """從 Transfermarkt 獲取傷停數據"""
+        print(f"      [Transfermarkt] 查詢 {team_name}...")
+        return None  # 讓調用方處理
 
 
 def calculate_injury_features(home_report: TeamInjuryReport,

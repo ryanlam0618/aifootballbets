@@ -22,6 +22,13 @@ try:
         MonteCarloSimulatorV3,          # 蒙地卡羅模擬 V3
         ConfidenceKelly                 # 信心度 Kelly
     )
+    # 導入高級模型
+    from src.advanced_models import (
+        ExponentialDecayXGForecaster,   # 指數衰減 xG
+        BayesianGoalModel,              # 貝葉斯進球模型
+        TeamFormLSTM,                  # LSTM 時序模型
+        BettingRLAgent                  # RL 投注策略
+    )
     from src.injury_api import InjuryDataAggregator, get_injury_report
     from src.lineup_api import LineupAggregator, get_lineup
 except ImportError as e:
@@ -274,6 +281,94 @@ def main():
     print(f"      大2.5: {mc_v3_probs['mc_over_2.5']:.1%}")
     print(f"      期望進球: {mc_v3_probs['expected_goals']['home']:.2f} - {mc_v3_probs['expected_goals']['away']:.2f}")
 
+    # ========== [Advanced] 指數衰減 xG 預測 ==========
+    # 近期權重更高，自適應球隊風格
+    print(f"\n   📈 [Adv] 指數衰減 xG 預測:")
+    try:
+        xg_forecaster = ExponentialDecayXGForecaster(decay_rate=0.1, recency_weight=1.5)
+        # 使用歷史數據填充
+        if hasattr(repo, 'df') and not repo.df.empty:
+            valid_df = repo.df.dropna(subset=['home_team', 'away_team', 'home_xg', 'away_xg', 'date'])
+            for _, row in valid_df.tail(200).iterrows():
+                try:
+                    xg_forecaster.add_match(row['home_team'], row.get('home_xg', 1.5), True, row.get('date'))
+                    xg_forecaster.add_match(row['away_team'], row.get('away_xg', 1.0), False, row.get('date'))
+                except: continue
+        
+        # 獲取預測
+        import datetime
+        ref_date = datetime.datetime.now()
+        home_xg_adv = xg_forecaster.get_team_xg(home, ref_date, True)
+        away_xg_adv = xg_forecaster.get_team_xg(away, ref_date, False)
+        
+        xg_forecast_home = home_xg_adv['xg'] if home_xg_adv['xg'] else h_exp_adj
+        xg_forecast_away = away_xg_adv['xg'] if away_xg_adv['xg'] else a_exp_adj
+        
+        print(f"      {home} 預測 xG: {xg_forecast_home:.2f} (n={home_xg_adv['n_games']})")
+        print(f"      {away} 預測 xG: {xg_forecast_away:.2f} (n={away_xg_adv['n_games']})")
+    except Exception as e:
+        print(f"      ⚠️ 指數衰減模型失敗: {str(e)[:50]}")
+        xg_forecast_home, xg_forecast_away = h_exp_adj, a_exp_adj
+
+    # ========== [Advanced] 貝葉斯進球模型 ==========
+    # 完全概率化不確定性估計
+    print(f"\n   🔮 [Adv] 貝葉斯進球模型:")
+    try:
+        bayes_model = BayesianGoalModel(confidence_level=0.95)
+        # 使用歷史數據
+        if hasattr(repo, 'df') and not repo.df.empty:
+            valid_df = repo.df.dropna(subset=['home_goals', 'away_goals'])
+            for _, row in valid_df.tail(50).iterrows():
+                try:
+                    bayes_model.add_observation(int(row['home_goals']), int(row['away_goals']),
+                                               is_home=True)
+                except: continue
+        
+        bayes_pred = bayes_model.predict()
+        print(f"      主場 λ: {bayes_pred['home_lambda']:.3f} [{bayes_pred['home_ci'][0]:.2f}-{bayes_pred['home_ci'][1]:.2f}]")
+        print(f"      客場 λ: {bayes_pred['away_lambda']:.3f} [{bayes_pred['away_ci'][0]:.2f}-{bayes_pred['away_ci'][1]:.2f}]")
+        print(f"      主勝概率: {bayes_pred['probabilities']['home_win']:.1%}")
+        print(f"      不確定性: {bayes_pred['uncertainty']['average']:.1%}")
+    except Exception as e:
+        print(f"      ⚠️ 貝葉斯模型失敗: {str(e)[:50]}")
+        bayes_pred = {'probabilities': {'home_win': nb_probs['home_win']}, 'uncertainty': {'average': 0.3}}
+
+    # ========== [Advanced] LSTM 狀態追蹤 ==========
+    # 捕捉球隊狀態變化
+    print(f"\n   📊 [Adv] LSTM 球隊狀態追蹤:")
+    try:
+        lstm_model = TeamFormLSTM(sequence_length=10, use_attention=True)
+        # 使用歷史數據
+        if hasattr(repo, 'df') and not repo.df.empty:
+            valid_df = repo.df.dropna(subset=['home_team', 'away_team', 'home_goals', 'away_goals', 'result'])
+            for _, row in valid_df.tail(100).iterrows():
+                try:
+                    lstm_model.add_match(row['home_team'], 
+                                        goals_scored=int(row['home_goals']),
+                                        goals_conceded=int(row['away_goals']),
+                                        xg=row.get('home_xg', 1.5),
+                                        possession=50, shots_on_target=3,
+                                        result=row.get('result', 'W'), is_home=True)
+                    lstm_model.add_match(row['away_team'],
+                                        goals_scored=int(row['away_goals']),
+                                        goals_conceded=int(row['home_goals']),
+                                        xg=row.get('away_xg', 1.0),
+                                        possession=50, shots_on_target=3,
+                                        result='L' if row.get('result') == 'W' else 'W' if row.get('result') == 'L' else 'D',
+                                        is_home=False)
+                except: continue
+        
+        home_form = lstm_model.predict_team_form(home)
+        away_form = lstm_model.predict_team_form(away)
+        
+        print(f"      {home} 狀態: {home_form['form_score']:.2f} ({home_form['trend']})")
+        print(f"      {away} 狀態: {away_form['form_score']:.2f} ({away_form['trend']})")
+        print(f"      信心度: {home_form['confidence']}/{away_form['confidence']}")
+    except Exception as e:
+        print(f"      ⚠️ LSTM 模型失敗: {str(e)[:50]}")
+        home_form = {'form_score': 0.5, 'trend': 'stable', 'confidence': 'low'}
+        away_form = {'form_score': 0.5, 'trend': 'stable', 'confidence': 'low'}
+
     # 計算綜合勝率 (結合多個模型)
     avg_v3_prob = (nb_probs['home_win'] + mc_v3_probs['mc_home_win'] + elo_win_prob) / 3
     print(f"\n   📊 [v3] 綜合勝率: {avg_v3_prob:.1%}")
@@ -295,6 +390,34 @@ def main():
         },
         "monte_carlo_v3": mc_v3_probs,
         "avg_v3_prob": avg_v3_prob,
+    # [Advanced] 高級模型結果
+        "exponential_xg": {
+            "home": xg_forecast_home,
+            "away": xg_forecast_away,
+            "home_n": home_xg_adv.get('n_games', 0) if isinstance(home_xg_adv, dict) else 0,
+            "away_n": away_xg_adv.get('n_games', 0) if isinstance(away_xg_adv, dict) else 0
+        },
+        "bayesian": {
+            "home_lambda": bayes_pred.get('home_lambda', h_exp_adj),
+            "away_lambda": bayes_pred.get('away_lambda', a_exp_adj),
+            "home_ci": bayes_pred.get('home_ci', (h_exp_adj*0.5, h_exp_adj*1.5)),
+            "away_ci": bayes_pred.get('away_ci', (a_exp_adj*0.5, a_exp_adj*1.5)),
+            "probabilities": bayes_pred.get('probabilities', nb_probs),
+            "uncertainty": bayes_pred.get('uncertainty', {'average': 0.3})
+        },
+        "lstm_form": {
+            "home": {
+                "form_score": home_form.get('form_score', 0.5),
+                "trend": home_form.get('trend', 'stable'),
+                "confidence": home_form.get('confidence', 'low')
+            },
+            "away": {
+                "form_score": away_form.get('form_score', 0.5),
+                "trend": away_form.get('trend', 'stable'),
+                "confidence": away_form.get('confidence', 'low')
+            }
+        },
+    # ==========
         "glicko": match_context.get("glicko", "No Data"),
         "lineup_prob": lineup_prob,
         "expected_goals": {"home": h_exp_adj, "away": a_exp_adj},
@@ -333,7 +456,7 @@ def main():
 
     # 5. Grok 搜尋
     print(f"\n🤖 [3/4] 請求 Grok 聯網搜尋市場情報...", flush=True)
-    grok_input = odds_summary_text[:1500]
+    grok_input = odds_summary_text[:10000]
     grok_reaction = llm.search_and_analyze_market_reaction(f"{home} vs {away}", grok_input)
     print("\n--------- 🤖 Grok 市場觀點 ---------", flush=True)
     print(grok_reaction[:200] + "..." if len(grok_reaction) > 200 else grok_reaction, flush=True)
@@ -451,6 +574,49 @@ def main():
         except Exception as e:
             kelly_v3_result = stake_info
             print(f"      [信心度 Kelly 計算失敗: {e}]")
+        
+        # ========== [Advanced] RL 投注策略優化 ==========
+        print(f"\n   🤖 [Adv] RL 投注策略:")
+        try:
+            # 計算邊緣
+            model_prob = v3_prob if 'v3_prob' in dir() else prob
+            implied_prob = 1 / target_odds
+            edge = model_prob - implied_prob
+            
+            # 使用 LSTM 狀態數據
+            home_form_score = home_form.get('form_score', 0.5) if isinstance(home_form, dict) else 0.5
+            away_form_score = away_form.get('form_score', 0.5) if isinstance(away_form, dict) else 0.5
+            
+            # 初始化 RL agent
+            rl_agent = BettingRLAgent(
+                bankroll=settings.INITIAL_BANKROLL,
+                learning_rate=0.1,
+                discount_factor=0.95,
+                exploration_rate=0.1
+            )
+            
+            # 進行投注決策
+            rl_decision = rl_agent.place_bet(
+                edge=edge,
+                confidence=1 - bayes_pred.get('uncertainty', {}).get('average', 0.3),
+                odds=target_odds,
+                home_form=home_form_score,
+                away_form=away_form_score,
+                predicted_prob=model_prob
+            )
+            
+            print(f"      [RL 策略]")
+            print(f"         邊緣 (Edge): {edge:.3f}")
+            print(f"         投注比例: {rl_decision.get('bet_pct', 0):.2%}")
+            print(f"         投注金額: ${rl_decision.get('bet_amount', 0):.2f}")
+            print(f"         Kelly分數: {rl_decision.get('kelly_frac', 0):.3f}")
+            
+            # RL 建議
+            if rl_decision.get('bet_amount', 0) > 0:
+                print(f"         >>> RL 建議投注: ${rl_decision['bet_amount']:.2f}")
+            
+        except Exception as e:
+            print(f"      [RL 策略計算失敗: {str(e)[:50]}]")
         
         print(f"\n   [{target_label}] 賠率 {target_odds}:")
         if stake_info["stake"] > 0:

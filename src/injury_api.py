@@ -468,7 +468,20 @@ class InjurySimulator:
         return injuries
 
     def get_simulated_injuries(self, team_name: str, match_date: str = None) -> Dict:
-        """獲取模擬傷停數據"""
+        """
+        ⚠️ 已棄用: 請使用 get_match_injury_report() 獲取真實數據
+        
+        獲取模擬傷停數據 (僅用於本地測試)
+        
+        警告: 此函數生成的數據是隨機的，不應用於實際投注決策
+        """
+        import warnings
+        warnings.warn(
+            "get_simulated_injuries() 已棄用，請使用 get_match_injury_report() 獲取真實 API 數據",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        
         match_date = match_date or datetime.now().strftime('%Y-%m-%d')
 
         injuries = self._generate_consistent_injuries(team_name, match_date)
