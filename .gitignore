@@ -1,4 +1,8 @@
-# Python
+# ============================================================
+# FB AI Bets - .gitignore
+# ============================================================
+
+# --- Python ---
 __pycache__/
 *.py[cod]
 *$py.class
@@ -20,47 +24,51 @@ wheels/
 .installed.cfg
 *.egg
 
-# Virtual Environment
+# --- Virtual Environment ---
 venv/
 env/
 ENV/
-.venv
+.venv/
 
-# IDE
+# --- IDE ---
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# Environment Variables
+# --- Environment Variables ---
 .env
 .env.local
+env.example
 
-# Data Files
+# --- Data Files ---
 *.csv
 *.xlsx
 *.xls
 !requirements.txt
 
-# Model Files
+# --- Model Files ---
 *.pkl
 *.h5
 *.model
 
-# Logs
+# --- Logs ---
 *.log
 
-# OS
+# --- OS ---
 .DS_Store
 Thumbs.db
 
-# Project Specific
+# --- Project Specific ---
 data/*.csv
 data/*.json
 !data/.gitkeep
 Betting_Records*.xlsx
 xgb_model.pkl
+archive/
 
-# Large external tools
+# --- Large External Tools ---
 TakeData/other/Football data crawling tool/
+OddsHarvester/node_modules/
+OddsHarvester/*.log

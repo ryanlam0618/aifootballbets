@@ -1,0 +1,177 @@
+{
+    "match_id": "5125169",
+    "match_time": "Fri, Feb 6, 2026, 10:05 UTC",
+    "timestamp": "2026-02-06 17:59:31",
+    "home_team": {
+        "name": "V-Varen Nagasaki",
+        "id": 194016,
+        "formation": "3-4-2-1",
+        "starters": [
+            {
+                "id": 833022,
+                "name": "Masaaki Goto",
+                "number": "1",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 648375,
+                "name": "Ryosuke Shindo",
+                "number": "50",
+                "position_id": 33,
+                "rating": null
+            },
+            {
+                "id": 1010719,
+                "name": "Hayato Teruyama",
+                "number": "48",
+                "position_id": 35,
+                "rating": null
+            },
+            {
+                "id": 1134726,
+                "name": "Yusei Egawa",
+                "number": "6",
+                "position_id": 37,
+                "rating": null
+            },
+            {
+                "id": 825997,
+                "name": "Hijiri Onaga",
+                "number": "22",
+                "position_id": 62,
+                "rating": null
+            },
+            {
+                "id": 176201,
+                "name": "Hotaru Yamaguchi",
+                "number": "5",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 1690874,
+                "name": "Tenmu Matsumoto",
+                "number": "34",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 826010,
+                "name": "Yuto Iwasaki",
+                "number": "8",
+                "position_id": 68,
+                "rating": null
+            },
+            {
+                "id": 750052,
+                "name": "Matheus Jesus",
+                "number": "10",
+                "position_id": 84,
+                "rating": null
+            },
+            {
+                "id": 1171972,
+                "name": "Motoki Hasegawa",
+                "number": "41",
+                "position_id": 86,
+                "rating": null
+            },
+            {
+                "id": 645763,
+                "name": "Thiago Santana",
+                "number": "9",
+                "position_id": 105,
+                "rating": null
+            }
+        ],
+        "coach": "Takuya Takagi"
+    },
+    "away_team": {
+        "name": "Sanfrecce Hiroshima",
+        "id": 6224,
+        "formation": "3-4-2-1",
+        "starters": [
+            {
+                "id": 922808,
+                "name": "Keisuke Osako",
+                "number": "1",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 310090,
+                "name": "Tsukasa Shiotani",
+                "number": "33",
+                "position_id": 33,
+                "rating": null
+            },
+            {
+                "id": 922815,
+                "name": "Taichi Yamasaki",
+                "number": "3",
+                "position_id": 35,
+                "rating": null
+            },
+            {
+                "id": 1054177,
+                "name": "Ju-Sung Kim",
+                "number": "37",
+                "position_id": 37,
+                "rating": null
+            },
+            {
+                "id": 1337750,
+                "name": "Shuto Nakano",
+                "number": "15",
+                "position_id": 62,
+                "rating": null
+            },
+            {
+                "id": 435151,
+                "name": "Hayao Kawabe",
+                "number": "6",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 858023,
+                "name": "Taishi Matsumoto",
+                "number": "14",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 922817,
+                "name": "Shunki Higashi",
+                "number": "24",
+                "position_id": 68,
+                "rating": null
+            },
+            {
+                "id": 1303896,
+                "name": "Motoki Ohara",
+                "number": "40",
+                "position_id": 84,
+                "rating": null
+            },
+            {
+                "id": 1134711,
+                "name": "Mutsuki Kato",
+                "number": "11",
+                "position_id": 86,
+                "rating": null
+            },
+            {
+                "id": 1337764,
+                "name": "Akito Suzuki",
+                "number": "10",
+                "position_id": 105,
+                "rating": null
+            }
+        ],
+        "coach": "Bartosch Gaul"
+    },
+    "date": "2026-02-06",
+    "source": "fotmob_manual"
+}

@@ -63,7 +63,7 @@ class Settings:
     MIN_EDGE = 0.09
 
     # --- 模型名稱設定 ---
-    MODEL_GEMINI = os.getenv("MODEL_GEMINI", "gemini-3-pro-preview")
+    MODEL_GEMINI = os.getenv("MODEL_GEMINI", "gemini-3-flash-preview-thinking-*")
     MODEL_GROK = os.getenv("MODEL_GROK", "grok-4")
     MODEL_GPT = os.getenv("MODEL_GPT", "gpt-5.2")
 

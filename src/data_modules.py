@@ -102,6 +102,59 @@ LEAGUE_OPTIONS = {
     "61": {"name": "FIFA Club World Cup", "key": "soccer_fifa_club_world_cup"}
 }
 
+# --- 球隊名稱映射表 (The Odds API <-> API-Football) ---
+TEAM_NAME_MAPPING = {
+    # J1 League (Japan)
+    "j1": {
+        # The Odds API name : API-Football name
+        "Avispa Fukuoka": "avispa fukuoka",
+        "Cerezo Osaka": "cerezo osaka",
+        "FC Tokyo": "fc tokyo",
+        "Fagiano Okayama": "fagiano okayama",
+        "Gamba Osaka": "gamba osaka",
+        "JEF United Chiba": "jef united chiba",
+        "Kashima Antlers": "kashima",
+        "Kashiwa Reysol": "kashiwa reysol",
+        "Kawasaki Frontale": "kawasaki frontale",
+        "Mito HollyHock": "mito hollyhock",
+        "Nagoya Grampus": "nagoya grampus",
+        "Shimizu S Pulse": "shimizu s-pulse",
+        "Tokyo Verdy": "tokyo verdy",
+        "Urawa Red Diamonds": "urawa",
+        "Consadole Sapporo": "consadole sapporo",
+        "Jubilo Iwata": "jubilo iwata",
+        "Sanfrecce Hiroshima": "sanfrecce hiroshima",
+        "Shonan Bellmare": "shonan bellmare",
+        "Vissel Kobe": "vissel kobe",
+        "Yokohama F. Marinos": "yokohama f. marinos",
+        "Sagan Tosu": "sagan tosu",
+        "Kyoto Sanga": "kyoto sanga",
+        "Albirex Niigata": "albirex niigata",
+        "V-Varen Nagasaki": "v-varen nagasaki",
+        "Vegalta Sendai": "vegalta sendai",
+        "Oita Trinita": "oita trinita",
+        "Tokushima Vortis": "tokushima vortis",
+        "Yokohama FC": "yokohama fc",
+        "Ventforet Kofu": "ventforet kofu",
+        "Renofa Yamaguchi": "renofa yamaguchi",
+        "Montedio Yamagata": "montedio yamagata",
+        "Roasso Kumamoto": "roasso kumamoto",
+        "Tochigi SC": "tochigi sc",
+        "Ehime FC": "ehime fc",
+        "Thespakusatsu Gunma": "thespakusatsu gunma",
+        "Blaublitz Akita": "blaublitz akita",
+        "Fujieda MYFC": "fujieda myfc",
+    }
+}
+
+def convert_odds_api_to_api_football(team_name: str, league: str = "j1") -> str:
+    """
+    將 The Odds API 的球隊名稱轉換為 API-Football 格式
+    """
+    mapping = TEAM_NAME_MAPPING.get(league, {})
+    return mapping.get(team_name, team_name.lower())
+
+
 # --- 1. 歷史數據儲存庫 ---
 class HistoryRepo:
     def __init__(self, csv_path: str):

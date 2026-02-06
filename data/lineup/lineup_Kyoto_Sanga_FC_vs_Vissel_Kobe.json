@@ -1,0 +1,177 @@
+{
+    "match_id": "5125168",
+    "match_time": "Fri, Feb 6, 2026, 10:03 UTC",
+    "timestamp": "2026-02-06 17:37:03",
+    "home_team": {
+        "name": "Kyoto Sanga FC",
+        "id": 8542,
+        "formation": "4-1-2-3",
+        "starters": [
+            {
+                "id": 431489,
+                "name": "Gakuji Ota",
+                "number": "1",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 1437159,
+                "name": "Shinnosuke Fukuda",
+                "number": "2",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 1155059,
+                "name": "Hisashi Tawiah",
+                "number": "5",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 628316,
+                "name": "Yoshinori Suzuki",
+                "number": "50",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 1337015,
+                "name": "Kyo Sato",
+                "number": "44",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 727857,
+                "name": "Mitsuki Saito",
+                "number": "32",
+                "position_id": 65,
+                "rating": null
+            },
+            {
+                "id": 1281588,
+                "name": "Joao Pedro",
+                "number": "6",
+                "position_id": 84,
+                "rating": null
+            },
+            {
+                "id": 865992,
+                "name": "Temma Matsuda",
+                "number": "18",
+                "position_id": 86,
+                "rating": null
+            },
+            {
+                "id": 897671,
+                "name": "Marco Tulio",
+                "number": "11",
+                "position_id": 103,
+                "rating": null
+            },
+            {
+                "id": 931201,
+                "name": "Rafael Elias",
+                "number": "9",
+                "position_id": 105,
+                "rating": null
+            },
+            {
+                "id": 1285959,
+                "name": "Haruki Arai",
+                "number": "77",
+                "position_id": 107,
+                "rating": null
+            }
+        ],
+        "coach": "Kwi-Jea Cho"
+    },
+    "away_team": {
+        "name": "Vissel Kobe",
+        "id": 4688,
+        "formation": "4-1-2-3",
+        "starters": [
+            {
+                "id": 846603,
+                "name": "Daiya Maekawa",
+                "number": "1",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 157252,
+                "name": "Gotoku Sakai",
+                "number": "24",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 688651,
+                "name": "Tetsushi Yamakawa",
+                "number": "4",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 895646,
+                "name": "Matheus Thuler",
+                "number": "3",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 825800,
+                "name": "Katsuya Nagato",
+                "number": "41",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 196299,
+                "name": "Takahiro Ogihara",
+                "number": "6",
+                "position_id": 65,
+                "rating": null
+            },
+            {
+                "id": 619662,
+                "name": "Yosuke Ideguchi",
+                "number": "7",
+                "position_id": 84,
+                "rating": null
+            },
+            {
+                "id": 922716,
+                "name": "Yuta Goke",
+                "number": "5",
+                "position_id": 86,
+                "rating": null
+            },
+            {
+                "id": 459499,
+                "name": "Yoshinori Muto",
+                "number": "11",
+                "position_id": 103,
+                "rating": null
+            },
+            {
+                "id": 166449,
+                "name": "Yuya Osako",
+                "number": "10",
+                "position_id": 105,
+                "rating": null
+            },
+            {
+                "id": 922719,
+                "name": "Daiju Sasaki",
+                "number": "13",
+                "position_id": 107,
+                "rating": null
+            }
+        ],
+        "coach": "Michael Skibbe"
+    },
+    "date": "2026-02-06",
+    "source": "fotmob_manual"
+}

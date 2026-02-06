@@ -284,90 +284,204 @@ def main():
     # ========== [Advanced] 指數衰減 xG 預測 ==========
     # 近期權重更高，自適應球隊風格
     print(f"\n   📈 [Adv] 指數衰減 xG 預測:")
+    
+    # 預設值 (在 try block 外部定義，避免 UnboundLocalError)
+    xg_forecast_home, xg_forecast_away = h_exp_adj, a_exp_adj
+    home_xg_adv = {'xg': h_exp_adj, 'n_games': 0}
+    away_xg_adv = {'xg': a_exp_adj, 'n_games': 0}
+    
     try:
         xg_forecaster = ExponentialDecayXGForecaster(decay_rate=0.1, recency_weight=1.5)
         # 使用歷史數據填充
         if hasattr(repo, 'df') and not repo.df.empty:
-            valid_df = repo.df.dropna(subset=['home_team', 'away_team', 'home_xg', 'away_xg', 'date'])
-            for _, row in valid_df.tail(200).iterrows():
-                try:
-                    xg_forecaster.add_match(row['home_team'], row.get('home_xg', 1.5), True, row.get('date'))
-                    xg_forecaster.add_match(row['away_team'], row.get('away_xg', 1.0), False, row.get('date'))
-                except: continue
+            valid_df = repo.df.dropna(subset=['home_team', 'away_team'])
+            # 支援不同欄位名稱
+            xg_cols = valid_df.columns.tolist()
+            home_xg_col = next((c for c in xg_cols if c.lower() in ['home_xg', 'xg', 'xghome', 'xg_home']), None)
+            away_xg_col = next((c for c in xg_cols if c.lower() in ['away_xg', 'xga', 'xgaway', 'xg_away']), None)
+            
+            if home_xg_col and away_xg_col:
+                for _, row in valid_df.tail(200).iterrows():
+                    try:
+                        xg_forecaster.add_match(row['home_team'], float(row.get(home_xg_col, 1.5)), True, str(row.get('date', '')))
+                        xg_forecaster.add_match(row['away_team'], float(row.get(away_xg_col, 1.0)), False, str(row.get('date', '')))
+                    except: continue
+            else:
+                print(f"      ⚠️ 找不到 xG 欄位，跳過指數衰減模型")
         
         # 獲取預測
         import datetime
         ref_date = datetime.datetime.now()
-        home_xg_adv = xg_forecaster.get_team_xg(home, ref_date, True)
-        away_xg_adv = xg_forecaster.get_team_xg(away, ref_date, False)
+        home_result = xg_forecaster.get_team_xg(home, ref_date, True)
+        away_result = xg_forecaster.get_team_xg(away, ref_date, False)
         
-        xg_forecast_home = home_xg_adv['xg'] if home_xg_adv['xg'] else h_exp_adj
-        xg_forecast_away = away_xg_adv['xg'] if away_xg_adv['xg'] else a_exp_adj
+        if isinstance(home_result, dict) and home_result.get('xg') is not None:
+            xg_forecast_home = float(home_result['xg'])
+            home_xg_adv = home_result
+        if isinstance(away_result, dict) and away_result.get('xg') is not None:
+            xg_forecast_away = float(away_result['xg'])
+            away_xg_adv = away_result
         
-        print(f"      {home} 預測 xG: {xg_forecast_home:.2f} (n={home_xg_adv['n_games']})")
-        print(f"      {away} 預測 xG: {xg_forecast_away:.2f} (n={away_xg_adv['n_games']})")
+        print(f"      {home} 預測 xG: {xg_forecast_home:.2f} (n={home_xg_adv.get('n_games', 0)})")
+        print(f"      {away} 預測 xG: {xg_forecast_away:.2f} (n={away_xg_adv.get('n_games', 0)})")
     except Exception as e:
-        print(f"      ⚠️ 指數衰減模型失敗: {str(e)[:50]}")
-        xg_forecast_home, xg_forecast_away = h_exp_adj, a_exp_adj
+        print(f"      ⚠️ 指數衰減模型失敗: {str(e)[:80]}")
 
     # ========== [Advanced] 貝葉斯進球模型 ==========
     # 完全概率化不確定性估計
     print(f"\n   🔮 [Adv] 貝葉斯進球模型:")
+    
+    # 預設值
+    bayes_pred = {
+        'home_lambda': h_exp_adj,
+        'away_lambda': a_exp_adj,
+        'home_ci': (h_exp_adj * 0.5, h_exp_adj * 1.5),
+        'away_ci': (a_exp_adj * 0.5, a_exp_adj * 1.5),
+        'probabilities': {'home_win': nb_probs['home_win'], 'draw': nb_probs['draw'], 'away_win': nb_probs['away_win']},
+        'uncertainty': {'average': 0.3, 'home': 0.3, 'away': 0.3}
+    }
+    
     try:
         bayes_model = BayesianGoalModel(confidence_level=0.95)
         # 使用歷史數據
         if hasattr(repo, 'df') and not repo.df.empty:
             valid_df = repo.df.dropna(subset=['home_goals', 'away_goals'])
-            for _, row in valid_df.tail(50).iterrows():
-                try:
-                    bayes_model.add_observation(int(row['home_goals']), int(row['away_goals']),
-                                               is_home=True)
-                except: continue
+            if len(valid_df) >= 5:
+                for _, row in valid_df.tail(50).iterrows():
+                    try:
+                        bayes_model.add_observation(int(row['home_goals']), int(row['away_goals']), is_home=True)
+                    except: continue
+                bayes_pred = bayes_model.predict()
+                # 限制不確定性在合理範圍 (0-100%)
+                uncertainty = bayes_pred.get('uncertainty', {})
+                for key in uncertainty:
+                    uncertainty[key] = min(1.0, max(0.0, uncertainty.get(key, 0.3)))
         
-        bayes_pred = bayes_model.predict()
         print(f"      主場 λ: {bayes_pred['home_lambda']:.3f} [{bayes_pred['home_ci'][0]:.2f}-{bayes_pred['home_ci'][1]:.2f}]")
         print(f"      客場 λ: {bayes_pred['away_lambda']:.3f} [{bayes_pred['away_ci'][0]:.2f}-{bayes_pred['away_ci'][1]:.2f}]")
-        print(f"      主勝概率: {bayes_pred['probabilities']['home_win']:.1%}")
+        probs = bayes_pred.get('probabilities', {})
+        print(f"      主勝概率: {probs.get('home_win', nb_probs['home_win']):.1%}")
         print(f"      不確定性: {bayes_pred['uncertainty']['average']:.1%}")
     except Exception as e:
-        print(f"      ⚠️ 貝葉斯模型失敗: {str(e)[:50]}")
-        bayes_pred = {'probabilities': {'home_win': nb_probs['home_win']}, 'uncertainty': {'average': 0.3}}
+        print(f"      ⚠️ 貝葉斯模型失敗: {str(e)[:80]}")
 
     # ========== [Advanced] LSTM 狀態追蹤 ==========
     # 捕捉球隊狀態變化
     print(f"\n   📊 [Adv] LSTM 球隊狀態追蹤:")
+    
+    # 預設值
+    home_form = {'form_score': 0.5, 'trend': 'stable', 'confidence': 'low'}
+    away_form = {'form_score': 0.5, 'trend': 'stable', 'confidence': 'low'}
+    
+    # 檢查 TensorFlow 是否可用
+    tf_available = False
     try:
-        lstm_model = TeamFormLSTM(sequence_length=10, use_attention=True)
-        # 使用歷史數據
-        if hasattr(repo, 'df') and not repo.df.empty:
-            valid_df = repo.df.dropna(subset=['home_team', 'away_team', 'home_goals', 'away_goals', 'result'])
-            for _, row in valid_df.tail(100).iterrows():
-                try:
-                    lstm_model.add_match(row['home_team'], 
-                                        goals_scored=int(row['home_goals']),
-                                        goals_conceded=int(row['away_goals']),
-                                        xg=row.get('home_xg', 1.5),
-                                        possession=50, shots_on_target=3,
-                                        result=row.get('result', 'W'), is_home=True)
-                    lstm_model.add_match(row['away_team'],
-                                        goals_scored=int(row['away_goals']),
-                                        goals_conceded=int(row['home_goals']),
-                                        xg=row.get('away_xg', 1.0),
-                                        possession=50, shots_on_target=3,
-                                        result='L' if row.get('result') == 'W' else 'W' if row.get('result') == 'L' else 'D',
-                                        is_home=False)
-                except: continue
+        import tensorflow as tf
+        tf_available = True
+    except ImportError:
+        print(f"      ⚠️ TensorFlow 不可用，使用統計狀態追蹤")
+    
+    try:
+        if tf_available:
+            lstm_model = TeamFormLSTM(sequence_length=10, use_attention=True)
+            # 使用歷史數據
+            if hasattr(repo, 'df') and not repo.df.empty:
+                valid_df = repo.df.dropna(subset=['home_team', 'away_team', 'home_goals', 'away_goals', 'result'])
+                for _, row in valid_df.tail(100).iterrows():
+                    try:
+                        # 判斷主客場結果
+                        result = str(row.get('result', 'D')).upper()
+                        if result == 'W':
+                            home_result, away_result = 'W', 'L'
+                        elif result == 'L':
+                            home_result, away_result = 'L', 'W'
+                        else:
+                            home_result, away_result = 'D', 'D'
+                        
+                        lstm_model.add_match(row['home_team'], 
+                                            goals_scored=int(row['home_goals']),
+                                            goals_conceded=int(row['away_goals']),
+                                            xg=float(row.get('home_xg', 1.5)),
+                                            possession=50, shots_on_target=3,
+                                            result=home_result, is_home=True)
+                        lstm_model.add_match(row['away_team'],
+                                            goals_scored=int(row['away_goals']),
+                                            goals_conceded=int(row['home_goals']),
+                                            xg=float(row.get('away_xg', 1.0)),
+                                            possession=50, shots_on_target=3,
+                                            result=away_result, is_home=False)
+                    except: continue
+            
+            home_form = lstm_model.predict_team_form(home)
+            away_form = lstm_model.predict_team_form(away)
         
-        home_form = lstm_model.predict_team_form(home)
-        away_form = lstm_model.predict_team_form(away)
+        # 如果 TensorFlow 不可用或 LSTM 失敗，使用基於統計的簡化狀態
+        if not tf_available or home_form.get('form_score', 0) == 0.5:
+            if hasattr(repo, 'df') and not repo.df.empty:
+                tmp = repo.df.copy()
+                tmp["hl"] = tmp["home_team"].astype(str).str.lower().str.strip()
+                tmp["al"] = tmp["away_team"].astype(str).str.lower().str.strip()
+                
+                home_s = home.lower().strip()
+                away_s = away.lower().strip()
+                
+                home_games = tmp[(tmp["hl"] == home_s) | (tmp["al"] == home_s)].tail(10)
+                away_games = tmp[(tmp["hl"] == away_s) | (tmp["al"] == away_s)].tail(10)
+                
+                def calc_simple_form(games, team_l):
+                    if games.empty:
+                        return 0.5, 'stable'
+                    points = 0
+                    for _, row in games.iterrows():
+                        if row['hl'] == team_l:
+                            if row['home_goals'] > row['away_goals']: points += 3
+                            elif row['home_goals'] == row['away_goals']: points += 1
+                        else:
+                            if row['away_goals'] > row['home_goals']: points += 3
+                            elif row['away_goals'] == row['home_goals']: points += 1
+                    avg_pts = points / max(len(games), 1)
+                    form_score = min(1.0, avg_pts / 3.0)
+                    
+                    # 趨勢判斷
+                    recent = games.tail(3)
+                    older = games.head(len(games)-3) if len(games) > 3 else games.head(0)
+                    r_pts = 0
+                    o_pts = 0
+                    for _, row in recent.iterrows():
+                        if row['hl'] == team_l:
+                            if row['home_goals'] > row['away_goals']: r_pts += 3
+                            elif row['home_goals'] == row['away_goals']: r_pts += 1
+                        else:
+                            if row['away_goals'] > row['home_goals']: r_pts += 3
+                            elif row['away_goals'] == row['home_goals']: r_pts += 1
+                    for _, row in older.iterrows():
+                        if row['hl'] == team_l:
+                            if row['home_goals'] > row['away_goals']: o_pts += 3
+                            elif row['home_goals'] == row['away_goals']: o_pts += 1
+                        else:
+                            if row['away_goals'] > row['home_goals']: o_pts += 3
+                            elif row['away_goals'] == row['home_goals']: o_pts += 1
+                    
+                    r_avg = r_pts / max(len(recent), 1) if len(recent) > 0 else 1.5
+                    o_avg = o_pts / max(len(older), 1) if len(older) > 0 else 1.5
+                    
+                    if r_avg > o_avg + 0.5: trend = 'improving'
+                    elif r_avg < o_avg - 0.5: trend = 'declining'
+                    else: trend = 'stable'
+                    
+                    return form_score, trend
+                
+                home_f, home_t = calc_simple_form(home_games, home_s)
+                away_f, away_t = calc_simple_form(away_games, away_s)
+                
+                home_form = {'form_score': home_f, 'trend': home_t, 'confidence': 'medium'}
+                away_form = {'form_score': away_f, 'trend': away_t, 'confidence': 'medium'}
         
         print(f"      {home} 狀態: {home_form['form_score']:.2f} ({home_form['trend']})")
         print(f"      {away} 狀態: {away_form['form_score']:.2f} ({away_form['trend']})")
         print(f"      信心度: {home_form['confidence']}/{away_form['confidence']}")
     except Exception as e:
-        print(f"      ⚠️ LSTM 模型失敗: {str(e)[:50]}")
-        home_form = {'form_score': 0.5, 'trend': 'stable', 'confidence': 'low'}
-        away_form = {'form_score': 0.5, 'trend': 'stable', 'confidence': 'low'}
+        print(f"      ⚠️ 狀態追蹤失敗: {str(e)[:80]}")
 
     # 計算綜合勝率 (結合多個模型)
     avg_v3_prob = (nb_probs['home_win'] + mc_v3_probs['mc_home_win'] + elo_win_prob) / 3

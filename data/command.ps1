@@ -1,11 +1,12 @@
 # 1. Define Links
 $links = @(
-     "https://www.oddsportal.com/football/germany/regionalliga-west/wiedenbruck-rodinghausen-djheAVI5/#1X2;2"
+     "https://www.oddsportal.com/football/england/premier-league/leeds-nottingham-raKBgwWA/"
      )
 
 # 2. Define File Paths
 $basePath = "C:\Users\Ryan\python\.vscode\fb_ai_bets\data\archive"
-$finalFile = Join-Path -Path $basePath -ChildPath "20260204_011810_odds.csv"
+$finalFile = Join-Path -Path $basePath -ChildPath "odds_latest.csv"
+$tempFile = Join-Path -Path $basePath -ChildPath "temp_odds.csv"
 
 # 3. Ensure Directory Exists
 if (-not (Test-Path $basePath)) { New-Item -ItemType Directory -Path $basePath | Out-Null }
@@ -19,24 +20,38 @@ for ($i = 0; $i -lt $links.Count; $i++) {
     Write-Host "Target: $currentLink"
     
     # Remove old temp file
-    if (Test-Path $tempFile) { Remove-Item $tempFile }
+    if ($tempFile -and (Test-Path $tempFile)) { Remove-Item $tempFile -ErrorAction SilentlyContinue }
 
-    # Run Python Scraper
-    # FIX: Combined markets into a SINGLE string
-    python -m uv run python src/main.py scrape_upcoming `
-        --sport football `
-        --match_links "$currentLink" `
-        --format csv `
-        --markets "1x2" `
-        --scrape_odds_history `
-        --file_path "$tempFile" `
-        --concurrency_tasks 5 `
-        --target_bookmaker "1xBet" `
-        --headless
+    # Run Python Scraper (check if OddsHarvester exists)
+    $scraperPath = "C:\Users\Ryan\python\.vscode\fb_ai_bets\OddsHarvester"
+    $scraperVenv = "C:\Users\Ryan\python\.vscode\fb_ai_bets\OddsHarvester\.venv\Scripts\python.exe"
+    $scraperSrcMain = "C:\Users\Ryan\python\.vscode\fb_ai_bets\OddsHarvester\src\main.py"
+    if (Test-Path $scraperSrcMain) {
+        # FIX: Explicitly set PYTHONPATH to OddsHarvester src, excluding fb_ai_bets/src
+        $venvPython = if (Test-Path $scraperVenv) { $scraperVenv } else { "python" }
+        $env:PYTHONPATH = $scraperPath  # Only OddsHarvester, not parent
+        $env:PYTHONUNBUFFERED = "1"
+        & $venvPython -m src.main scrape_upcoming `
+            --sport football `
+            --match_links "$currentLink" `
+            --format csv `
+            --markets "1x2" `
+            --scrape_odds_history `
+            --file_path "$tempFile" `
+            --concurrency_tasks 5 `
+            --target_bookmaker "1xBet" `
+            --headless
+        Remove-Item Env:PYTHONPATH -ErrorAction SilentlyContinue
+    } else {
+        Write-Host " [Warning] Scraper not found at: $scraperSrcMain" -ForegroundColor Yellow
+        Write-Host " [Info] Trying alternative scraper..." -ForegroundColor Cyan
+        # Try with the data module instead
+        python "C:\Users\Ryan\python\.vscode\fb_ai_bets\scripts\TakeHistoryData.py" 2>$null
+    }
 
 
     # 5. Merge Logic (Append)
-    if (Test-Path $tempFile) {
+    if ($tempFile -and (Test-Path $tempFile)) {
         if (-not (Test-Path $finalFile)) {
             # Case 1: Final file doesn't exist, simply move temp file
             Move-Item -Path $tempFile -Destination $finalFile
