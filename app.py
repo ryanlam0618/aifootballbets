@@ -120,7 +120,7 @@ def find_lineup_file(home_team, away_team, data_folder="data"):
 
 def main():
     print("========================================", flush=True)
-    print("⚽ AI 足球分析系統 v6.0 (API Integrated)", flush=True)
+    print("⚽ AI 足球分析系統 v6.5 (API Integrated) - Team Name Matcher", flush=True)
     print("========================================", flush=True)
 
     # 1. 選擇聯賽 (新增選單功能)
@@ -418,7 +418,7 @@ def main():
     # 檢查 TensorFlow 是否可用
     tf_available = False
     try:
-        import tensorflow as tf
+        import tensorflow as tf  # noqa: F401
         tf_available = True
     except ImportError:
         print(f"      ⚠️ TensorFlow 不可用，使用統計狀態追蹤")
