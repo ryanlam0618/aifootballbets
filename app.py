@@ -31,6 +31,7 @@ try:
     )
     from src.injury_api import InjuryDataAggregator, get_injury_report
     from src.lineup_api import LineupAggregator, get_lineup
+    from src.team_name_matcher import match_teams, get_team_info
 except ImportError as e:
     print(f"模組載入失敗: {e}", flush=True)
     sys.exit(1)
@@ -157,6 +158,46 @@ def main():
             print("⚠️ 格式錯誤"); return
     except ValueError: return
 
+    # ========== [整合] 使用 Gemini API 智能匹配球隊名稱 ==========
+    print(f"\n🔗 [1.1/4] 正在整合 The Odds API 與 API-Football 數據...", flush=True)
+    print(f"   原始輸入: {home} vs {away}")
+
+    # 使用 team_name_matcher 整合兩個 API 的 ID
+    match_result = match_teams(home, away)
+
+    # 獲取標準化後的隊名
+    odds_home = home  # 預設使用輸入
+    odds_away = away
+    api_home = home   # 預設使用輸入
+    api_away = away
+
+    # 解析配對結果
+    if match_result.get('home', {}).get('matched'):
+        api_home = match_result['home'].get('api_name', home)
+        odds_home = match_result['home'].get('odds_name', home)
+        api_home_id = match_result['home'].get('api_football_id')
+        print(f"   [主隊] The Odds API: {odds_home} | API-Football ID: {api_home_id} ({api_home})")
+    else:
+        api_home_id = None
+        print(f"   [主隊] ⚠️ 無法自動配對，使用原始名稱: {home}")
+
+    if match_result.get('away', {}).get('matched'):
+        api_away = match_result['away'].get('api_name', away)
+        odds_away = match_result['away'].get('odds_name', away)
+        api_away_id = match_result['away'].get('api_football_id')
+        print(f"   [客隊] The Odds API: {odds_away} | API-Football ID: {api_away_id} ({api_away})")
+    else:
+        api_away_id = None
+        print(f"   [客隊] ⚠️ 無法自動配對，使用原始名稱: {away}")
+
+    # 檢查是否需要 Gemini 進一步匹配
+    if not match_result.get('home', {}).get('matched') or not match_result.get('away', {}).get('matched'):
+        print(f"   💡 提示: 如需更精確的匹配，請確認球隊名稱拼寫正確。")
+
+    # 使用 API-Football ID 進行後續操作
+    home_team_id = api_home_id if api_home_id else match_result.get('home', {}).get('api_football_id')
+    away_team_id = api_away_id if api_away_id else match_result.get('away', {}).get('api_football_id')
+
     # 初始化
     repo = HistoryRepo(settings.HISTORY_CSV_PATH)
     odds_fetcher = RealOddsFetcher()
@@ -165,34 +206,35 @@ def main():
     # 2.5 讀取/獲取陣容數據
     print(f"\n👕 [1.2/4] 正在獲取陣容數據...", flush=True)
 
-    # 首先嘗試讀取本地陣容檔案
+    # 首先嘗試讀取本地陣容檔案 (使用用戶輸入的原始名稱)
     lineup_data = find_lineup_file(home, away)
 
     if lineup_data:
         print(f"   [本地] 找到陣容檔案: {lineup_data['home_team']['name']} vs {lineup_data['away_team']['name']}")
         print(f"      主隊陣容: {len(lineup_data['home_team']['starters'])} 人 | 客隊陣容: {len(lineup_data['away_team']['starters'])} 人")
     else:
-        # 本地沒有，嘗試從 API 獲取
+        # 本地沒有，嘗試從 API 獲取 (使用 API-Football 標準化後的隊名)
         print(f"   [API] 未找到本地檔案，嘗試 API 獲取...")
         lineup_aggregator = LineupAggregator()
-        lineup_data = lineup_aggregator.get_lineup(home, away)
+        lineup_data = lineup_aggregator.get_lineup(api_home, api_away)
 
     # 2.6 獲取傷停數據 (使用真實 API 數據)
     print(f"\n[1.3/4] 正在獲取傷停數據 (API-Football)...", flush=True)
     injury_aggregator = InjuryDataAggregator()
-    injury_report = injury_aggregator.get_match_injury_report(home, away)
+    # 使用 API-Football 標準化後的隊名
+    injury_report = injury_aggregator.get_match_injury_report(api_home, api_away)
 
     home_injury = injury_report['home']
     away_injury = injury_report['away']
 
-    print(f"   {home}:")
+    print(f"   {odds_home}:")
     print(f"      - 傷病: {len(home_injury['injuries'])} 人")
     print(f"      - 停賽: {len(home_injury['suspensions'])} 人")
     print(f"      - 影響分數: {home_injury['total_impact']:.1f}")
     if home_injury['key_players']:
         print(f"      - [警告] 核心球員傷停: {', '.join(home_injury['key_players'])}")
 
-    print(f"   {away}:")
+    print(f"   {odds_away}:")
     print(f"      - 傷病: {len(away_injury['injuries'])} 人")
     print(f"      - 停賽: {len(away_injury['suspensions'])} 人")
     print(f"      - 影響分數: {away_injury['total_impact']:.1f}")
@@ -232,8 +274,8 @@ def main():
     a_exp_adj = max(0.5, min(3.5, a_exp_adj))
 
     print(f"\n   📈 傷停影響調整後的xG:")
-    print(f"      原始: {home} {h_exp:.2f} - {a_exp:.2f} {away}")
-    print(f"      調整: {home} {h_exp_adj:.2f} - {a_exp_adj:.2f} {away} (傷停調整: {injury_impact_diff:+.1f})")
+    print(f"      原始: {odds_home} {h_exp:.2f} - {a_exp:.2f} {odds_away}")
+    print(f"      調整: {odds_home} {h_exp_adj:.2f} - {a_exp_adj:.2f} {odds_away} (傷停調整: {injury_impact_diff:+.1f})")
 
     dc_model = DixonColesModel(h_exp_adj, a_exp_adj)
     dc_probs = dc_model.calculate_probabilities()
@@ -266,10 +308,10 @@ def main():
                 continue
     except:
         pass
-    elo_home = dynamic_elo.get_rating(home)
-    elo_away = dynamic_elo.get_rating(away)
-    elo_win_prob = dynamic_elo.expected_win_prob(home, away)
-    print(f"      {home} 評分: {elo_home:.0f} | {away} 評分: {elo_away:.0f}")
+    elo_home = dynamic_elo.get_rating(api_home)
+    elo_away = dynamic_elo.get_rating(api_away)
+    elo_win_prob = dynamic_elo.expected_win_prob(api_home, api_away)
+    print(f"      {odds_home} 評分: {elo_home:.0f} | {odds_away} 評分: {elo_away:.0f}")
     print(f"      Elo 勝率預測: {elo_win_prob:.1%}")
 
     # ========== [v3] 蒙地卡羅模擬 V3 ==========
@@ -312,8 +354,8 @@ def main():
         # 獲取預測
         import datetime
         ref_date = datetime.datetime.now()
-        home_result = xg_forecaster.get_team_xg(home, ref_date, True)
-        away_result = xg_forecaster.get_team_xg(away, ref_date, False)
+        home_result = xg_forecaster.get_team_xg(api_home, ref_date, True)
+        away_result = xg_forecaster.get_team_xg(api_away, ref_date, False)
         
         if isinstance(home_result, dict) and home_result.get('xg') is not None:
             xg_forecast_home = float(home_result['xg'])
@@ -322,8 +364,8 @@ def main():
             xg_forecast_away = float(away_result['xg'])
             away_xg_adv = away_result
         
-        print(f"      {home} 預測 xG: {xg_forecast_home:.2f} (n={home_xg_adv.get('n_games', 0)})")
-        print(f"      {away} 預測 xG: {xg_forecast_away:.2f} (n={away_xg_adv.get('n_games', 0)})")
+        print(f"      {odds_home} 預測 xG: {xg_forecast_home:.2f} (n={home_xg_adv.get('n_games', 0)})")
+        print(f"      {odds_away} 預測 xG: {xg_forecast_away:.2f} (n={away_xg_adv.get('n_games', 0)})")
     except Exception as e:
         print(f"      ⚠️ 指數衰減模型失敗: {str(e)[:80]}")
 
@@ -412,8 +454,8 @@ def main():
                                             result=away_result, is_home=False)
                     except: continue
             
-            home_form = lstm_model.predict_team_form(home)
-            away_form = lstm_model.predict_team_form(away)
+            home_form = lstm_model.predict_team_form(api_home)
+            away_form = lstm_model.predict_team_form(api_away)
         
         # 如果 TensorFlow 不可用或 LSTM 失敗，使用基於統計的簡化狀態
         if not tf_available or home_form.get('form_score', 0) == 0.5:
@@ -422,8 +464,8 @@ def main():
                 tmp["hl"] = tmp["home_team"].astype(str).str.lower().str.strip()
                 tmp["al"] = tmp["away_team"].astype(str).str.lower().str.strip()
                 
-                home_s = home.lower().strip()
-                away_s = away.lower().strip()
+                home_s = api_home.lower().strip()
+                away_s = api_away.lower().strip()
                 
                 home_games = tmp[(tmp["hl"] == home_s) | (tmp["al"] == home_s)].tail(10)
                 away_games = tmp[(tmp["hl"] == away_s) | (tmp["al"] == away_s)].tail(10)
@@ -477,8 +519,8 @@ def main():
                 home_form = {'form_score': home_f, 'trend': home_t, 'confidence': 'medium'}
                 away_form = {'form_score': away_f, 'trend': away_t, 'confidence': 'medium'}
         
-        print(f"      {home} 狀態: {home_form['form_score']:.2f} ({home_form['trend']})")
-        print(f"      {away} 狀態: {away_form['form_score']:.2f} ({away_form['trend']})")
+        print(f"      {odds_home} 狀態: {home_form['form_score']:.2f} ({home_form['trend']})")
+        print(f"      {odds_away} 狀態: {away_form['form_score']:.2f} ({away_form['trend']})")
         print(f"      信心度: {home_form['confidence']}/{away_form['confidence']}")
     except Exception as e:
         print(f"      ⚠️ 狀態追蹤失敗: {str(e)[:80]}")
@@ -543,14 +585,14 @@ def main():
     }
 
     glicko = match_context.get("glicko", {})
-    print(f"   ℹ️ 傷停調整後進球期望: {home} {h_exp_adj:.2f} - {a_exp_adj:.2f} {away}")
+    print(f"   ℹ️ 傷停調整後進球期望: {odds_home} {h_exp_adj:.2f} - {a_exp_adj:.2f} {odds_away}")
     print(f"   🏆 Glicko-2 勝率: {glicko.get('win_prob', 0):.1%}")
     print(f"   🎲 [MonteCarlo] 主: {mc_probs['mc_home_win']:.1%} | 大 2.5: {mc_probs['mc_over_2.5']:.1%}")
 
     # 4. 讀取全盤口賠率 (使用 API Key)
     print(f"\n📈 [2/4] 連線 API 讀取即時賠率...", flush=True)
-    # 這裡傳入 league_key (例如 soccer_epl)
-    all_markets = odds_fetcher.get_real_odds(league_key, home, away)
+    # 使用 The Odds API 標準化後的隊名
+    all_markets = odds_fetcher.get_real_odds(league_key, odds_home, odds_away)
     
     odds_summary_text = ""
     if all_markets:
@@ -571,7 +613,7 @@ def main():
     # 5. Grok 搜尋
     print(f"\n🤖 [3/4] 請求 Grok 聯網搜尋市場情報...", flush=True)
     grok_input = odds_summary_text[:10000]
-    grok_reaction = llm.search_and_analyze_market_reaction(f"{home} vs {away}", grok_input)
+    grok_reaction = llm.search_and_analyze_market_reaction(f"{odds_home} vs {odds_away}", grok_input)
     print("\n--------- 🤖 Grok 市場觀點 ---------", flush=True)
     print(grok_reaction[:200] + "..." if len(grok_reaction) > 200 else grok_reaction, flush=True)
 
@@ -736,7 +778,7 @@ def main():
         if stake_info["stake"] > 0:
             print(f"      >>> 建議下注: ${stake_info['stake']:.2f} (EV: {stake_info['ev']:.3f})")
             if input("\n[?] 記錄注單到 Excel? (y/n): ").lower() == 'y':
-                match_info = {"league": league_name, "home": home, "away": away}
+                match_info = {"league": league_name, "home": odds_home, "away": odds_away}
                 bet_info = {"market": rec_market, "selection": rec_selection, "odds": target_odds, "model_probability": prob}
                 logger.log_bet(match_info, bet_info, stake_info)
                 logger.show_stats()
