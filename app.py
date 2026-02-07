@@ -3,6 +3,7 @@ import os
 import json
 import re
 import difflib
+import pandas as pd
 
 # 強制設定輸出編碼
 sys.stdout.reconfigure(encoding='utf-8')
@@ -317,40 +318,243 @@ def main():
     away_xg_adv = {'xg': a_exp_adj, 'n_games': 0}
     
     try:
-        xg_forecaster = ExponentialDecayXGForecaster(decay_rate=0.1, recency_weight=1.5)
+        xg_forecaster = ExponentialDecayXGForecaster(decay_rate=0.1, recency_weight=1.5, min_games=2)  # 改為 2 場
         # 使用歷史數據填充
         if hasattr(repo, 'df') and not repo.df.empty:
             valid_df = repo.df.dropna(subset=['home_team', 'away_team'])
             
             # 只使用有 xG 數據的行
-            if 'xG' in valid_df.columns:
-                valid_df = valid_df[valid_df['xG'].notna()]
+            if 'xg' in valid_df.columns:
+                valid_df = valid_df[valid_df['xg'].notna()]
             
             print(f"      [DEBUG] 指數衰減 xG: 載入 {len(valid_df)} 場有效比賽")
             
-            # 支援不同欄位名稱 (包括大小寫)
+            # 支援不同欄位名稱
             xg_cols = valid_df.columns.tolist()
-            home_xg_col = next((c for c in xg_cols if c.lower() in ['home_xg', 'xg', 'xghome', 'xg_home', 'xG']), None)
-            away_xg_col = next((c for c in xg_cols if c.lower() in ['away_xg', 'xga', 'xgaway', 'xg_away', 'xGA']), None)
+            home_xg_col = 'xg'
+            away_xg_col = 'xga'
             
             print(f"      [DEBUG] 找到 xG 欄位: home={home_xg_col}, away={away_xg_col}")
             
+            # ========== Fuzzy Search 球隊名稱匹配 ==========
+            try:
+                from fuzzywuzzy import fuzz, process
+                HAS_FUZZY = True
+            except ImportError:
+                HAS_FUZZY = False
+            
+            # 建立所有可用球隊名稱列表 (使用完整數據，不僅限於 xG 數據)
+            all_teams = set(list(repo.df['home_team'].unique()) + list(repo.df['away_team'].unique()))
+            all_teams_list = list(all_teams)
+            
+            # 檢查有效數據中的球隊 (用於模型載入)
+            if 'xg' in valid_df.columns:
+                valid_teams = set(list(valid_df['home_team'].unique()) + list(valid_df['away_team'].unique()))
+            else:
+                valid_teams = all_teams
+            
+            # 常見縮寫/別名映射 (提高匹配準確率)
+            ALIAS_MAP = {
+                # English Premier League
+                "manchester united": "Manchester United",
+                "manchester utd": "Manchester United",
+                "man utd": "Manchester United",
+                "manchester city": "Manchester City",
+                "man city": "Manchester City",
+                "newcastle": "Newcastle United",
+                "newcastle utd": "Newcastle United",
+                "spurs": "Tottenham Hotspur",
+                "tottenham": "Tottenham Hotspur",
+                "arsenal london": "Arsenal",
+                "west ham": "West Ham United",
+                "wolverhampton": "Wolverhampton Wanderers",
+                "wolves": "Wolverhampton Wanderers",
+                "leicester": "Leicester City",
+                "leeds": "Leeds United",
+                "crystal palace": "Crystal Palace",
+                "brighton": "Brighton & Hove Albion",
+                "southampton": "Southampton",
+                "fulham": "Fulham",
+                "brentford": "Brentford",
+                "nottingham": "Nottingham Forest",
+                "villa": "Aston Villa",
+                "ipswich": "Ipswich Town",
+                
+                # Spanish La Liga
+                "atletico": "Ath Madrid",
+                "atletico madrid": "Ath Madrid",
+                "atlético madrid": "Ath Madrid",
+                "barca": "Barcelona",
+                "sevila": "Sevilla",
+                "sevilla fc": "Sevilla",
+                "sociedad": "Real Sociedad",
+                "betis": "Real Betis",
+                
+                # Italian Serie A
+                "inter": "Inter Milan",
+                "ac milan": "AC Milan",
+                "milan": "AC Milan",
+                "juventus turin": "Juventus",
+                "napoli": "SSC Napoli",
+                "ssc napoli": "SSC Napoli",
+                "as roma": "AS Roma",
+                "lazio": "Lazio",
+                "fiorentina": "Fiorentina",
+                "torino": "Torino",
+                "sampdoria": "Sampdoria",
+                "udinese": "Udinese",
+                "bologna": "Bologna",
+                "atalanta": "Atalanta BC",
+                
+                # German Bundesliga
+                "bayern": "Bayern Munich",
+                "dortmund": "Borussia Dortmund",
+                "borussia dortmund": "Borussia Dortmund",
+                "leverkusen": "Bayer Leverkusen",
+                "bayer leverkusen": "Bayer Leverkusen",
+                "rb leipzig": "RB Leipzig",
+                "leipzig": "RB Leipzig",
+                "m'gladbach": "Borussia Mönchengladbach",
+                "gladbach": "Borussia Mönchengladbach",
+                "eintracht frankfurt": "Eintracht Frankfurt",
+                "frankfurt": "Eintracht Frankfurt",
+                "schalke": "Schalke 04",
+                "schalke 04": "Schalke 04",
+                
+                # French Ligue 1
+                "psg": "Paris SG",
+                "paris sg": "Paris SG",
+                "paris saint germain": "Paris SG",
+                "lyon": "Olympique Lyonnais",
+                "olympique lyonnais": "Olympique Lyonnais",
+                "marseille": "Olympique de Marseille",
+                "olympique marseille": "Olympique de Marseille",
+                "monaco": "Monaco",
+                "as monaco": "Monaco",
+                "nice": "OGC Nice",
+                "ogc nice": "OGC Nice",
+                "lille": "Lille",
+                "rennes": "Stade Rennais",
+                "stade rennais": "Stade Rennais",
+            }
+            
+            def fuzzy_match_team(input_name, team_list, threshold=60):
+                """使用模糊匹配找最佳球隊名稱"""
+                if not HAS_FUZZY:
+                    return input_name  # fallback
+                
+                clean_input = input_name.lower().strip()
+                
+                # 調試信息
+                # print(f"      [DEBUG-FUZZY] 輸入: \"{input_name}\" -> clean: \"{clean_input}\"")
+                
+                # 先檢查別名映射 (精確匹配)
+                if clean_input in ALIAS_MAP:
+                    matched = ALIAS_MAP[clean_input]
+                    # print(f"      [DEBUG-FUZZY] ALIAS_MAP 命中: \"{clean_input}\" -> \"{matched}\"")
+                    if matched in team_list:
+                        return matched
+                
+                # 檢查原始名稱是否已存在於 team_list
+                if input_name in team_list:
+                    # print(f"      [DEBUG-FUZZY] 原始名稱命中: \"{input_name}\"")
+                    return input_name
+                
+                # 檢查小寫版本是否在 team_list
+                if clean_input in [t.lower() for t in team_list]:
+                    for team in team_list:
+                        if team.lower() == clean_input:
+                            # print(f"      [DEBUG-FUZZY] 小寫版本命中: \"{input_name}\" -> \"{team}\"")
+                            return team
+                
+                best_match = None
+                best_score = 0
+                
+                for team in team_list:
+                    clean_team = team.lower().strip()
+                    
+                    # 計算分數時保留 "united" 等關鍵詞
+                    scores = [
+                        fuzz.ratio(clean_input, clean_team),
+                        fuzz.partial_ratio(clean_input, clean_team),
+                        fuzz.token_sort_ratio(clean_input, clean_team),
+                        fuzz.token_set_ratio(clean_input, clean_team),
+                    ]
+                    
+                    team_score = max(scores)
+                    
+                    if team_score > best_score:
+                        best_score = team_score
+                        best_match = team
+                
+                # print(f"      [DEBUG-FUZZY] 最佳匹配: \"{best_match}\" (score: {best_score})")
+                
+                if best_score >= threshold:
+                    return best_match
+                return input_name  # fallback
+            
+            # 使用模糊匹配
+            target_home = fuzzy_match_team(api_home, all_teams_list)
+            target_away = fuzzy_match_team(api_away, all_teams_list)
+            
+            print(f"      [FUZZY] \"{api_home}\" -> \"{target_home}\"")
+            print(f"      [FUZZY] \"{api_away}\" -> \"{target_away}\"")
+            
             if home_xg_col and away_xg_col:
                 match_count = 0
-                for _, row in valid_df.tail(200).iterrows():
+                mu_home_count = 0
+                mu_away_count = 0
+                
+                # 修復：數據是按日期升序排列（最舊在前），所以用 tail() 取最新的數據
+                # 擴大載入範圍到 1000 場，確保載入足夠數據
+                recent_df = valid_df.tail(1000)
+                
+                print(f"      [DEBUG] 指數衰減 xG: 載入 {len(recent_df)} 場最近比賽")
+                print(f"      [DEBUG] 數據範圍: {recent_df['date'].min()} 到 {recent_df['date'].max()}")
+                
+                for _, row in recent_df.iterrows():
                     try:
                         home_xg_val = float(row.get(home_xg_col, 1.5))
                         away_xg_val = float(row.get(away_xg_col, 1.0))
-                        # 添加主隊數據
-                        xg_forecaster.add_match(row['home_team'], home_xg_val, True, str(row.get('Date', '')))
+                        
+                        # 跳過無效的 xG 值
+                        if pd.isna(home_xg_val) or home_xg_val <= 0:
+                            home_xg_val = float(row['home_goals']) if pd.notna(row.get('home_goals')) else 1.5
+                        if pd.isna(away_xg_val) or away_xg_val <= 0:
+                            away_xg_val = float(row['away_goals']) if pd.notna(row.get('away_goals')) else 1.0
+                        
+                        # 添加主隊數據 (直接傳入 datetime 物件)
+                        xg_forecaster.add_match(row['home_team'], home_xg_val, True, row['date'])
                         # 添加客隊數據
-                        xg_forecaster.add_match(row['away_team'], away_xg_val, False, str(row.get('Date', '')))
+                        xg_forecaster.add_match(row['away_team'], away_xg_val, False, row['date'])
+                        
+                        # 統計 Manchester United 數據
+                        if row['home_team'] == target_home or row['away_team'] == target_home:
+                            mu_home_count += 1
+                        if row['home_team'] == target_away or row['away_team'] == target_away:
+                            mu_away_count += 1
+                        
                         match_count += 1
-                    except Exception as e:
+                    except:
                         continue
+                
                 print(f"      [DEBUG] 已載入 {match_count} 場比賽數據")
-            else:
-                print(f"      ⚠️ 找不到 xG 欄位，跳過指數衰減模型")
+                print(f"      [DEBUG] {target_home} 載入: {mu_home_count} 場")
+                print(f"      [DEBUG] {target_away} 載入: {mu_away_count} 場")
+                
+                # 使用匹配後的球隊名稱獲取預測
+                import datetime
+                ref_date = datetime.datetime.now()
+                
+                # 先用原始名稱嘗試
+                home_result = xg_forecaster.get_team_xg(target_home, ref_date, True)
+                away_result = xg_forecaster.get_team_xg(target_away, ref_date, False)
+                
+                # 如果沒有數據，嘗試用用戶輸入的名稱
+                if home_result.get('n_games', 0) == 0:
+                    home_result = xg_forecaster.get_team_xg(api_home, ref_date, True)
+                if away_result.get('n_games', 0) == 0:
+                    away_result = xg_forecaster.get_team_xg(api_away, ref_date, False)
         
         # 獲取預測
         import datetime
@@ -390,19 +594,24 @@ def main():
         if hasattr(repo, 'df') and not repo.df.empty:
             valid_df = repo.df.dropna(subset=['home_goals', 'away_goals'])
             
-            # 只使用有 xG 數據的行
-            if 'xG' in valid_df.columns:
-                valid_df = valid_df[valid_df['xG'].notna()]
+            # 只使用有 xG 數據的行 (repo.df.columns 是小寫)
+            if 'xg' in valid_df.columns:
+                valid_df = valid_df[valid_df['xg'].notna()]
             
             print(f"      [DEBUG] Bayesian: 載入 {len(valid_df)} 場有效比賽")
             
             obs_count = 0
+            mu_obs_count = 0
             if len(valid_df) >= 5:
-                # 優先使用 xG，如果沒有則使用實際進球
-                for _, row in valid_df.tail(50).iterrows():
+                # 修復：數據是按日期升序排列，用 tail() 取最近的數據
+                recent_valid = valid_df.tail(200)
+                print(f"      [DEBUG] Bayesian: 使用最近 {len(recent_valid)} 場比賽")
+                
+                # 使用 xG 值，如果沒有則 fallback 到實際進球
+                for _, row in recent_valid.iterrows():
                     try:
                         # 主隊觀察
-                        home_xg = float(row.get('xG', 1.5)) if pd.notna(row.get('xG')) else float(row['home_goals'])
+                        home_xg = float(row.get('xg', 1.5)) if pd.notna(row.get('xg')) else float(row['home_goals'])
                         bayes_model.add_observation(
                             int(row['home_goals']), 
                             int(row['away_goals']),
@@ -410,7 +619,7 @@ def main():
                             is_home=True
                         )
                         # 客隊觀察
-                        away_xg = float(row.get('xGA', 1.0)) if pd.notna(row.get('xGA')) else float(row['away_goals'])
+                        away_xg = float(row.get('xga', 1.0)) if pd.notna(row.get('xga')) else float(row['away_goals'])
                         bayes_model.add_observation(
                             int(row['away_goals']),
                             int(row['home_goals']),
@@ -418,15 +627,31 @@ def main():
                             is_home=False
                         )
                         obs_count += 2
+                        
+                        # 統計目標球隊
+                        if row['home_team'] == target_home or row['away_team'] == target_home:
+                            mu_obs_count += 1
                     except: continue
                 
-                bayes_pred = bayes_model.predict()
-                print(f"      [DEBUG] Bayesian: 觀察數量={obs_count}, home_lambda={bayes_pred['home_lambda']:.3f}")
-                
-                # 限制不確定性在合理範圍 (0-100%)
-                uncertainty = bayes_pred.get('uncertainty', {})
-                for key in uncertainty:
-                    uncertainty[key] = min(1.0, max(0.0, uncertainty.get(key, 0.3)))
+                if obs_count > 0:
+                    bayes_pred = bayes_model.predict()
+                    print(f"      [DEBUG] Bayesian: 觀察數量={obs_count}, home_lambda={bayes_pred['home_lambda']:.3f}")
+                    print(f"      [DEBUG] {target_home} 觀察數: {mu_obs_count}")
+                    
+                    # 限制不確定性在合理範圍 (0-100%)
+                    uncertainty = bayes_pred.get('uncertainty', {})
+                    for key in uncertainty:
+                        uncertainty[key] = min(1.0, max(0.0, uncertainty.get(key, 0.3)))
+                else:
+                    # Fallback
+                    bayes_pred = {
+                        'home_lambda': xg_forecast_home,
+                        'away_lambda': xg_forecast_away,
+                        'home_ci': (xg_forecast_home * 0.7, xg_forecast_home * 1.3),
+                        'away_ci': (xg_forecast_away * 0.7, xg_forecast_away * 1.3),
+                        'probabilities': nb_probs,
+                        'uncertainty': {'average': 0.5}
+                    }
             else:
                 # 使用指數衰減 xG 的結果作為先驗
                 bayes_pred = {
@@ -484,24 +709,29 @@ def main():
     
     try:
         if torch_available or tf_available:
-            lstm_model = TeamFormLSTM(sequence_length=10, use_attention=True)
+            lstm_model = TeamFormLSTM(sequence_length=10, use_attention=True, min_games=2)  # 改為 2 場
             # 使用歷史數據
             if hasattr(repo, 'df') and not repo.df.empty:
                 valid_df = repo.df.dropna(subset=['home_team', 'away_team', 'home_goals', 'away_goals'])
                 
-                # 只使用有 xG 數據的行
-                if 'xG' in valid_df.columns:
-                    valid_df = valid_df[valid_df['xG'].notna()]
+                # 只使用有 xG 數據的行 (repo.df.columns 是小寫)
+                if 'xg' in valid_df.columns:
+                    valid_df = valid_df[valid_df['xg'].notna()]
                 
-                result_col = 'FTR' if 'FTR' in valid_df.columns else 'result'
-                xg_col = 'xG' if 'xG' in valid_df.columns else 'home_xg'
-                away_xg_col = 'xGA' if 'xGA' in valid_df.columns else 'away_xg'
+                result_col = 'ftr' if 'ftr' in valid_df.columns else 'result'
+                xg_col = 'xg' if 'xg' in valid_df.columns else 'home_xg'
+                away_xg_col = 'xga' if 'xga' in valid_df.columns else 'away_xg'
                 
                 print(f"      [DEBUG] LSTM: 載入 {len(valid_df)} 場有效比賽")
                 print(f"      [DEBUG] LSTM: result_col={result_col}, xG_cols={xg_col}/{away_xg_col}")
                 
+                # 修復：數據是按日期升序排列，用 tail() 取最近的數據
+                recent_valid = valid_df.tail(300)
+                print(f"      [DEBUG] LSTM: 使用最近 {len(recent_valid)} 場比賽")
+                
+                # Fuzzy matching 已經在上面定義，直接使用
                 match_count = 0
-                for _, row in valid_df.tail(100).iterrows():
+                for _, row in recent_valid.iterrows():
                     try:
                         # 判斷主客場結果
                         result = str(row.get(result_col, 'D')).upper()
@@ -531,9 +761,19 @@ def main():
                     except: continue
                 
                 print(f"      [DEBUG] LSTM: 已載入 {match_count} 場比賽數據")
-            
-            home_form = lstm_model.predict_team_form(api_home)
-            away_form = lstm_model.predict_team_form(api_away)
+                
+                # 使用 fuzzy_match_team 進行匹配
+                lstm_teams = set(list(valid_df['home_team'].unique()) + list(valid_df['away_team'].unique()))
+                lstm_team_list = list(lstm_teams)
+                
+                lstm_home = fuzzy_match_team(api_home, lstm_team_list)
+                lstm_away = fuzzy_match_team(api_away, lstm_team_list)
+                
+                print(f"      [FUZZY-LSTM] \"{api_home}\" -> \"{lstm_home}\"")
+                print(f"      [FUZZY-LSTM] \"{api_away}\" -> \"{lstm_away}\"")
+                
+                home_form = lstm_model.predict_team_form(lstm_home)
+                away_form = lstm_model.predict_team_form(lstm_away)
         
         # 如果 TensorFlow 不可用或 LSTM 失敗，使用基於統計的簡化狀態
         if not tf_available or home_form.get('form_score', 0) == 0.5:
@@ -542,11 +782,16 @@ def main():
                 tmp["hl"] = tmp["home_team"].astype(str).str.lower().str.strip()
                 tmp["al"] = tmp["away_team"].astype(str).str.lower().str.strip()
                 
-                home_s = api_home.lower().strip()
-                away_s = api_away.lower().strip()
+                # 使用 fuzzy matched 名稱 (fallback)
+                simple_teams = set(list(tmp["hl"].unique()) + list(tmp["al"].unique()))
+                simple_home = fuzzy_match_team(api_home, list(simple_teams))
+                simple_away = fuzzy_match_team(api_away, list(simple_teams))
                 
-                home_games = tmp[(tmp["hl"] == home_s) | (tmp["al"] == home_s)].tail(10)
-                away_games = tmp[(tmp["hl"] == away_s) | (tmp["al"] == away_s)].tail(10)
+                simple_home_l = simple_home.lower().strip()
+                simple_away_l = simple_away.lower().strip()
+                
+                home_games = tmp[(tmp["hl"] == simple_home_l) | (tmp["al"] == simple_home_l)].tail(10)
+                away_games = tmp[(tmp["hl"] == simple_away_l) | (tmp["al"] == simple_away_l)].tail(10)
                 
                 def calc_simple_form(games, team_l):
                     if games.empty:
@@ -591,8 +836,8 @@ def main():
                     
                     return form_score, trend
                 
-                home_f, home_t = calc_simple_form(home_games, home_s)
-                away_f, away_t = calc_simple_form(away_games, away_s)
+                home_f, home_t = calc_simple_form(home_games, simple_home_l)
+                away_f, away_t = calc_simple_form(away_games, simple_away_l)
                 
                 home_form = {'form_score': home_f, 'trend': home_t, 'confidence': 'medium'}
                 away_form = {'form_score': away_f, 'trend': away_t, 'confidence': 'medium'}

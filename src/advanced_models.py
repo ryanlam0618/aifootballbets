@@ -561,13 +561,15 @@ class TeamFormLSTM:
                  hidden_units: int = 64,       # LSTM 隱藏單元
                  n_features: int = 8,          # 特徵維度
                  dropout_rate: float = 0.2,    # Dropout 比率
-                 use_attention: bool = True):  # 是否使用 Attention
+                 use_attention: bool = True,   # 是否使用 Attention
+                 min_games: int = 2):         # 最小比賽數
 
         self.sequence_length = sequence_length
         self.hidden_units = hidden_units
         self.n_features = n_features
         self.dropout_rate = dropout_rate
         self.use_attention = use_attention
+        self.min_games = min_games
 
         self.models = {}  # {team_name: trained_pytorch_model}
         self.team_sequences = {}  # {team_name: sequence_data}
