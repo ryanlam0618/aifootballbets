@@ -25,7 +25,16 @@ import math
 import warnings
 warnings.filterwarnings('ignore')
 
-# LSTM 需要 TensorFlow/Keras，如果沒有則回退
+# PyTorch LSTM (優先使用)
+try:
+    import torch
+    import torch.nn as nn
+    from torch.utils.data import DataLoader, TensorDataset
+    HAS_TORCH = True
+except ImportError:
+    HAS_TORCH = False
+
+# TensorFlow/Keras (備用)
 try:
     import tensorflow as tf
     from tensorflow.keras.models import Sequential, Model
@@ -35,7 +44,6 @@ try:
     HAS_TENSORFLOW = True
 except ImportError:
     HAS_TENSORFLOW = False
-    # 定義 Model 為 NoneType
     Model = type('Model', (), {})
 
 
@@ -378,14 +386,20 @@ class BayesianGoalModel:
         if not observations:
             return self.prior_alpha, self.prior_beta
         
-        # 使用 xG 或實際進球
-        xgs = [o['home_xg'] for o in observations]
+        # 使用 xG 或實際進球，根據 is_home 選擇正確的欄位
+        xgs = []
+        for o in observations:
+            if o.get('is_home', True):
+                xgs.append(o.get('home_xg', o.get('goals_scored', 1.0)))
+            else:
+                xgs.append(o.get('away_xg', o.get('goals_scored', 1.0)))
+        
         alphas = [max(0.1, xg) for xg in xgs]  # 確保正數
         
         # 後驗 alpha = 先驗 + 觀察總和
         posterior_alpha = self.prior_alpha + sum(alphas)
         
-        # 後驗 beta = 先驗 + 觀察數量 * 權重
+        # 後驗 beta = 先驗 + 觀察數量
         posterior_beta = self.prior_beta + len(observations)
         
         return posterior_alpha, posterior_beta
@@ -442,13 +456,13 @@ class BayesianGoalModel:
         home_ci = self._gamma_ci(home_alpha, home_beta, self.confidence_level)
         away_ci = self._gamma_ci(away_alpha, away_beta, self.confidence_level)
         
-        # 計算每個進球數的概率 (使用後驗預測)
-        def calc_goal_probs(mean_lambda: float, alpha: float, beta: float, max_goals: int = 6) -> List[float]:
+        # 計算每個進球數的概率 (使用 Poisson 分布)
+        def calc_goal_probs(mean_lambda: float, max_goals: int = 8) -> List[float]:
+            """計算 Poisson 進球概率"""
             probs = []
             for k in range(max_goals + 1):
-                # 混合 Gamma-Poisson (負二項近似)
-                prob = (beta ** alpha) / (beta_func(k + alpha, 1) * math.factorial(k)) * \
-                       (beta / (beta + 1)) ** alpha * (1 / (beta + 1)) ** k
+                # Poisson probability: P(k) = lambda^k * e^(-lambda) / k!
+                prob = (mean_lambda ** k) * math.exp(-mean_lambda) / math.factorial(k)
                 probs.append(prob)
             
             # 正規化
@@ -457,8 +471,8 @@ class BayesianGoalModel:
                 probs = [p / total for p in probs]
             return probs
         
-        home_dist = calc_goal_probs(home_mean, home_alpha, home_beta)
-        away_dist = calc_goal_probs(away_mean, away_alpha, away_beta)
+        home_dist = calc_goal_probs(home_mean)
+        away_dist = calc_goal_probs(away_mean)
         
         # 計算勝平負概率
         home_wins = sum(home_dist[i] * sum(away_dist[:i]) for i in range(len(home_dist)))
@@ -533,42 +547,43 @@ class BayesianGoalModel:
 
 class TeamFormLSTM:
     """
-    LSTM 球隊狀態追蹤模型
-    
+    LSTM 球隊狀態追蹤模型 (PyTorch 版本)
+
     特點：
     - 捕捉時序依賴
     - 學習狀態變化模式
     - 多維度特徵輸入
     - 狀態向量輸出
     """
-    
+
     def __init__(self,
                  sequence_length: int = 10,     # 輸入序列長度
                  hidden_units: int = 64,       # LSTM 隱藏單元
                  n_features: int = 8,          # 特徵維度
                  dropout_rate: float = 0.2,    # Dropout 比率
                  use_attention: bool = True):  # 是否使用 Attention
-    
+
         self.sequence_length = sequence_length
         self.hidden_units = hidden_units
         self.n_features = n_features
         self.dropout_rate = dropout_rate
         self.use_attention = use_attention
-        
-        self.models = {}  # {team_name: trained_model}
+
+        self.models = {}  # {team_name: trained_pytorch_model}
         self.team_sequences = {}  # {team_name: sequence_data}
-        self.is_fitted = HAS_TENSORFLOW
-        
-        if not HAS_TENSORFLOW:
-            print("⚠️ TensorFlow 不可用，LSTM 功能受限")
-    
+        self.is_fitted = HAS_TORCH
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+        if not HAS_TORCH and not HAS_TENSORFLOW:
+            print("⚠️ PyTorch 和 TensorFlow 都不可用，LSTM 功能受限")
+
     def _prepare_sequence(self, matches: List[dict]) -> np.ndarray:
         """準備時序特徵"""
         if not matches:
             return None
-        
+
         features = []
-        
+
         for m in matches[-self.sequence_length:]:
             # 標準化特徵
             feat = [
@@ -582,20 +597,29 @@ class TeamFormLSTM:
                 m.get('home_advantage', 0.5),    # 主客場
             ]
             features.append(feat[:self.n_features])
-        
+
         # Padding
         while len(features) < self.sequence_length:
             features.insert(0, [0.5] * self.n_features)
-        
+
         return np.array(features)
-    
+
     def add_match(self, team: str, goals_scored: int, goals_conceded: int,
                   xg: float, possession: float, shots_on_target: int,
-                  result: str, is_home: bool, date=None):
+                  result: str = None, is_home: bool = True, date=None):
         """添加比賽數據"""
         if team not in self.team_sequences:
             self.team_sequences[team] = []
-        
+
+        # 處理 result 欄位，如果沒有提供則根據比分推斷
+        if result is None:
+            if goals_scored > goals_conceded:
+                result = 'W'
+            elif goals_scored < goals_conceded:
+                result = 'L'
+            else:
+                result = 'D'
+
         self.team_sequences[team].append({
             'goals_scored': goals_scored,
             'goals_conceded': goals_conceded,
@@ -607,12 +631,48 @@ class TeamFormLSTM:
             'home_advantage': 1.0 if is_home else 0.0,
             'date': pd.Timestamp(date) if date else pd.Timestamp.now()
         })
-    
-    def _build_model(self):
-        """構建 LSTM 模型"""
+
+    def _build_pytorch_model(self):
+        """構建 PyTorch LSTM 模型"""
+        class LSTMModel(nn.Module):
+            def __init__(self, input_size, hidden_size, num_layers, dropout):
+                super(LSTMModel, self).__init__()
+                self.lstm = nn.LSTM(
+                    input_size=input_size,
+                    hidden_size=hidden_size,
+                    num_layers=num_layers,
+                    batch_first=True,
+                    dropout=dropout if num_layers > 1 else 0
+                )
+                self.fc = nn.Sequential(
+                    nn.Linear(hidden_size, 32),
+                    nn.ReLU(),
+                    nn.Dropout(dropout),
+                    nn.Linear(32, 16),
+                    nn.ReLU(),
+                    nn.Linear(16, 8)  # 輸出 8 維狀態向量
+                )
+
+            def forward(self, x):
+                lstm_out, _ = self.lstm(x)
+                # 取最後一個時間步的輸出
+                out = self.fc(lstm_out[:, -1, :])
+                return out
+
+        model = LSTMModel(
+            input_size=self.n_features,
+            hidden_size=self.hidden_units,
+            num_layers=2,
+            dropout=self.dropout_rate
+        ).to(self.device)
+
+        return model
+
+    def _build_keras_model(self):
+        """構建 Keras LSTM 模型 (備用)"""
         if not HAS_TENSORFLOW:
             return None
-        
+
         model = Sequential([
             Input(shape=(self.sequence_length, self.n_features)),
             LSTM(self.hidden_units, return_sequences=self.use_attention),
@@ -623,39 +683,38 @@ class TeamFormLSTM:
             Dense(16, activation='relu'),
             Dense(8, activation='linear')  # 輸出 8 維狀態向量
         ])
-        
+
         model.compile(
             optimizer=Adam(learning_rate=0.001),
             loss='mse',
             metrics=['mae']
         )
-        
+
         return model
-    
+
     def fit_team(self, team: str, epochs: int = 50, verbose: int = 0) -> bool:
         """訓練球隊狀態模型"""
-        if not HAS_TENSORFLOW or team not in self.team_sequences:
+        if team not in self.team_sequences:
             return False
-        
+
         sequences = self.team_sequences[team]
         if len(sequences) < self.sequence_length:
             print(f"⚠️ {team}: 比賽數據不足 ({len(sequences)}/{self.sequence_length})")
             return False
-        
+
+        # 嘗試 PyTorch
+        if HAS_TORCH:
+            return self._fit_team_pytorch(team, epochs, verbose)
+        elif HAS_TENSORFLOW:
+            return self._fit_team_keras(team, epochs, verbose)
+        else:
+            return False
+
+    def _fit_team_pytorch(self, team: str, epochs: int, verbose: int) -> bool:
+        """使用 PyTorch 訓練"""
+        sequences = self.team_sequences[team]
+
         # 準備數據
-        X = self._prepare_sequence(sequences)
-        
-        # 目標：下一場比賽的表現
-        # 使用滑動窗口，最後一場作為測試
-        y = np.array([
-            sequences[-1].get('goals_scored', 0) / 5,
-            sequences[-1].get('goals_conceded', 0) / 5,
-            sequences[-1].get('xg', 0) / 3,
-            1.0 if sequences[-1].get('won', False) else 0.0,
-            0.0  # Padding
-        ] + [0.0] * 3)[:8]
-        
-        # 創建多序列訓練數據
         X_train, y_train = [], []
         for i in range(len(sequences) - 1):
             seq = self._prepare_sequence(sequences[:i+1])
@@ -669,38 +728,145 @@ class TeamFormLSTM:
                     1.0 if next_match.get('won', False) else 0.0,
                     0.0, 0.0, 0.0, 0.0
                 ])
-        
+
         if len(X_train) < 3:
             return False
-        
+
         X_train = np.array(X_train)
         y_train = np.array(y_train)
-        
+
+        # 轉換為 PyTorch tensors
+        X_tensor = torch.FloatTensor(X_train).to(self.device)
+        y_tensor = torch.FloatTensor(y_train).to(self.device)
+
+        # 創建 DataLoader
+        dataset = TensorDataset(X_tensor, y_tensor)
+        dataloader = DataLoader(dataset, batch_size=4, shuffle=True)
+
+        # 構建模型
+        model = self._build_pytorch_model()
+        criterion = nn.MSELoss()
+        optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+
         # 訓練
-        model = self._build_model()
-        
+        model.train()
+        for epoch in range(epochs):
+            total_loss = 0
+            for batch_X, batch_y in dataloader:
+                optimizer.zero_grad()
+                outputs = model(batch_X)
+                loss = criterion(outputs, batch_y)
+                loss.backward()
+                optimizer.step()
+                total_loss += loss.item()
+
+            if verbose and (epoch + 1) % 10 == 0:
+                print(f"   Epoch {epoch+1}/{epochs}, Loss: {total_loss/len(dataloader):.4f}")
+
+        self.models[team] = model
+        self.is_fitted = True
+        return True
+
+    def _fit_team_keras(self, team: str, epochs: int, verbose: int) -> bool:
+        """使用 Keras 訓練 (備用)"""
+        sequences = self.team_sequences[team]
+
+        # 準備數據
+        X_train, y_train = [], []
+        for i in range(len(sequences) - 1):
+            seq = self._prepare_sequence(sequences[:i+1])
+            if seq is not None:
+                X_train.append(seq)
+                next_match = sequences[min(i+1, len(sequences)-1)]
+                y_train.append([
+                    next_match.get('goals_scored', 0) / 5,
+                    next_match.get('goals_conceded', 0) / 5,
+                    next_match.get('xg', 0) / 3,
+                    1.0 if next_match.get('won', False) else 0.0,
+                    0.0, 0.0, 0.0, 0.0
+                ])
+
+        if len(X_train) < 3:
+            return False
+
+        X_train = np.array(X_train)
+        y_train = np.array(y_train)
+
+        # 構建模型
+        model = self._build_keras_model()
+
         callbacks = [
             EarlyStopping(patience=10, restore_best_weights=True),
             ReduceLROnPlateau(factor=0.5, patience=5)
         ]
-        
-        model.fit(X_train, y_train, epochs=epochs, 
+
+        model.fit(X_train, y_train, epochs=epochs,
                  callbacks=callbacks, verbose=verbose)
-        
+
         self.models[team] = model
+        self.is_fitted = True
         return True
     
     def predict_team_form(self, team: str) -> Dict:
         """預測球隊當前狀態"""
         if team not in self.team_sequences:
             return {'form_vector': None, 'form_score': None, 'trend': None}
-        
-        # 使用簡單的加權平均作為回退
+
         matches = self.team_sequences[team]
         recent = matches[-self.sequence_length:]
-        
+
+        # 嘗試使用訓練好的模型
+        model = self.models.get(team)
+
+        if model is not None and len(recent) >= self.sequence_length:
+            # 準備輸入
+            X = self._prepare_sequence(recent)
+
+            if X is not None:
+                try:
+                    if HAS_TORCH and isinstance(model, nn.Module):
+                        # PyTorch 模型
+                        model.eval()
+                        with torch.no_grad():
+                            X_tensor = torch.FloatTensor(X).unsqueeze(0).to(self.device)
+                            pred = model(X_tensor).cpu().numpy()[0]
+                            form_vector = pred.tolist()
+                    elif HAS_TENSORFLOW:
+                        # Keras 模型
+                        X_input = np.array([X])
+                        pred = model.predict(X_input, verbose=0)[0]
+                        form_vector = pred.tolist()
+
+                    # 計算狀態分數
+                    win_rate = form_vector[3] if len(form_vector) > 3 else 0.5
+                    xg_ratio = form_vector[0] / (form_vector[1] + 0.1) if form_vector[1] else 1.0
+                    form_score = (win_rate * 0.4 + min(1.0, xg_ratio) * 0.4 + form_vector[2] * 0.2) if form_vector[2] else 0.5
+
+                    # 計算趨勢
+                    if len(recent) >= 5:
+                        early = np.mean([m.get('xg', 0) for m in recent[:len(recent)//2]])
+                        late = np.mean([m.get('xg', 0) for m in recent[len(recent)//2:]])
+                        trend = 'improving' if late > early * 1.1 else 'declining' if late < early * 0.9 else 'stable'
+                    else:
+                        trend = 'stable'
+
+                    # 置信度
+                    n_games = len(matches)
+                    confidence = 'high' if n_games >= 15 else 'medium' if n_games >= 5 else 'low'
+
+                    return {
+                        'form_vector': form_vector,
+                        'form_score': float(form_score),
+                        'trend': trend,
+                        'confidence': confidence,
+                        'recent_xg': float(np.mean([m.get('xg', 0) for m in recent[-3:]])),
+                        'win_rate_recent': float(np.mean([1.0 if m.get('won', False) else 0.0 for m in recent[-5:]]))
+                    }
+                except Exception as e:
+                    print(f"   ⚠️ 模型預測失敗，回退到統計方法: {str(e)[:50]}")
+
+        # 使用加權平均作為回退
         if len(recent) < 3:
-            # 數據不足，使用簡單平均
             avg_xg = np.mean([m.get('xg', 0) for m in matches]) if matches else 1.0
             return {
                 'form_vector': [avg_xg, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
@@ -708,11 +874,11 @@ class TeamFormLSTM:
                 'trend': 'stable',
                 'confidence': 'low'
             }
-        
+
         # 計算近期狀態
         weights = np.exp(np.linspace(0, 1, len(recent)))
         weights /= weights.sum()
-        
+
         form_vector = [
             np.average([m.get('goals_scored', 0) for m in recent], weights=weights) / 5,
             np.average([m.get('goals_conceded', 0) for m in recent], weights=weights) / 5,
@@ -723,17 +889,17 @@ class TeamFormLSTM:
             np.average([m.get('home_advantage', 0.5) for m in recent], weights=weights),
             0.5  # Padding
         ]
-        
+
         # 計算狀態分數 (0-1)
         win_rate = form_vector[3]
         xg_ratio = form_vector[0] / (form_vector[1] + 0.1)
         form_score = (win_rate * 0.4 + min(1.0, xg_ratio) * 0.4 + form_vector[2] * 0.2)
-        
+
         # 計算趨勢
         if len(recent) >= 5:
             early = np.mean([m.get('xg', 0) for m in recent[:len(recent)//2]])
             late = np.mean([m.get('xg', 0) for m in recent[len(recent)//2:]])
-            
+
             if late > early * 1.1:
                 trend = 'improving'
             elif late < early * 0.9:
@@ -742,18 +908,18 @@ class TeamFormLSTM:
                 trend = 'stable'
         else:
             trend = 'stable'
-        
+
         # 置信度
         n_games = len(matches)
         confidence = 'high' if n_games >= 15 else 'medium' if n_games >= 5 else 'low'
-        
+
         return {
-            'form_vector': form_vector,
-            'form_score': form_score,
+            'form_vector': [float(x) for x in form_vector],
+            'form_score': float(form_score),
             'trend': trend,
             'confidence': confidence,
-            'recent_xg': np.mean([m.get('xg', 0) for m in recent[-3:]]),
-            'win_rate_recent': np.mean([1.0 if m.get('won', False) else 0.0 for m in recent[-5:]])
+            'recent_xg': float(np.mean([m.get('xg', 0) for m in recent[-3:]])),
+            'win_rate_recent': float(np.mean([1.0 if m.get('won', False) else 0.0 for m in recent[-5:]]))
         }
     
     def predict_match(self, home_team: str, away_team: str) -> Dict:

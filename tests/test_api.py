@@ -14,19 +14,19 @@ print("========================================")
 print("🔗 API 連線診斷工具")
 print("========================================")
 print(f"測試 Base URL: {settings.API_BASE_URL}")
-print(f"測試 API Key: {settings.GROK_API_KEY[:4]}****{settings.GROK_API_KEY[-4:]}")
-print(f"測試 模型: {settings.MODEL_GROK}")
+print(f"測試 API Key: {settings.GEMINI_API_KEY[:4]}****{settings.GEMINI_API_KEY[-4:]}")
+print(f"測試  Gemini 模型: {settings.MODEL_GEMINI}")
 print("-" * 40)
 
 client = OpenAI(
     base_url=settings.API_BASE_URL,
-    api_key=settings.GROK_API_KEY
+    api_key=settings.GEMINI_API_KEY
 )
 
 try:
     print("🚀 發送測試請求中...", flush=True)
     response = client.chat.completions.create(
-        model=settings.MODEL_GROK,
+        model=settings.MODEL_GEMINI,
         messages=[{"role": "user", "content": "Hi, return the word 'Success'."}],
         max_tokens=10
     )

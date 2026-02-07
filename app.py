@@ -218,34 +218,20 @@ def main():
         lineup_aggregator = LineupAggregator()
         lineup_data = lineup_aggregator.get_lineup(api_home, api_away)
 
-    # 2.6 獲取傷停數據 (使用真實 API 數據)
-    print(f"\n[1.3/4] 正在獲取傷停數據 (API-Football)...", flush=True)
-    injury_aggregator = InjuryDataAggregator()
-    # 使用 API-Football 標準化後的隊名
-    injury_report = injury_aggregator.get_match_injury_report(api_home, api_away)
-
+    # 2.6 傷停數據 (已停用)
+    print(f"\n[1.3/4] 傷停數據功能已停用", flush=True)
+    # 使用空數據作為佔位
+    injury_report = {
+        'home': {'injuries': [], 'suspensions': [], 'total_impact': 0, 'key_players': []},
+        'away': {'injuries': [], 'suspensions': [], 'total_impact': 0, 'key_players': []},
+        'impact_diff': 0
+    }
     home_injury = injury_report['home']
     away_injury = injury_report['away']
 
-    print(f"   {odds_home}:")
-    print(f"      - 傷病: {len(home_injury['injuries'])} 人")
-    print(f"      - 停賽: {len(home_injury['suspensions'])} 人")
-    print(f"      - 影響分數: {home_injury['total_impact']:.1f}")
-    if home_injury['key_players']:
-        print(f"      - [警告] 核心球員傷停: {', '.join(home_injury['key_players'])}")
-
-    print(f"   {odds_away}:")
-    print(f"      - 傷病: {len(away_injury['injuries'])} 人")
-    print(f"      - 停賽: {len(away_injury['suspensions'])} 人")
-    print(f"      - 影響分數: {away_injury['total_impact']:.1f}")
-    if away_injury['key_players']:
-        print(f"      - [警告] 核心球員傷停: {', '.join(away_injury['key_players'])}")
-
     # 計算傷停影響差異
-    injury_impact_diff = injury_report['impact_diff']
-    print(f"\n   [INFO] 傷停影響差異: {injury_impact_diff:+.1f} (正數表示主隊有利)")
-    if abs(injury_impact_diff) > 5:
-        print(f"   [警告] 傷停影響顯著！", flush=True)
+    injury_impact_diff = 0
+    print(f"\n   [INFO] 傷停數據已停用 (使用預設值 0)")
 
     # 3. 獲取數據 & 數學模型 (傳入 league_name 給歷史數據模組顯示用)
     print(f"\n🔍 [1/4] 執行 Glicko-2 回測與機器學習預測...", flush=True)
@@ -256,26 +242,24 @@ def main():
     print(f"👕 [1.5/4] 分析首發名單評分 (Lineup Rating)...", flush=True)
     lineup_prob = repo.get_lineup_prediction(home, away)
     if lineup_prob:
-        print(f"   👥 基於首發球員評分的主勝率: {lineup_prob:.1%}")
+        print(f"   [基於首發球員評分的主勝率: {lineup_prob:.1%}")
     else:
-        print("   ⚠️ 未找到首發名單 JSON，跳過。")
+        print("   [未找到首發名單 JSON，跳過。")
 
-    # 數學運算 (包含傷停影響調整)
+    # 數學運算 (傷停功能已停用)
     h_exp = stats.get("home_weighted_xg", 1.2)
     a_exp = stats.get("away_weighted_xg", 1.0)
 
-    # 傷停影響調整 (根據傷停影響分數調整xG)
-    injury_factor = 0.02  # 每單位影響分數調整 2%
-    h_exp_adj = h_exp * (1 - injury_impact_diff * injury_factor) if injury_impact_diff >= 0 else h_exp * (1 + abs(injury_impact_diff) * injury_factor)
-    a_exp_adj = a_exp * (1 + injury_impact_diff * injury_factor) if injury_impact_diff >= 0 else a_exp * (1 - abs(injury_impact_diff) * injury_factor)
+    # 傷停調整已停用，使用原始 xG
+    h_exp_adj = h_exp
+    a_exp_adj = a_exp
 
-    # 確保調整後的值合理
+    # 確保值合理
     h_exp_adj = max(0.5, min(3.5, h_exp_adj))
     a_exp_adj = max(0.5, min(3.5, a_exp_adj))
 
-    print(f"\n   📈 傷停影響調整後的xG:")
-    print(f"      原始: {odds_home} {h_exp:.2f} - {a_exp:.2f} {odds_away}")
-    print(f"      調整: {odds_home} {h_exp_adj:.2f} - {a_exp_adj:.2f} {odds_away} (傷停調整: {injury_impact_diff:+.1f})")
+    print(f"\n   [INFO] 傷停調整已停用，使用原始 xG")
+    print(f"      {odds_home} {h_exp_adj:.2f} - {a_exp_adj:.2f} {odds_away}")
 
     dc_model = DixonColesModel(h_exp_adj, a_exp_adj)
     dc_probs = dc_model.calculate_probabilities()
@@ -337,17 +321,34 @@ def main():
         # 使用歷史數據填充
         if hasattr(repo, 'df') and not repo.df.empty:
             valid_df = repo.df.dropna(subset=['home_team', 'away_team'])
-            # 支援不同欄位名稱
+            
+            # 只使用有 xG 數據的行
+            if 'xG' in valid_df.columns:
+                valid_df = valid_df[valid_df['xG'].notna()]
+            
+            print(f"      [DEBUG] 指數衰減 xG: 載入 {len(valid_df)} 場有效比賽")
+            
+            # 支援不同欄位名稱 (包括大小寫)
             xg_cols = valid_df.columns.tolist()
-            home_xg_col = next((c for c in xg_cols if c.lower() in ['home_xg', 'xg', 'xghome', 'xg_home']), None)
-            away_xg_col = next((c for c in xg_cols if c.lower() in ['away_xg', 'xga', 'xgaway', 'xg_away']), None)
+            home_xg_col = next((c for c in xg_cols if c.lower() in ['home_xg', 'xg', 'xghome', 'xg_home', 'xG']), None)
+            away_xg_col = next((c for c in xg_cols if c.lower() in ['away_xg', 'xga', 'xgaway', 'xg_away', 'xGA']), None)
+            
+            print(f"      [DEBUG] 找到 xG 欄位: home={home_xg_col}, away={away_xg_col}")
             
             if home_xg_col and away_xg_col:
+                match_count = 0
                 for _, row in valid_df.tail(200).iterrows():
                     try:
-                        xg_forecaster.add_match(row['home_team'], float(row.get(home_xg_col, 1.5)), True, str(row.get('date', '')))
-                        xg_forecaster.add_match(row['away_team'], float(row.get(away_xg_col, 1.0)), False, str(row.get('date', '')))
-                    except: continue
+                        home_xg_val = float(row.get(home_xg_col, 1.5))
+                        away_xg_val = float(row.get(away_xg_col, 1.0))
+                        # 添加主隊數據
+                        xg_forecaster.add_match(row['home_team'], home_xg_val, True, str(row.get('Date', '')))
+                        # 添加客隊數據
+                        xg_forecaster.add_match(row['away_team'], away_xg_val, False, str(row.get('Date', '')))
+                        match_count += 1
+                    except Exception as e:
+                        continue
+                print(f"      [DEBUG] 已載入 {match_count} 場比賽數據")
             else:
                 print(f"      ⚠️ 找不到 xG 欄位，跳過指數衰減模型")
         
@@ -388,16 +389,64 @@ def main():
         # 使用歷史數據
         if hasattr(repo, 'df') and not repo.df.empty:
             valid_df = repo.df.dropna(subset=['home_goals', 'away_goals'])
+            
+            # 只使用有 xG 數據的行
+            if 'xG' in valid_df.columns:
+                valid_df = valid_df[valid_df['xG'].notna()]
+            
+            print(f"      [DEBUG] Bayesian: 載入 {len(valid_df)} 場有效比賽")
+            
+            obs_count = 0
             if len(valid_df) >= 5:
+                # 優先使用 xG，如果沒有則使用實際進球
                 for _, row in valid_df.tail(50).iterrows():
                     try:
-                        bayes_model.add_observation(int(row['home_goals']), int(row['away_goals']), is_home=True)
+                        # 主隊觀察
+                        home_xg = float(row.get('xG', 1.5)) if pd.notna(row.get('xG')) else float(row['home_goals'])
+                        bayes_model.add_observation(
+                            int(row['home_goals']), 
+                            int(row['away_goals']),
+                            home_xg=home_xg,
+                            is_home=True
+                        )
+                        # 客隊觀察
+                        away_xg = float(row.get('xGA', 1.0)) if pd.notna(row.get('xGA')) else float(row['away_goals'])
+                        bayes_model.add_observation(
+                            int(row['away_goals']),
+                            int(row['home_goals']),
+                            home_xg=away_xg,
+                            is_home=False
+                        )
+                        obs_count += 2
                     except: continue
+                
                 bayes_pred = bayes_model.predict()
+                print(f"      [DEBUG] Bayesian: 觀察數量={obs_count}, home_lambda={bayes_pred['home_lambda']:.3f}")
+                
                 # 限制不確定性在合理範圍 (0-100%)
                 uncertainty = bayes_pred.get('uncertainty', {})
                 for key in uncertainty:
                     uncertainty[key] = min(1.0, max(0.0, uncertainty.get(key, 0.3)))
+            else:
+                # 使用指數衰減 xG 的結果作為先驗
+                bayes_pred = {
+                    'home_lambda': xg_forecast_home,
+                    'away_lambda': xg_forecast_away,
+                    'home_ci': (xg_forecast_home * 0.7, xg_forecast_home * 1.3),
+                    'away_ci': (xg_forecast_away * 0.7, xg_forecast_away * 1.3),
+                    'probabilities': nb_probs,
+                    'uncertainty': {'average': 0.5}
+                }
+        else:
+            # 使用指數衰減 xG 的結果
+            bayes_pred = {
+                'home_lambda': xg_forecast_home,
+                'away_lambda': xg_forecast_away,
+                'home_ci': (xg_forecast_home * 0.7, xg_forecast_home * 1.3),
+                'away_ci': (xg_forecast_away * 0.7, xg_forecast_away * 1.3),
+                'probabilities': nb_probs,
+                'uncertainty': {'average': 0.5}
+            }
         
         print(f"      主場 λ: {bayes_pred['home_lambda']:.3f} [{bayes_pred['home_ci'][0]:.2f}-{bayes_pred['home_ci'][1]:.2f}]")
         print(f"      客場 λ: {bayes_pred['away_lambda']:.3f} [{bayes_pred['away_ci'][0]:.2f}-{bayes_pred['away_ci'][1]:.2f}]")
@@ -415,24 +464,47 @@ def main():
     home_form = {'form_score': 0.5, 'trend': 'stable', 'confidence': 'low'}
     away_form = {'form_score': 0.5, 'trend': 'stable', 'confidence': 'low'}
     
-    # 檢查 TensorFlow 是否可用
+    # 檢查深度學習框架是否可用
+    torch_available = False
     tf_available = False
+    try:
+        import torch
+        torch_available = True
+    except ImportError:
+        pass
+    
     try:
         import tensorflow as tf  # noqa: F401
         tf_available = True
     except ImportError:
-        print(f"      ⚠️ TensorFlow 不可用，使用統計狀態追蹤")
+        pass
+    
+    if not torch_available and not tf_available:
+        print(f"      ⚠️ PyTorch 和 TensorFlow 都不可用，使用統計狀態追蹤")
     
     try:
-        if tf_available:
+        if torch_available or tf_available:
             lstm_model = TeamFormLSTM(sequence_length=10, use_attention=True)
             # 使用歷史數據
             if hasattr(repo, 'df') and not repo.df.empty:
-                valid_df = repo.df.dropna(subset=['home_team', 'away_team', 'home_goals', 'away_goals', 'result'])
+                valid_df = repo.df.dropna(subset=['home_team', 'away_team', 'home_goals', 'away_goals'])
+                
+                # 只使用有 xG 數據的行
+                if 'xG' in valid_df.columns:
+                    valid_df = valid_df[valid_df['xG'].notna()]
+                
+                result_col = 'FTR' if 'FTR' in valid_df.columns else 'result'
+                xg_col = 'xG' if 'xG' in valid_df.columns else 'home_xg'
+                away_xg_col = 'xGA' if 'xGA' in valid_df.columns else 'away_xg'
+                
+                print(f"      [DEBUG] LSTM: 載入 {len(valid_df)} 場有效比賽")
+                print(f"      [DEBUG] LSTM: result_col={result_col}, xG_cols={xg_col}/{away_xg_col}")
+                
+                match_count = 0
                 for _, row in valid_df.tail(100).iterrows():
                     try:
                         # 判斷主客場結果
-                        result = str(row.get('result', 'D')).upper()
+                        result = str(row.get(result_col, 'D')).upper()
                         if result == 'W':
                             home_result, away_result = 'W', 'L'
                         elif result == 'L':
@@ -440,19 +512,25 @@ def main():
                         else:
                             home_result, away_result = 'D', 'D'
                         
+                        home_xg_val = float(row.get(xg_col, 1.5))
+                        away_xg_val = float(row.get(away_xg_col, 1.0))
+                        
                         lstm_model.add_match(row['home_team'], 
                                             goals_scored=int(row['home_goals']),
                                             goals_conceded=int(row['away_goals']),
-                                            xg=float(row.get('home_xg', 1.5)),
+                                            xg=home_xg_val,
                                             possession=50, shots_on_target=3,
                                             result=home_result, is_home=True)
                         lstm_model.add_match(row['away_team'],
                                             goals_scored=int(row['away_goals']),
                                             goals_conceded=int(row['home_goals']),
-                                            xg=float(row.get('away_xg', 1.0)),
+                                            xg=away_xg_val,
                                             possession=50, shots_on_target=3,
                                             result=away_result, is_home=False)
+                        match_count += 1
                     except: continue
+                
+                print(f"      [DEBUG] LSTM: 已載入 {match_count} 場比賽數據")
             
             home_form = lstm_model.predict_team_form(api_home)
             away_form = lstm_model.predict_team_form(api_away)
@@ -573,19 +651,21 @@ def main():
                 "confidence": away_form.get('confidence', 'low')
             }
         },
-    # ==========
+        # ==========
         "glicko": match_context.get("glicko", "No Data"),
         "lineup_prob": lineup_prob,
         "expected_goals": {"home": h_exp_adj, "away": a_exp_adj},
         "injury_impact": {
-            "home": home_injury['total_impact'],
-            "away": away_injury['total_impact'],
-            "diff": injury_impact_diff
+            "home": 0,
+            "away": 0,
+            "diff": 0,
+            "disabled": True
         }
     }
 
     glicko = match_context.get("glicko", {})
-    print(f"   ℹ️ 傷停調整後進球期望: {odds_home} {h_exp_adj:.2f} - {a_exp_adj:.2f} {odds_away}")
+    print(f"   [INFO] 傷停調整已停用")
+    print(f"      {odds_home} {h_exp_adj:.2f} - {a_exp_adj:.2f} {odds_away}")
     print(f"   🏆 Glicko-2 勝率: {glicko.get('win_prob', 0):.1%}")
     print(f"   🎲 [MonteCarlo] 主: {mc_probs['mc_home_win']:.1%} | 大 2.5: {mc_probs['mc_over_2.5']:.1%}")
 
@@ -612,7 +692,7 @@ def main():
 
     # 5. Grok 搜尋
     print(f"\n🤖 [3/4] 請求 Grok 聯網搜尋市場情報...", flush=True)
-    grok_input = odds_summary_text[:10000]
+    grok_input = odds_summary_text[:1500]
     grok_reaction = llm.search_and_analyze_market_reaction(f"{odds_home} vs {odds_away}", grok_input)
     print("\n--------- 🤖 Grok 市場觀點 ---------", flush=True)
     print(grok_reaction[:200] + "..." if len(grok_reaction) > 200 else grok_reaction, flush=True)
@@ -698,7 +778,7 @@ def main():
         try:
             # 嘗試使用 v3 信心度 Kelly
             kelly_v3 = ConfidenceKelly(
-                base_fraction=0.5,  # 半Kelly
+                base_fraction=0.75,  # 半Kelly
                 min_edge=0.08,       # 最小優勢 8%
                 initial_bankroll=settings.INITIAL_BANKROLL
             )

@@ -1,0 +1,177 @@
+{
+    "match_id": "4829502",
+    "match_time": "Fri, Feb 6, 2026, 19:30 UTC",
+    "timestamp": "2026-02-07 03:28:09",
+    "home_team": {
+        "name": "Union Berlin",
+        "id": 8149,
+        "formation": "3-4-2-1",
+        "starters": [
+            {
+                "id": 186557,
+                "name": "Frederik Rønnow",
+                "number": "1",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 724196,
+                "name": "Danilho Doekhi",
+                "number": "5",
+                "position_id": 33,
+                "rating": null
+            },
+            {
+                "id": 1199947,
+                "name": "Leopold Querfeld",
+                "number": "14",
+                "position_id": 35,
+                "rating": null
+            },
+            {
+                "id": 907495,
+                "name": "Stanley N'Soki",
+                "number": "34",
+                "position_id": 37,
+                "rating": null
+            },
+            {
+                "id": 166733,
+                "name": "Christopher Trimmel",
+                "number": "28",
+                "position_id": 62,
+                "rating": null
+            },
+            {
+                "id": 304348,
+                "name": "Rani Khedira",
+                "number": "8",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 1403332,
+                "name": "Aljoscha Kemlein",
+                "number": "6",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 860260,
+                "name": "Derrick Köhn",
+                "number": "39",
+                "position_id": 68,
+                "rating": null
+            },
+            {
+                "id": 836726,
+                "name": "András Schäfer",
+                "number": "13",
+                "position_id": 84,
+                "rating": null
+            },
+            {
+                "id": 949673,
+                "name": "Woo-Yeong Jeong",
+                "number": "11",
+                "position_id": 86,
+                "rating": null
+            },
+            {
+                "id": 1515977,
+                "name": "Ilyas Ansah",
+                "number": "10",
+                "position_id": 105,
+                "rating": null
+            }
+        ],
+        "coach": "Steffen Baumgart"
+    },
+    "away_team": {
+        "name": "Eintracht Frankfurt",
+        "id": 9810,
+        "formation": "3-4-2-1",
+        "starters": [
+            {
+                "id": 1418816,
+                "name": "Kaua",
+                "number": "40",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 722207,
+                "name": "Rasmus Kristensen",
+                "number": "13",
+                "position_id": 33,
+                "rating": null
+            },
+            {
+                "id": 628201,
+                "name": "Robin Koch",
+                "number": "4",
+                "position_id": 35,
+                "rating": null
+            },
+            {
+                "id": 1173250,
+                "name": "Arthur Theate",
+                "number": "3",
+                "position_id": 37,
+                "rating": null
+            },
+            {
+                "id": 629805,
+                "name": "Ritsu Doan",
+                "number": "20",
+                "position_id": 62,
+                "rating": null
+            },
+            {
+                "id": 1336529,
+                "name": "Oscar Højlund",
+                "number": "6",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 1339269,
+                "name": "Hugo Larsson",
+                "number": "16",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 1395447,
+                "name": "Nathaniel Brown",
+                "number": "21",
+                "position_id": 68,
+                "rating": null
+            },
+            {
+                "id": 1345875,
+                "name": "Fares Chaibi",
+                "number": "8",
+                "position_id": 84,
+                "rating": null
+            },
+            {
+                "id": 177714,
+                "name": "Mario Götze",
+                "number": "27",
+                "position_id": 86,
+                "rating": null
+            },
+            {
+                "id": 1095445,
+                "name": "Arnaud Kalimuendo-Muinga",
+                "number": "25",
+                "position_id": 105,
+                "rating": null
+            }
+        ],
+        "coach": "Albert Riera"
+    },
+    "date": "2026-02-07",
+    "source": "fotmob_manual"
+}
