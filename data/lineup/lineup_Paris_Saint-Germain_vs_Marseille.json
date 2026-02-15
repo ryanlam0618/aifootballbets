@@ -1,0 +1,177 @@
+{
+    "match_id": "4830646",
+    "match_time": "Sun, Feb 8, 2026, 19:45 UTC",
+    "timestamp": "2026-02-09 04:32:29",
+    "home_team": {
+        "name": "Paris Saint-Germain",
+        "id": 9847,
+        "formation": "4-3-3",
+        "starters": [
+            {
+                "id": 800880,
+                "name": "Matvey Safonov",
+                "number": "39",
+                "position_id": 11,
+                "rating": 6.8
+            },
+            {
+                "id": 1367615,
+                "name": "Warren Zaire-Emery",
+                "number": "33",
+                "position_id": 32,
+                "rating": 6.4
+            },
+            {
+                "id": 267365,
+                "name": "Marquinhos",
+                "number": "5",
+                "position_id": 34,
+                "rating": 7.1
+            },
+            {
+                "id": 1137670,
+                "name": "Willian Pacho",
+                "number": "51",
+                "position_id": 36,
+                "rating": 6.6
+            },
+            {
+                "id": 1158945,
+                "name": "Nuno Mendes",
+                "number": "25",
+                "position_id": 38,
+                "rating": 8.4
+            },
+            {
+                "id": 1574189,
+                "name": "Senny Mayulu",
+                "number": "24",
+                "position_id": 73,
+                "rating": 7.6
+            },
+            {
+                "id": 1061249,
+                "name": "Vitinha",
+                "number": "17",
+                "position_id": 75,
+                "rating": 7.4
+            },
+            {
+                "id": 1342757,
+                "name": "Joao Neves",
+                "number": "87",
+                "position_id": 77,
+                "rating": 6.7
+            },
+            {
+                "id": 1339208,
+                "name": "Désiré Doué",
+                "number": "14",
+                "position_id": 103,
+                "rating": 6.4
+            },
+            {
+                "id": 692984,
+                "name": "Ousmane Dembélé",
+                "number": "10",
+                "position_id": 105,
+                "rating": 8.9
+            },
+            {
+                "id": 1297165,
+                "name": "Bradley Barcola",
+                "number": "29",
+                "position_id": 107,
+                "rating": 6.4
+            }
+        ],
+        "coach": "Luis Enrique"
+    },
+    "away_team": {
+        "name": "Marseille",
+        "id": 8592,
+        "formation": "3-4-2-1",
+        "starters": [
+            {
+                "id": 687868,
+                "name": "Jeffrey De Lange",
+                "number": "12",
+                "position_id": 11,
+                "rating": 5.5
+            },
+            {
+                "id": 611223,
+                "name": "Benjamin Pavard",
+                "number": "28",
+                "position_id": 33,
+                "rating": 6.1
+            },
+            {
+                "id": 958464,
+                "name": "Leonardo Balerdi",
+                "number": "5",
+                "position_id": 35,
+                "rating": 6.8
+            },
+            {
+                "id": 812652,
+                "name": "Facundo Medina",
+                "number": "32",
+                "position_id": 37,
+                "rating": 6.3
+            },
+            {
+                "id": 889536,
+                "name": "Timothy Weah",
+                "number": "22",
+                "position_id": 62,
+                "rating": 5.7
+            },
+            {
+                "id": 970563,
+                "name": "Quinten Timber",
+                "number": "27",
+                "position_id": 64,
+                "rating": 6.2
+            },
+            {
+                "id": 266523,
+                "name": "Pierre-Emile Højbjerg",
+                "number": "23",
+                "position_id": 66,
+                "rating": 6.7
+            },
+            {
+                "id": 267371,
+                "name": "Emerson",
+                "number": "33",
+                "position_id": 68,
+                "rating": 6.6
+            },
+            {
+                "id": 950473,
+                "name": "Mason Greenwood",
+                "number": "10",
+                "position_id": 84,
+                "rating": 6.6
+            },
+            {
+                "id": 1254234,
+                "name": "Ethan Nwaneri",
+                "number": "11",
+                "position_id": 86,
+                "rating": 5.8
+            },
+            {
+                "id": 844437,
+                "name": "Amine Gouiri",
+                "number": "9",
+                "position_id": 105,
+                "rating": 6.5
+            }
+        ],
+        "coach": "Roberto De Zerbi"
+    },
+    "date": "2026-02-09",
+    "source": "fotmob_manual"
+}

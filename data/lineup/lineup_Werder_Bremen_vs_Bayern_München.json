@@ -1,0 +1,175 @@
+{
+    "match_id": "4829512",
+    "match_time": "Sat, Feb 14, 2026, 14:30 UTC",
+    "timestamp": "2026-02-14 22:27:42",
+    "home_team": {
+        "name": "Werder Bremen",
+        "id": 8697,
+        "formation": "3-5-2",
+        "starters": [
+            {
+                "id": 1352996,
+                "name": "Mio Backhaus",
+                "number": "30",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 425962,
+                "name": "Niklas Stark",
+                "number": "4",
+                "position_id": 33,
+                "rating": null
+            },
+            {
+                "id": 767789,
+                "name": "Marco Friedl",
+                "number": "32",
+                "position_id": 35,
+                "rating": null
+            },
+            {
+                "id": 1643851,
+                "name": "Karim Coulibaly",
+                "number": "31",
+                "position_id": 37,
+                "rating": null
+            },
+            {
+                "id": 909907,
+                "name": "Cameron Puertas",
+                "number": "18",
+                "position_id": 71,
+                "rating": null
+            },
+            {
+                "id": 528811,
+                "name": "Jens Stage",
+                "number": "6",
+                "position_id": 73,
+                "rating": null
+            },
+            {
+                "id": 919742,
+                "name": "Senne Lynen",
+                "number": "14",
+                "position_id": 75,
+                "rating": null
+            },
+            {
+                "id": 749488,
+                "name": "Romano Schmid",
+                "number": "20",
+                "position_id": 77,
+                "rating": null
+            },
+            {
+                "id": 937368,
+                "name": "Felix Agu",
+                "number": "27",
+                "position_id": 79,
+                "rating": null
+            },
+            {
+                "id": 1137364,
+                "name": "Justin Njinmah",
+                "number": "11",
+                "position_id": 104,
+                "rating": null
+            },
+            {
+                "id": 1024292,
+                "name": "Marco Grüll",
+                "number": "17",
+                "position_id": 106,
+                "rating": null
+            }
+        ],
+        "coach": "Daniel Thioune"
+    },
+    "away_team": {
+        "name": "Bayern München",
+        "id": 9823,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 27299,
+                "name": "Manuel Neuer",
+                "number": "1",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 526827,
+                "name": "Konrad Laimer",
+                "number": "27",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 469700,
+                "name": "Jonathan Tah",
+                "number": "4",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 828159,
+                "name": "Min-Jae Kim",
+                "number": "3",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 950824,
+                "name": "Josip Stanisic",
+                "number": "44",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 460632,
+                "name": "Joshua Kimmich",
+                "number": "6",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 343748,
+                "name": "Leon Goretzka",
+                "number": "8",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 1737700,
+                "name": "Lennart Karl",
+                "number": "42",
+                "position_id": 83,
+                "rating": null
+            },
+            {
+                "id": 385437,
+                "name": "Serge Gnabry",
+                "number": "7",
+                "position_id": 85,
+                "rating": null
+            },
+            {
+                "id": 860914,
+                "name": "Luis Diaz",
+                "number": "14",
+                "position_id": 87,
+                "rating": null
+            },
+            {
+                "id": 194165,
+                "name": "Harry Kane",
+                "number": "9",
+                "position_id": 115,
+                "rating": null
+            }
+        ],
+        "coach": "Vincent Kompany"
+    }
+}

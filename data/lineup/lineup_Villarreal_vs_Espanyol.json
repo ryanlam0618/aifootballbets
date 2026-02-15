@@ -1,0 +1,175 @@
+{
+    "match_id": "4837336",
+    "match_time": "Mon, Feb 9, 2026, 20:00 UTC",
+    "timestamp": "2026-02-11 06:51:44",
+    "home_team": {
+        "name": "Villarreal",
+        "id": 10205,
+        "formation": "4-4-2",
+        "starters": [
+            {
+                "id": 1187044,
+                "name": "Luiz Junior",
+                "number": "1",
+                "position_id": 11,
+                "rating": 6.8
+            },
+            {
+                "id": 1407468,
+                "name": "Santiago Mourino",
+                "number": "15",
+                "position_id": 32,
+                "rating": 7.5
+            },
+            {
+                "id": 1531887,
+                "name": "Pau Navarro",
+                "number": "6",
+                "position_id": 34,
+                "rating": 7.2
+            },
+            {
+                "id": 1343750,
+                "name": "Renato Veiga",
+                "number": "12",
+                "position_id": 36,
+                "rating": 7.1
+            },
+            {
+                "id": 1059657,
+                "name": "Sergi Cardona",
+                "number": "23",
+                "position_id": 38,
+                "rating": 7.1
+            },
+            {
+                "id": 1026135,
+                "name": "Tajon Buchanan",
+                "number": "17",
+                "position_id": 72,
+                "rating": 7.6
+            },
+            {
+                "id": 75307,
+                "name": "Daniel Parejo",
+                "number": "10",
+                "position_id": 74,
+                "rating": 7.2
+            },
+            {
+                "id": 844544,
+                "name": "Pape Gueye",
+                "number": "18",
+                "position_id": 76,
+                "rating": 6.8
+            },
+            {
+                "id": 1184694,
+                "name": "Alberto Moleiro",
+                "number": "20",
+                "position_id": 78,
+                "rating": 8.4
+            },
+            {
+                "id": 575735,
+                "name": "Nicolas Pépé",
+                "number": "19",
+                "position_id": 104,
+                "rating": 8.5
+            },
+            {
+                "id": 1117069,
+                "name": "Georges Mikautadze",
+                "number": "9",
+                "position_id": 106,
+                "rating": 8.6
+            }
+        ],
+        "coach": "Marcelino Garcia"
+    },
+    "away_team": {
+        "name": "Espanyol",
+        "id": 8558,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 280818,
+                "name": "Marko Dmitrovic",
+                "number": "13",
+                "position_id": 11,
+                "rating": 5.1
+            },
+            {
+                "id": 1208708,
+                "name": "Omar El Hilali",
+                "number": "23",
+                "position_id": 32,
+                "rating": 5.2
+            },
+            {
+                "id": 839232,
+                "name": "Fernando Calero",
+                "number": "5",
+                "position_id": 34,
+                "rating": 5.8
+            },
+            {
+                "id": 169586,
+                "name": "Leandro Cabrera",
+                "number": "6",
+                "position_id": 36,
+                "rating": 6.4
+            },
+            {
+                "id": 1187478,
+                "name": "José Salinas",
+                "number": "12",
+                "position_id": 38,
+                "rating": 4.4
+            },
+            {
+                "id": 1187767,
+                "name": "Urko González",
+                "number": "4",
+                "position_id": 64,
+                "rating": 5.7
+            },
+            {
+                "id": 750031,
+                "name": "Pol Lozano",
+                "number": "10",
+                "position_id": 66,
+                "rating": 6
+            },
+            {
+                "id": 593129,
+                "name": "Pere Milla",
+                "number": "11",
+                "position_id": 83,
+                "rating": 6.3
+            },
+            {
+                "id": 837089,
+                "name": "Edu Exposito",
+                "number": "8",
+                "position_id": 85,
+                "rating": 6.1
+            },
+            {
+                "id": 1181101,
+                "name": "Tyrhys Dolan",
+                "number": "24",
+                "position_id": 87,
+                "rating": 6.6
+            },
+            {
+                "id": 1252373,
+                "name": "Roberto Fernández",
+                "number": "9",
+                "position_id": 115,
+                "rating": 5.8
+            }
+        ],
+        "coach": "Manolo Gonzalez"
+    }
+}

@@ -32,115 +32,236 @@ try:
     )
     from src.injury_api import InjuryDataAggregator, get_injury_report
     from src.lineup_api import LineupAggregator, get_lineup
-    from src.team_name_matcher import match_teams, get_team_info
 except ImportError as e:
     print(f"模組載入失敗: {e}", flush=True)
     sys.exit(1)
 
+
+# ============================================
+# Load Historical Team Names from CSV
+# ============================================
+HISTORICAL_TEAMS = {}
+try:
+    # 從 CSV 加載歷史數據的球隊名稱
+    df_hist = pd.read_csv(settings.HISTORY_CSV_PATH)
+    all_teams_hist = set(df_hist['home_team'].unique()) | set(df_hist['away_team'].unique())
+    HISTORICAL_TEAMS['csv_names'] = sorted(list(all_teams_hist))
+    print(f"[INFO] 已載入 {len(HISTORICAL_TEAMS['csv_names'])} 個歷史球隊名稱")
+except Exception as e:
+    print(f"[WARN] 無法載入歷史球隊名稱: {e}")
+    HISTORICAL_TEAMS['csv_names'] = []
+
+
+# ============================================
+# Load The Odds API Team Names
+# ============================================
+ODDS_API_TEAMS = {}
+try:
+    odds_teams_file = 'data/odds_api_teams.json'
+    if os.path.exists(odds_teams_file):
+        with open(odds_teams_file, 'r', encoding='utf-8') as f:
+            ODDS_API_TEAMS = json.load(f)
+        print(f"[INFO] 已載入 The Odds API 球隊數據")
+    else:
+        # 如果沒有本地檔案，創建空結構
+        ODDS_API_TEAMS = {
+            'soccer_epl': [],
+            'soccer_spain_la_liga': [],
+            'soccer_germany_bundesliga': [],
+            'soccer_italy_serie_a': [],
+            'soccer_france_ligue_one': []
+        }
+except Exception as e:
+    print(f"[WARN] 無法載入 The Odds API 球隊數據: {e}")
+    ODDS_API_TEAMS = {}
+
+
+# ============================================
+# Gemini API Team Matching Functions
+# ============================================
+def match_with_gemini(home_input, away_input, historical_names, league_context=""):
+    """
+    使用 Gemini API 智能匹配球隊名稱到歷史數據庫
+    返回: {'home': matched_name, 'away': matched_name, 'confidence': 'high/medium/low'}
+    """
+    if not historical_names:
+        return {'home': home_input, 'away': away_input, 'confidence': 'low'}
+    
+    # 精簡歷史名稱列表 (避免超過 token limit)
+    key_leagues = ['Premier League', 'La Liga', 'Serie A', 'Bundesliga', 'Ligue 1']
+    filtered_names = [n for n in historical_names if any(lg.lower() in n.lower() or n.lower() in lg.lower() for lg in key_leagues)]
+    if len(filtered_names) > 50:
+        filtered_names = filtered_names[:50]
+    elif len(filtered_names) < 10:
+        filtered_names = historical_names[:50]
+    
+    prompt = f"""Match these 2 football teams to the historical database.
+
+Match: {home_input} vs {away_input}
+League Context: {league_context}
+
+Historical Database Names:
+{', '.join(filtered_names)}
+
+IMPORTANT RULES:
+- "Villarreal" -> Villarreal (Spain, NOT English)
+- "Espanyol" -> Espanol (Spain)
+- "AC Milan" -> AC Milan (Italy)
+- "Inter Milan" -> Inter Milan (Italy)
+- "Bayern Munich" -> Bayern Munich (Germany)
+- "PSG" -> Paris SG (France)
+- "Man Utd" -> Manchester United (England)
+- "Man City" -> Manchester City (England)
+- "Tottenham" -> Tottenham Hotspur (England)
+- "Napoli" -> SSC Napoli (Italy)
+- "Atletico" -> Ath Madrid (Spain)
+
+Respond in this exact format (JSON):
+{{"home": "exact name from database", "away": "exact name from database", "confidence": "high/medium/low"}}"""
+
+    try:
+        response = llm.fetch_data_helper(prompt)
+        if response:
+            # 清理回應
+            response = response.strip()
+            # 嘗試解析 JSON
+            import json as json_mod
+            result = json_mod.loads(response)
+            
+            # 驗證結果是否在數據庫中
+            home_matched = result.get('home', home_input)
+            away_matched = result.get('away', away_input)
+            
+            # 標準化比對
+            home_lower = home_matched.lower().strip()
+            away_lower = away_matched.lower().strip()
+            
+            for hist_name in historical_names:
+                if home_lower == hist_name.lower():
+                    home_matched = hist_name
+                    break
+                if hist_name.lower() in home_lower or home_lower in hist_name.lower():
+                    home_matched = hist_name
+                    break
+            
+            for hist_name in historical_names:
+                if away_lower == hist_name.lower():
+                    away_matched = hist_name
+                    break
+                if hist_name.lower() in away_lower or away_lower in hist_name.lower():
+                    away_matched = hist_name
+                    break
+            
+            return {
+                'home': home_matched,
+                'away': away_matched,
+                'confidence': result.get('confidence', 'medium')
+            }
+    except Exception as e:
+        print(f"[WARN] Gemini matching failed: {e}")
+    
+    # Fallback: 返回原始輸入
+    return {'home': home_input, 'away': away_input, 'confidence': 'low'}
+
+
+def match_to_odds_api(home_input, away_input, league_key):
+    """
+    使用 Gemini API 匹配球隊名稱到 The Odds API
+    返回: {'home': odds_name, 'away': odds_name}
+    """
+    if not ODDS_API_TEAMS.get(league_key):
+        return {'home': home_input, 'away': away_input}
+    
+    odds_teams = ODDS_API_TEAMS[league_key]
+    if not odds_teams:
+        return {'home': home_input, 'away': away_input}
+    
+    # 提取球隊名稱列表
+    team_names = [t.get('name', t.get('id', '')) for t in odds_teams if t.get('name')]
+    
+    prompt = f"""Match these football teams to The Odds API names.
+
+Input: {home_input} vs {away_input}
+
+Available Odds API Teams:
+{', '.join(team_names[:50])}
+
+IMPORTANT:
+- Use exact names from the list above
+- "Manchester United" -> exact name from list
+- "Barcelona" -> exact name from list
+
+Respond in JSON format:
+{{"home": "exact name from list", "away": "exact name from list"}}"""
+
+    try:
+        response = llm.fetch_data_helper(prompt)
+        if response:
+            import json as json_mod
+            result = json_mod.loads(response.strip())
+            return {
+                'home': result.get('home', home_input),
+                'away': result.get('away', away_input)
+            }
+    except Exception as e:
+        print(f"[WARN] Odds API matching failed: {e}")
+    
+    return {'home': home_input, 'away': away_input}
+
+
 def find_lineup_file(home_team, away_team, data_folder="data"):
     """
     查找陣容 JSON 檔案
-    Args:
-        home_team: 主隊名稱
-        away_team: 客隊名稱
-        data_folder: 資料夾路徑
-    Returns:
-        lineup_data (dict) 或 None
     """
     import glob
 
-    # 清理隊名中的特殊字符
     def clean_team_name(name):
-        # 移除常見的擴展字符，保持簡單的字母數字和底線
         import unicodedata
-        name = unicodedata.normalize('NFKD', name)
-        # 只保留字母數字和底線
         import re
+        name = unicodedata.normalize('NFKD', name)
         name = re.sub(r'[^a-zA-Z0-9\s]', '', name)
         return name.strip().replace(" ", "_")
 
     home_clean = clean_team_name(home_team)
     away_clean = clean_team_name(away_team)
 
-    # 優先嘗試精確匹配 (主隊 vs 客隊)
+    # 優先嘗試精確匹配
     exact_pattern = f"{data_folder}/lineup/lineup_{home_clean}_vs_{away_clean}.json"
     exact_matches = glob.glob(exact_pattern)
     if exact_matches:
         with open(exact_matches[0], 'r', encoding='utf-8') as f:
             return json.load(f)
 
-    # 嘗試反向匹配 (客隊 vs 主隊)
+    # 反向匹配
     reverse_pattern = f"{data_folder}/lineup/lineup_{away_clean}_vs_{home_clean}.json"
     reverse_matches = glob.glob(reverse_pattern)
     if reverse_matches:
         with open(reverse_matches[0], 'r', encoding='utf-8') as f:
             return json.load(f)
 
-    # 模糊搜索 - 遍歷所有檔案找匹配的
-    all_files = glob.glob(f"{data_folder}/lineup/*.json")
-    for filepath in all_files:
-        filename = os.path.basename(filepath)
-        # 提取檔名中的隊名
-        # 格式: lineup_HomeName_vs_AwayName.json
-        match = re.match(r'lineup_(.+?)_vs_(.+?)\.json', filename)
-        if match:
-            file_home = match.group(1)
-            file_away = match.group(2)
-
-            # 清理檔案中的隊名
-            file_home_clean = clean_team_name(file_home)
-            file_away_clean = clean_team_name(file_away)
-
-            # 使用 difflib 計算相似度
-            home_score = difflib.SequenceMatcher(None, home_clean.lower(), file_home_clean.lower()).ratio()
-            away_score = difflib.SequenceMatcher(None, away_clean.lower(), file_away_clean.lower()).ratio()
-            
-            # 計算反向匹配分數（考慮主客隊互換的情況）
-            home_score_rev = difflib.SequenceMatcher(None, home_clean.lower(), file_away_clean.lower()).ratio()
-            away_score_rev = difflib.SequenceMatcher(None, away_clean.lower(), file_home_clean.lower()).ratio()
-            
-            # 選擇最佳匹配方向
-            score_normal = (home_score + away_score) / 2
-            score_rev = (home_score_rev + away_score_rev) / 2
-            
-            if score_normal >= score_rev:
-                final_score = score_normal
-                min_team_match = min(home_score, away_score)
-            else:
-                final_score = score_rev
-                min_team_match = min(home_score_rev, away_score_rev)
-
-            # 關鍵修復：兩個隊都必須有較高匹配度 (>0.8)
-            # 這確保 "Arsenal vs Chelsea" 不會錯誤匹配到 "Arsenal vs Liverpool"
-            if final_score > 0.6 and min_team_match > 0.8:
-                with open(filepath, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-
     return None
 
 
 def main():
     print("========================================", flush=True)
-    print("⚽ AI 足球分析系統 v6.5 (API Integrated) - Team Name Matcher", flush=True)
+    print("⚽ AI Football Analysis System v6.6 (Gemini API Matching)", flush=True)
     print("========================================", flush=True)
 
-    # 1. 選擇聯賽 (新增選單功能)
+    # 1. 選擇聯賽
     print("\n📋 請選擇聯賽 (輸入數字):")
-    # 排序並顯示選單
     sorted_keys = sorted(LEAGUE_OPTIONS.keys(), key=lambda x: int(x))
     for key in sorted_keys:
         print(f"   [{key}] {LEAGUE_OPTIONS[key]['name']}")
     
     league_idx = input("👉 選擇: ").strip()
     
-    # 預設為英超
     if league_idx not in LEAGUE_OPTIONS:
         print("⚠️ 輸入無效，預設使用 Premier League")
         league_idx = "1"
         
     selected_league = LEAGUE_OPTIONS[league_idx]
     league_name = selected_league['name']
-    league_key = selected_league['key'] # API 需要這個 key
+    league_key = selected_league['key']
     
     print(f"✅ 已選擇: {league_name} ({league_key})")
 
@@ -159,107 +280,88 @@ def main():
             print("⚠️ 格式錯誤"); return
     except ValueError: return
 
-    # ========== [整合] 使用 Gemini API 智能匹配球隊名稱 ==========
-    print(f"\n🔗 [1.1/4] 正在整合 The Odds API 與 API-Football 數據...", flush=True)
+    # ============================================
+    # 使用 Gemini API 進行球隊名稱匹配
+    # ============================================
+    print(f"\n🔗 [1.1/4] 使用 Gemini API 匹配球隊名稱...", flush=True)
     print(f"   原始輸入: {home} vs {away}")
+    print(f"   聯賽上下文: {league_name}")
 
-    # 使用 team_name_matcher 整合兩個 API 的 ID
-    match_result = match_teams(home, away)
+    # Step 1: 匹配到歷史數據庫 (CSV)
+    print(f"\n   [1/3] 匹配到歷史數據庫...")
+    hist_match = match_with_gemini(home, away, HISTORICAL_TEAMS.get('csv_names', []), league_name)
+    db_home = hist_match['home']
+    db_away = hist_match['away']
+    print(f"      [HIST] {home} -> {db_home} (confidence: {hist_match['confidence']})")
+    print(f"      [HIST] {away} -> {db_away} (confidence: {hist_match['confidence']})")
 
-    # 獲取標準化後的隊名
-    odds_home = home  # 預設使用輸入
-    odds_away = away
-    api_home = home   # 預設使用輸入
-    api_away = away
-
-    # 解析配對結果
-    if match_result.get('home', {}).get('matched'):
-        api_home = match_result['home'].get('api_name', home)
-        odds_home = match_result['home'].get('odds_name', home)
-        api_home_id = match_result['home'].get('api_football_id')
-        print(f"   [主隊] The Odds API: {odds_home} | API-Football ID: {api_home_id} ({api_home})")
-    else:
-        api_home_id = None
-        print(f"   [主隊] ⚠️ 無法自動配對，使用原始名稱: {home}")
-
-    if match_result.get('away', {}).get('matched'):
-        api_away = match_result['away'].get('api_name', away)
-        odds_away = match_result['away'].get('odds_name', away)
-        api_away_id = match_result['away'].get('api_football_id')
-        print(f"   [客隊] The Odds API: {odds_away} | API-Football ID: {api_away_id} ({api_away})")
-    else:
-        api_away_id = None
-        print(f"   [客隊] ⚠️ 無法自動配對，使用原始名稱: {away}")
-
-    # 檢查是否需要 Gemini 進一步匹配
-    if not match_result.get('home', {}).get('matched') or not match_result.get('away', {}).get('matched'):
-        print(f"   💡 提示: 如需更精確的匹配，請確認球隊名稱拼寫正確。")
-
-    # 使用 API-Football ID 進行後續操作
-    home_team_id = api_home_id if api_home_id else match_result.get('home', {}).get('api_football_id')
-    away_team_id = api_away_id if api_away_id else match_result.get('away', {}).get('api_football_id')
+    # Step 2: 匹配到 The Odds API
+    print(f"\n   [2/3] 匹配到 The Odds API...")
+    odds_match = match_to_odds_api(home, away, league_key)
+    odds_home = odds_match['home']
+    odds_away = odds_match['away']
+    print(f"      [ODDS] {home} -> {odds_home}")
+    print(f"      [ODDS] {away} -> {odds_away}")
 
     # 初始化
     repo = HistoryRepo(settings.HISTORY_CSV_PATH)
     odds_fetcher = RealOddsFetcher()
     logger = ExcelLogger()
 
-    # 2.5 讀取/獲取陣容數據
+    # 3. 讀取/獲取陣容數據
     print(f"\n👕 [1.2/4] 正在獲取陣容數據...", flush=True)
 
-    # 首先嘗試讀取本地陣容檔案 (使用用戶輸入的原始名稱)
-    lineup_data = find_lineup_file(home, away)
+    lineup_data = find_lineup_file(db_home, db_away)
+    if not lineup_data:
+        lineup_data = find_lineup_file(odds_home, odds_away)
+    if not lineup_data:
+        lineup_data = find_lineup_file(home, away)
 
     if lineup_data:
-        print(f"   [本地] 找到陣容檔案: {lineup_data['home_team']['name']} vs {lineup_data['away_team']['name']}")
-        print(f"      主隊陣容: {len(lineup_data['home_team']['starters'])} 人 | 客隊陣容: {len(lineup_data['away_team']['starters'])} 人")
+        print(f"   [本地] 找到陣容檔案")
     else:
-        # 本地沒有，嘗試從 API 獲取 (使用 API-Football 標準化後的隊名)
-        print(f"   [API] 未找到本地檔案，嘗試 API 獲取...")
-        lineup_aggregator = LineupAggregator()
-        lineup_data = lineup_aggregator.get_lineup(api_home, api_away)
+        print(f"   [INFO] 未找到本地陣容檔案")
+        
+        # 等待用戶輸入 Fotmob Match ID
+        fotmob_id = input("   👉 請輸入 Fotmob Match ID (或按 Enter 跳過): ").strip()
+        
+        if fotmob_id:
+            try:
+                from TakeData.fotmob_lineup_scraper import FotMobLineupHarvester
+                harvester = FotMobLineupHarvester(fotmob_id)
+                lineup_data = harvester.fetch_lineup(save_to_file=True)
+                if lineup_data:
+                    print(f"   [FOTMOB] 成功獲取陣容: {lineup_data['home_team']['name']} vs {lineup_data['away_team']['name']}")
+            except Exception as e:
+                print(f"   [FOTMOB] 獲取失敗: {e}")
 
-    # 2.6 傷停數據 (已停用)
+    # 4. 傷停數據 (已停用)
     print(f"\n[1.3/4] 傷停數據功能已停用", flush=True)
-    # 使用空數據作為佔位
     injury_report = {
-        'home': {'injuries': [], 'suspensions': [], 'total_impact': 0, 'key_players': []},
-        'away': {'injuries': [], 'suspensions': [], 'total_impact': 0, 'key_players': []},
-        'impact_diff': 0
+        'home': {'injuries': [], 'total_impact': 0},
+        'away': {'injuries': [], 'total_impact': 0},
     }
     home_injury = injury_report['home']
     away_injury = injury_report['away']
 
-    # 計算傷停影響差異
-    injury_impact_diff = 0
-    print(f"\n   [INFO] 傷停數據已停用 (使用預設值 0)")
-
-    # 3. 獲取數據 & 數學模型 (傳入 league_name 給歷史數據模組顯示用)
+    # 5. 獲取歷史數據
     print(f"\n🔍 [1/4] 執行 Glicko-2 回測與機器學習預測...", flush=True)
-    match_context = repo.get_match_context(home, away, league_name)
+    match_context = repo.get_match_context(db_home, db_away, league_name)
     stats = match_context.get("stats", {})
     
     # 陣容分析
-    print(f"👕 [1.5/4] 分析首發名單評分 (Lineup Rating)...", flush=True)
-    lineup_prob = repo.get_lineup_prediction(home, away)
+    print(f"👕 [1.5/4] 分析首發名單評分...", flush=True)
+    lineup_prob = repo.get_lineup_prediction(db_home, db_away)
     if lineup_prob:
         print(f"   [基於首發球員評分的主勝率: {lineup_prob:.1%}")
-    else:
-        print("   [未找到首發名單 JSON，跳過。")
 
-    # 數學運算 (傷停功能已停用)
+    # 數學運算
     h_exp = stats.get("home_weighted_xg", 1.2)
     a_exp = stats.get("away_weighted_xg", 1.0)
+    h_exp_adj = max(0.5, min(3.5, h_exp))
+    a_exp_adj = max(0.5, min(3.5, a_exp))
 
-    # 傷停調整已停用，使用原始 xG
-    h_exp_adj = h_exp
-    a_exp_adj = a_exp
-
-    # 確保值合理
-    h_exp_adj = max(0.5, min(3.5, h_exp_adj))
-    a_exp_adj = max(0.5, min(3.5, a_exp_adj))
-
-    print(f"\n   [INFO] 傷停調整已停用，使用原始 xG")
+    print(f"\n   [INFO] 使用 Gemini 匹配後的 xG")
     print(f"      {odds_home} {h_exp_adj:.2f} - {a_exp_adj:.2f} {odds_away}")
 
     dc_model = DixonColesModel(h_exp_adj, a_exp_adj)
@@ -268,19 +370,15 @@ def main():
     mc_sim = MCSim_v2(h_exp_adj, a_exp_adj)
     mc_probs = mc_sim.run_simulation()
 
-    # ========== [v3] 負二項分布進球模型 ==========
-    # 比 Poisson 更準確，處理進球過離散問題
+    # ========== [v3] 負二項分布 ==========
     print(f"\n   🎯 [v3] 負二項分布模型:")
     nb_model = NegativeBinomialModel(h_exp_adj, a_exp_adj, dispersion=1.5, calibrate_dispersion=False)
     nb_probs = nb_model.calculate_probabilities()
     print(f"      主勝: {nb_probs['home_win']:.1%} | 和局: {nb_probs['draw']:.1%} | 客勝: {nb_probs['away_win']:.1%}")
-    print(f"      離散參數 (α): {nb_probs.get('dispersion', 1.5):.2f}")
 
-    # ========== [v3] 動態K因子 Elo 評分系統 ==========
-    # 比標準 Elo 更敏感，根據對手實力和比賽結果調整
+    # ========== [v3] 動態K Elo ==========
     print(f"\n   📈 [v3] 動態K Elo 評分:")
     dynamic_elo = DynamicKEloSystem(base_k=20)
-    # 使用歷史數據更新評分
     try:
         valid_df = repo.df.dropna(subset=['home_goals', 'away_goals', 'home_team', 'away_team'])
         for _, row in valid_df.tail(100).iterrows():
@@ -289,278 +387,69 @@ def main():
                     row['home_team'], row['away_team'],
                     int(row['home_goals']), int(row['away_goals'])
                 )
-            except:
-                continue
-    except:
-        pass
-    elo_home = dynamic_elo.get_rating(api_home)
-    elo_away = dynamic_elo.get_rating(api_away)
-    elo_win_prob = dynamic_elo.expected_win_prob(api_home, api_away)
+            except: continue
+    except: pass
+    
+    elo_home = dynamic_elo.get_rating(db_home)
+    elo_away = dynamic_elo.get_rating(db_away)
+    elo_win_prob = dynamic_elo.expected_win_prob(db_home, db_away)
     print(f"      {odds_home} 評分: {elo_home:.0f} | {odds_away} 評分: {elo_away:.0f}")
     print(f"      Elo 勝率預測: {elo_win_prob:.1%}")
 
-    # ========== [v3] 蒙地卡羅模擬 V3 ==========
-    # 使用 Gamma-Poisson 混合物，更穩定
+    # ========== [v3] 蒙地卡羅模擬 ==========
     print(f"\n   🎲 [v3] 蒙地卡羅模擬 (10,000次):")
     mc_v3 = MonteCarloSimulatorV3(h_exp_adj, a_exp_adj, iterations=10000, use_nbinom=True, dispersion=1.5)
     mc_v3_probs = mc_v3.run_simulation()
     print(f"      主勝: {mc_v3_probs['mc_home_win']:.1%} | 和局: {mc_v3_probs['mc_draw']:.1%} | 客勝: {mc_v3_probs['mc_away_win']:.1%}")
-    print(f"      大2.5: {mc_v3_probs['mc_over_2.5']:.1%}")
-    print(f"      期望進球: {mc_v3_probs['expected_goals']['home']:.2f} - {mc_v3_probs['expected_goals']['away']:.2f}")
 
-    # ========== [Advanced] 指數衰減 xG 預測 ==========
-    # 近期權重更高，自適應球隊風格
+    # ========== [Advanced] 指數衰減 xG ==========
     print(f"\n   📈 [Adv] 指數衰減 xG 預測:")
     
-    # 預設值 (在 try block 外部定義，避免 UnboundLocalError)
     xg_forecast_home, xg_forecast_away = h_exp_adj, a_exp_adj
     home_xg_adv = {'xg': h_exp_adj, 'n_games': 0}
     away_xg_adv = {'xg': a_exp_adj, 'n_games': 0}
     
     try:
-        xg_forecaster = ExponentialDecayXGForecaster(decay_rate=0.1, recency_weight=1.5, min_games=2)  # 改為 2 場
-        # 使用歷史數據填充
+        xg_forecaster = ExponentialDecayXGForecaster(decay_rate=0.1, recency_weight=1.5, min_games=2)
+        
+        print(f"      [GEMINI] 使用 Gemini 匹配的歷史名稱: {db_home}, {db_away}")
+        
         if hasattr(repo, 'df') and not repo.df.empty:
             valid_df = repo.df.dropna(subset=['home_team', 'away_team'])
-            
-            # 只使用有 xG 數據的行
             if 'xg' in valid_df.columns:
                 valid_df = valid_df[valid_df['xg'].notna()]
             
-            print(f"      [DEBUG] 指數衰減 xG: 載入 {len(valid_df)} 場有效比賽")
+            print(f"      [DEBUG] 載入 {len(valid_df)} 場有效比賽")
             
-            # 支援不同欄位名稱
-            xg_cols = valid_df.columns.tolist()
             home_xg_col = 'xg'
             away_xg_col = 'xga'
             
-            print(f"      [DEBUG] 找到 xG 欄位: home={home_xg_col}, away={away_xg_col}")
-            
-            # ========== Fuzzy Search 球隊名稱匹配 ==========
-            try:
-                from fuzzywuzzy import fuzz, process
-                HAS_FUZZY = True
-            except ImportError:
-                HAS_FUZZY = False
-            
-            # 建立所有可用球隊名稱列表 (使用完整數據，不僅限於 xG 數據)
-            all_teams = set(list(repo.df['home_team'].unique()) + list(repo.df['away_team'].unique()))
-            all_teams_list = list(all_teams)
-            
-            # 檢查有效數據中的球隊 (用於模型載入)
-            if 'xg' in valid_df.columns:
-                valid_teams = set(list(valid_df['home_team'].unique()) + list(valid_df['away_team'].unique()))
-            else:
-                valid_teams = all_teams
-            
-            # 常見縮寫/別名映射 (提高匹配準確率)
-            ALIAS_MAP = {
-                # English Premier League
-                "manchester united": "Manchester United",
-                "manchester utd": "Manchester United",
-                "man utd": "Manchester United",
-                "manchester city": "Manchester City",
-                "man city": "Manchester City",
-                "newcastle": "Newcastle United",
-                "newcastle utd": "Newcastle United",
-                "spurs": "Tottenham Hotspur",
-                "tottenham": "Tottenham Hotspur",
-                "arsenal london": "Arsenal",
-                "west ham": "West Ham United",
-                "wolverhampton": "Wolverhampton Wanderers",
-                "wolves": "Wolverhampton Wanderers",
-                "leicester": "Leicester City",
-                "leeds": "Leeds United",
-                "crystal palace": "Crystal Palace",
-                "brighton": "Brighton & Hove Albion",
-                "southampton": "Southampton",
-                "fulham": "Fulham",
-                "brentford": "Brentford",
-                "nottingham": "Nottingham Forest",
-                "villa": "Aston Villa",
-                "ipswich": "Ipswich Town",
-                
-                # Spanish La Liga
-                "atletico": "Ath Madrid",
-                "atletico madrid": "Ath Madrid",
-                "atlético madrid": "Ath Madrid",
-                "barca": "Barcelona",
-                "sevila": "Sevilla",
-                "sevilla fc": "Sevilla",
-                "sociedad": "Real Sociedad",
-                "betis": "Real Betis",
-                
-                # Italian Serie A
-                "inter": "Inter Milan",
-                "ac milan": "AC Milan",
-                "milan": "AC Milan",
-                "juventus turin": "Juventus",
-                "napoli": "SSC Napoli",
-                "ssc napoli": "SSC Napoli",
-                "as roma": "AS Roma",
-                "lazio": "Lazio",
-                "fiorentina": "Fiorentina",
-                "torino": "Torino",
-                "sampdoria": "Sampdoria",
-                "udinese": "Udinese",
-                "bologna": "Bologna",
-                "atalanta": "Atalanta BC",
-                
-                # German Bundesliga
-                "bayern": "Bayern Munich",
-                "dortmund": "Borussia Dortmund",
-                "borussia dortmund": "Borussia Dortmund",
-                "leverkusen": "Bayer Leverkusen",
-                "bayer leverkusen": "Bayer Leverkusen",
-                "rb leipzig": "RB Leipzig",
-                "leipzig": "RB Leipzig",
-                "m'gladbach": "Borussia Mönchengladbach",
-                "gladbach": "Borussia Mönchengladbach",
-                "eintracht frankfurt": "Eintracht Frankfurt",
-                "frankfurt": "Eintracht Frankfurt",
-                "schalke": "Schalke 04",
-                "schalke 04": "Schalke 04",
-                
-                # French Ligue 1
-                "psg": "Paris SG",
-                "paris sg": "Paris SG",
-                "paris saint germain": "Paris SG",
-                "lyon": "Olympique Lyonnais",
-                "olympique lyonnais": "Olympique Lyonnais",
-                "marseille": "Olympique de Marseille",
-                "olympique marseille": "Olympique de Marseille",
-                "monaco": "Monaco",
-                "as monaco": "Monaco",
-                "nice": "OGC Nice",
-                "ogc nice": "OGC Nice",
-                "lille": "Lille",
-                "rennes": "Stade Rennais",
-                "stade rennais": "Stade Rennais",
-            }
-            
-            def fuzzy_match_team(input_name, team_list, threshold=60):
-                """使用模糊匹配找最佳球隊名稱"""
-                if not HAS_FUZZY:
-                    return input_name  # fallback
-                
-                clean_input = input_name.lower().strip()
-                
-                # 調試信息
-                # print(f"      [DEBUG-FUZZY] 輸入: \"{input_name}\" -> clean: \"{clean_input}\"")
-                
-                # 先檢查別名映射 (精確匹配)
-                if clean_input in ALIAS_MAP:
-                    matched = ALIAS_MAP[clean_input]
-                    # print(f"      [DEBUG-FUZZY] ALIAS_MAP 命中: \"{clean_input}\" -> \"{matched}\"")
-                    if matched in team_list:
-                        return matched
-                
-                # 檢查原始名稱是否已存在於 team_list
-                if input_name in team_list:
-                    # print(f"      [DEBUG-FUZZY] 原始名稱命中: \"{input_name}\"")
-                    return input_name
-                
-                # 檢查小寫版本是否在 team_list
-                if clean_input in [t.lower() for t in team_list]:
-                    for team in team_list:
-                        if team.lower() == clean_input:
-                            # print(f"      [DEBUG-FUZZY] 小寫版本命中: \"{input_name}\" -> \"{team}\"")
-                            return team
-                
-                best_match = None
-                best_score = 0
-                
-                for team in team_list:
-                    clean_team = team.lower().strip()
-                    
-                    # 計算分數時保留 "united" 等關鍵詞
-                    scores = [
-                        fuzz.ratio(clean_input, clean_team),
-                        fuzz.partial_ratio(clean_input, clean_team),
-                        fuzz.token_sort_ratio(clean_input, clean_team),
-                        fuzz.token_set_ratio(clean_input, clean_team),
-                    ]
-                    
-                    team_score = max(scores)
-                    
-                    if team_score > best_score:
-                        best_score = team_score
-                        best_match = team
-                
-                # print(f"      [DEBUG-FUZZY] 最佳匹配: \"{best_match}\" (score: {best_score})")
-                
-                if best_score >= threshold:
-                    return best_match
-                return input_name  # fallback
-            
-            # 使用模糊匹配
-            target_home = fuzzy_match_team(api_home, all_teams_list)
-            target_away = fuzzy_match_team(api_away, all_teams_list)
-            
-            print(f"      [FUZZY] \"{api_home}\" -> \"{target_home}\"")
-            print(f"      [FUZZY] \"{api_away}\" -> \"{target_away}\"")
-            
             if home_xg_col and away_xg_col:
                 match_count = 0
-                mu_home_count = 0
-                mu_away_count = 0
-                
-                # 修復：數據是按日期升序排列（最舊在前），所以用 tail() 取最新的數據
-                # 擴大載入範圍到 1000 場，確保載入足夠數據
                 recent_df = valid_df.tail(1000)
-                
-                print(f"      [DEBUG] 指數衰減 xG: 載入 {len(recent_df)} 場最近比賽")
-                print(f"      [DEBUG] 數據範圍: {recent_df['date'].min()} 到 {recent_df['date'].max()}")
                 
                 for _, row in recent_df.iterrows():
                     try:
                         home_xg_val = float(row.get(home_xg_col, 1.5))
                         away_xg_val = float(row.get(away_xg_col, 1.0))
                         
-                        # 跳過無效的 xG 值
                         if pd.isna(home_xg_val) or home_xg_val <= 0:
                             home_xg_val = float(row['home_goals']) if pd.notna(row.get('home_goals')) else 1.5
                         if pd.isna(away_xg_val) or away_xg_val <= 0:
                             away_xg_val = float(row['away_goals']) if pd.notna(row.get('away_goals')) else 1.0
                         
-                        # 添加主隊數據 (直接傳入 datetime 物件)
                         xg_forecaster.add_match(row['home_team'], home_xg_val, True, row['date'])
-                        # 添加客隊數據
                         xg_forecaster.add_match(row['away_team'], away_xg_val, False, row['date'])
-                        
-                        # 統計 Manchester United 數據
-                        if row['home_team'] == target_home or row['away_team'] == target_home:
-                            mu_home_count += 1
-                        if row['home_team'] == target_away or row['away_team'] == target_away:
-                            mu_away_count += 1
-                        
                         match_count += 1
-                    except:
-                        continue
+                    except: continue
                 
                 print(f"      [DEBUG] 已載入 {match_count} 場比賽數據")
-                print(f"      [DEBUG] {target_home} 載入: {mu_home_count} 場")
-                print(f"      [DEBUG] {target_away} 載入: {mu_away_count} 場")
-                
-                # 使用匹配後的球隊名稱獲取預測
-                import datetime
-                ref_date = datetime.datetime.now()
-                
-                # 先用原始名稱嘗試
-                home_result = xg_forecaster.get_team_xg(target_home, ref_date, True)
-                away_result = xg_forecaster.get_team_xg(target_away, ref_date, False)
-                
-                # 如果沒有數據，嘗試用用戶輸入的名稱
-                if home_result.get('n_games', 0) == 0:
-                    home_result = xg_forecaster.get_team_xg(api_home, ref_date, True)
-                if away_result.get('n_games', 0) == 0:
-                    away_result = xg_forecaster.get_team_xg(api_away, ref_date, False)
         
-        # 獲取預測
         import datetime
         ref_date = datetime.datetime.now()
-        home_result = xg_forecaster.get_team_xg(api_home, ref_date, True)
-        away_result = xg_forecaster.get_team_xg(api_away, ref_date, False)
+        
+        home_result = xg_forecaster.get_team_xg(db_home, ref_date, True)
+        away_result = xg_forecaster.get_team_xg(db_away, ref_date, False)
         
         if isinstance(home_result, dict) and home_result.get('xg') is not None:
             xg_forecast_home = float(home_result['xg'])
@@ -575,146 +464,82 @@ def main():
         print(f"      ⚠️ 指數衰減模型失敗: {str(e)[:80]}")
 
     # ========== [Advanced] 貝葉斯進球模型 ==========
-    # 完全概率化不確定性估計
     print(f"\n   🔮 [Adv] 貝葉斯進球模型:")
     
-    # 預設值
     bayes_pred = {
         'home_lambda': h_exp_adj,
         'away_lambda': a_exp_adj,
         'home_ci': (h_exp_adj * 0.5, h_exp_adj * 1.5),
         'away_ci': (a_exp_adj * 0.5, a_exp_adj * 1.5),
         'probabilities': {'home_win': nb_probs['home_win'], 'draw': nb_probs['draw'], 'away_win': nb_probs['away_win']},
-        'uncertainty': {'average': 0.3, 'home': 0.3, 'away': 0.3}
+        'uncertainty': {'average': 0.3}
     }
     
     try:
         bayes_model = BayesianGoalModel(confidence_level=0.95)
-        # 使用歷史數據
         if hasattr(repo, 'df') and not repo.df.empty:
             valid_df = repo.df.dropna(subset=['home_goals', 'away_goals'])
-            
-            # 只使用有 xG 數據的行 (repo.df.columns 是小寫)
             if 'xg' in valid_df.columns:
                 valid_df = valid_df[valid_df['xg'].notna()]
             
             print(f"      [DEBUG] Bayesian: 載入 {len(valid_df)} 場有效比賽")
             
-            obs_count = 0
-            mu_obs_count = 0
             if len(valid_df) >= 5:
-                # 修復：數據是按日期升序排列，用 tail() 取最近的數據
                 recent_valid = valid_df.tail(200)
-                print(f"      [DEBUG] Bayesian: 使用最近 {len(recent_valid)} 場比賽")
+                obs_count = 0
                 
-                # 使用 xG 值，如果沒有則 fallback 到實際進球
                 for _, row in recent_valid.iterrows():
                     try:
-                        # 主隊觀察
                         home_xg = float(row.get('xg', 1.5)) if pd.notna(row.get('xg')) else float(row['home_goals'])
                         bayes_model.add_observation(
-                            int(row['home_goals']), 
-                            int(row['away_goals']),
-                            home_xg=home_xg,
-                            is_home=True
+                            int(row['home_goals']), int(row['away_goals']),
+                            home_xg=home_xg, is_home=True
                         )
-                        # 客隊觀察
                         away_xg = float(row.get('xga', 1.0)) if pd.notna(row.get('xga')) else float(row['away_goals'])
                         bayes_model.add_observation(
-                            int(row['away_goals']),
-                            int(row['home_goals']),
-                            home_xg=away_xg,
-                            is_home=False
+                            int(row['away_goals']), int(row['home_goals']),
+                            home_xg=away_xg, is_home=False
                         )
                         obs_count += 2
-                        
-                        # 統計目標球隊
-                        if row['home_team'] == target_home or row['away_team'] == target_home:
-                            mu_obs_count += 1
                     except: continue
                 
                 if obs_count > 0:
                     bayes_pred = bayes_model.predict()
-                    print(f"      [DEBUG] Bayesian: 觀察數量={obs_count}, home_lambda={bayes_pred['home_lambda']:.3f}")
-                    print(f"      [DEBUG] {target_home} 觀察數: {mu_obs_count}")
+                    print(f"      [DEBUG] Bayesian: 觀察數量={obs_count}")
                     
-                    # 限制不確定性在合理範圍 (0-100%)
                     uncertainty = bayes_pred.get('uncertainty', {})
                     for key in uncertainty:
                         uncertainty[key] = min(1.0, max(0.0, uncertainty.get(key, 0.3)))
-                else:
-                    # Fallback
-                    bayes_pred = {
-                        'home_lambda': xg_forecast_home,
-                        'away_lambda': xg_forecast_away,
-                        'home_ci': (xg_forecast_home * 0.7, xg_forecast_home * 1.3),
-                        'away_ci': (xg_forecast_away * 0.7, xg_forecast_away * 1.3),
-                        'probabilities': nb_probs,
-                        'uncertainty': {'average': 0.5}
-                    }
-            else:
-                # 使用指數衰減 xG 的結果作為先驗
-                bayes_pred = {
-                    'home_lambda': xg_forecast_home,
-                    'away_lambda': xg_forecast_away,
-                    'home_ci': (xg_forecast_home * 0.7, xg_forecast_home * 1.3),
-                    'away_ci': (xg_forecast_away * 0.7, xg_forecast_away * 1.3),
-                    'probabilities': nb_probs,
-                    'uncertainty': {'average': 0.5}
-                }
-        else:
-            # 使用指數衰減 xG 的結果
-            bayes_pred = {
-                'home_lambda': xg_forecast_home,
-                'away_lambda': xg_forecast_away,
-                'home_ci': (xg_forecast_home * 0.7, xg_forecast_home * 1.3),
-                'away_ci': (xg_forecast_away * 0.7, xg_forecast_away * 1.3),
-                'probabilities': nb_probs,
-                'uncertainty': {'average': 0.5}
-            }
         
         print(f"      主場 λ: {bayes_pred['home_lambda']:.3f} [{bayes_pred['home_ci'][0]:.2f}-{bayes_pred['home_ci'][1]:.2f}]")
         print(f"      客場 λ: {bayes_pred['away_lambda']:.3f} [{bayes_pred['away_ci'][0]:.2f}-{bayes_pred['away_ci'][1]:.2f}]")
-        probs = bayes_pred.get('probabilities', {})
-        print(f"      主勝概率: {probs.get('home_win', nb_probs['home_win']):.1%}")
         print(f"      不確定性: {bayes_pred['uncertainty']['average']:.1%}")
     except Exception as e:
         print(f"      ⚠️ 貝葉斯模型失敗: {str(e)[:80]}")
 
     # ========== [Advanced] LSTM 狀態追蹤 ==========
-    # 捕捉球隊狀態變化
     print(f"\n   📊 [Adv] LSTM 球隊狀態追蹤:")
     
-    # 預設值
     home_form = {'form_score': 0.5, 'trend': 'stable', 'confidence': 'low'}
     away_form = {'form_score': 0.5, 'trend': 'stable', 'confidence': 'low'}
     
-    # 檢查深度學習框架是否可用
     torch_available = False
     tf_available = False
     try:
         import torch
         torch_available = True
-    except ImportError:
-        pass
-    
+    except: pass
     try:
-        import tensorflow as tf  # noqa: F401
+        import tensorflow as tf
         tf_available = True
-    except ImportError:
-        pass
-    
-    if not torch_available and not tf_available:
-        print(f"      ⚠️ PyTorch 和 TensorFlow 都不可用，使用統計狀態追蹤")
+    except: pass
     
     try:
         if torch_available or tf_available:
-            lstm_model = TeamFormLSTM(sequence_length=10, use_attention=True, min_games=2)  # 改為 2 場
-            # 使用歷史數據
+            lstm_model = TeamFormLSTM(sequence_length=10, use_attention=True, min_games=2)
+            
             if hasattr(repo, 'df') and not repo.df.empty:
                 valid_df = repo.df.dropna(subset=['home_team', 'away_team', 'home_goals', 'away_goals'])
-                
-                # 只使用有 xG 數據的行 (repo.df.columns 是小寫)
                 if 'xg' in valid_df.columns:
                     valid_df = valid_df[valid_df['xg'].notna()]
                 
@@ -723,79 +548,54 @@ def main():
                 away_xg_col = 'xga' if 'xga' in valid_df.columns else 'away_xg'
                 
                 print(f"      [DEBUG] LSTM: 載入 {len(valid_df)} 場有效比賽")
-                print(f"      [DEBUG] LSTM: result_col={result_col}, xG_cols={xg_col}/{away_xg_col}")
                 
-                # 修復：數據是按日期升序排列，用 tail() 取最近的數據
                 recent_valid = valid_df.tail(300)
-                print(f"      [DEBUG] LSTM: 使用最近 {len(recent_valid)} 場比賽")
-                
-                # Fuzzy matching 已經在上面定義，直接使用
                 match_count = 0
+                
                 for _, row in recent_valid.iterrows():
                     try:
-                        # 判斷主客場結果
                         result = str(row.get(result_col, 'D')).upper()
-                        if result == 'W':
-                            home_result, away_result = 'W', 'L'
-                        elif result == 'L':
-                            home_result, away_result = 'L', 'W'
-                        else:
-                            home_result, away_result = 'D', 'D'
+                        if result == 'W': home_result, away_result = 'W', 'L'
+                        elif result == 'L': home_result, away_result = 'L', 'W'
+                        else: home_result, away_result = 'D', 'D'
                         
                         home_xg_val = float(row.get(xg_col, 1.5))
                         away_xg_val = float(row.get(away_xg_col, 1.0))
                         
-                        lstm_model.add_match(row['home_team'], 
-                                            goals_scored=int(row['home_goals']),
-                                            goals_conceded=int(row['away_goals']),
-                                            xg=home_xg_val,
-                                            possession=50, shots_on_target=3,
-                                            result=home_result, is_home=True)
+                        lstm_model.add_match(row['home_team'],
+                            goals_scored=int(row['home_goals']),
+                            goals_conceded=int(row['away_goals']),
+                            xg=home_xg_val, possession=50, shots_on_target=3,
+                            result=home_result, is_home=True)
                         lstm_model.add_match(row['away_team'],
-                                            goals_scored=int(row['away_goals']),
-                                            goals_conceded=int(row['home_goals']),
-                                            xg=away_xg_val,
-                                            possession=50, shots_on_target=3,
-                                            result=away_result, is_home=False)
+                            goals_scored=int(row['away_goals']),
+                            goals_conceded=int(row['home_goals']),
+                            xg=away_xg_val, possession=50, shots_on_target=3,
+                            result=away_result, is_home=False)
                         match_count += 1
                     except: continue
                 
                 print(f"      [DEBUG] LSTM: 已載入 {match_count} 場比賽數據")
                 
-                # 使用 fuzzy_match_team 進行匹配
-                lstm_teams = set(list(valid_df['home_team'].unique()) + list(valid_df['away_team'].unique()))
-                lstm_team_list = list(lstm_teams)
-                
-                lstm_home = fuzzy_match_team(api_home, lstm_team_list)
-                lstm_away = fuzzy_match_team(api_away, lstm_team_list)
-                
-                print(f"      [FUZZY-LSTM] \"{api_home}\" -> \"{lstm_home}\"")
-                print(f"      [FUZZY-LSTM] \"{api_away}\" -> \"{lstm_away}\"")
-                
-                home_form = lstm_model.predict_team_form(lstm_home)
-                away_form = lstm_model.predict_team_form(lstm_away)
+                # 使用 Gemini 匹配的歷史名稱
+                home_form = lstm_model.predict_team_form(db_home)
+                away_form = lstm_model.predict_team_form(db_away)
         
-        # 如果 TensorFlow 不可用或 LSTM 失敗，使用基於統計的簡化狀態
+        # Fallback: 使用基於統計的狀態
         if not tf_available or home_form.get('form_score', 0) == 0.5:
             if hasattr(repo, 'df') and not repo.df.empty:
                 tmp = repo.df.copy()
                 tmp["hl"] = tmp["home_team"].astype(str).str.lower().str.strip()
                 tmp["al"] = tmp["away_team"].astype(str).str.lower().str.strip()
                 
-                # 使用 fuzzy matched 名稱 (fallback)
-                simple_teams = set(list(tmp["hl"].unique()) + list(tmp["al"].unique()))
-                simple_home = fuzzy_match_team(api_home, list(simple_teams))
-                simple_away = fuzzy_match_team(api_away, list(simple_teams))
+                db_home_l = db_home.lower().strip()
+                db_away_l = db_away.lower().strip()
                 
-                simple_home_l = simple_home.lower().strip()
-                simple_away_l = simple_away.lower().strip()
-                
-                home_games = tmp[(tmp["hl"] == simple_home_l) | (tmp["al"] == simple_home_l)].tail(10)
-                away_games = tmp[(tmp["hl"] == simple_away_l) | (tmp["al"] == simple_away_l)].tail(10)
+                home_games = tmp[(tmp["hl"] == db_home_l) | (tmp["al"] == db_home_l)].tail(10)
+                away_games = tmp[(tmp["hl"] == db_away_l) | (tmp["al"] == db_away_l)].tail(10)
                 
                 def calc_simple_form(games, team_l):
-                    if games.empty:
-                        return 0.5, 'stable'
+                    if games.empty: return 0.5, 'stable'
                     points = 0
                     for _, row in games.iterrows():
                         if row['hl'] == team_l:
@@ -807,25 +607,10 @@ def main():
                     avg_pts = points / max(len(games), 1)
                     form_score = min(1.0, avg_pts / 3.0)
                     
-                    # 趨勢判斷
                     recent = games.tail(3)
                     older = games.head(len(games)-3) if len(games) > 3 else games.head(0)
-                    r_pts = 0
-                    o_pts = 0
-                    for _, row in recent.iterrows():
-                        if row['hl'] == team_l:
-                            if row['home_goals'] > row['away_goals']: r_pts += 3
-                            elif row['home_goals'] == row['away_goals']: r_pts += 1
-                        else:
-                            if row['away_goals'] > row['home_goals']: r_pts += 3
-                            elif row['away_goals'] == row['home_goals']: r_pts += 1
-                    for _, row in older.iterrows():
-                        if row['hl'] == team_l:
-                            if row['home_goals'] > row['away_goals']: o_pts += 3
-                            elif row['home_goals'] == row['away_goals']: o_pts += 1
-                        else:
-                            if row['away_goals'] > row['home_goals']: o_pts += 3
-                            elif row['away_goals'] == row['home_goals']: o_pts += 1
+                    r_pts = sum(3 if (row['home_goals'] > row['away_goals'] if row['hl'] == team_l else row['away_goals'] > row['home_goals']) else (1 if row['home_goals'] == row['away_goals'] else 0) for _, row in recent.iterrows())
+                    o_pts = sum(3 if (row['home_goals'] > row['away_goals'] if row['hl'] == team_l else row['away_goals'] > row['home_goals']) else (1 if row['home_goals'] == row['away_goals'] else 0) for _, row in older.iterrows())
                     
                     r_avg = r_pts / max(len(recent), 1) if len(recent) > 0 else 1.5
                     o_avg = o_pts / max(len(older), 1) if len(older) > 0 else 1.5
@@ -836,26 +621,24 @@ def main():
                     
                     return form_score, trend
                 
-                home_f, home_t = calc_simple_form(home_games, simple_home_l)
-                away_f, away_t = calc_simple_form(away_games, simple_away_l)
+                home_f, home_t = calc_simple_form(home_games, db_home_l)
+                away_f, away_t = calc_simple_form(away_games, db_away_l)
                 
                 home_form = {'form_score': home_f, 'trend': home_t, 'confidence': 'medium'}
                 away_form = {'form_score': away_f, 'trend': away_t, 'confidence': 'medium'}
         
         print(f"      {odds_home} 狀態: {home_form['form_score']:.2f} ({home_form['trend']})")
         print(f"      {odds_away} 狀態: {away_form['form_score']:.2f} ({away_form['trend']})")
-        print(f"      信心度: {home_form['confidence']}/{away_form['confidence']}")
     except Exception as e:
         print(f"      ⚠️ 狀態追蹤失敗: {str(e)[:80]}")
 
-    # 計算綜合勝率 (結合多個模型)
+    # 計算綜合勝率
     avg_v3_prob = (nb_probs['home_win'] + mc_v3_probs['mc_home_win'] + elo_win_prob) / 3
     print(f"\n   📊 [v3] 綜合勝率: {avg_v3_prob:.1%}")
 
     math_results = {
         "dixon_coles": dc_probs,
         "monte_carlo": mc_probs,
-    # [v3] 新增模型結果
         "negative_binomial": {
             "home_win": nb_probs['home_win'],
             "draw": nb_probs['draw'],
@@ -869,12 +652,11 @@ def main():
         },
         "monte_carlo_v3": mc_v3_probs,
         "avg_v3_prob": avg_v3_prob,
-    # [Advanced] 高級模型結果
         "exponential_xg": {
             "home": xg_forecast_home,
             "away": xg_forecast_away,
-            "home_n": home_xg_adv.get('n_games', 0) if isinstance(home_xg_adv, dict) else 0,
-            "away_n": away_xg_adv.get('n_games', 0) if isinstance(away_xg_adv, dict) else 0
+            "home_n": home_xg_adv.get('n_games', 0),
+            "away_n": away_xg_adv.get('n_games', 0)
         },
         "bayesian": {
             "home_lambda": bayes_pred.get('home_lambda', h_exp_adj),
@@ -885,38 +667,22 @@ def main():
             "uncertainty": bayes_pred.get('uncertainty', {'average': 0.3})
         },
         "lstm_form": {
-            "home": {
-                "form_score": home_form.get('form_score', 0.5),
-                "trend": home_form.get('trend', 'stable'),
-                "confidence": home_form.get('confidence', 'low')
-            },
-            "away": {
-                "form_score": away_form.get('form_score', 0.5),
-                "trend": away_form.get('trend', 'stable'),
-                "confidence": away_form.get('confidence', 'low')
-            }
+            "home": home_form,
+            "away": away_form
         },
-        # ==========
         "glicko": match_context.get("glicko", "No Data"),
         "lineup_prob": lineup_prob,
         "expected_goals": {"home": h_exp_adj, "away": a_exp_adj},
-        "injury_impact": {
-            "home": 0,
-            "away": 0,
-            "diff": 0,
-            "disabled": True
-        }
+        "injury_impact": {"home": 0, "away": 0, "diff": 0, "disabled": True}
     }
 
     glicko = match_context.get("glicko", {})
     print(f"   [INFO] 傷停調整已停用")
     print(f"      {odds_home} {h_exp_adj:.2f} - {a_exp_adj:.2f} {odds_away}")
     print(f"   🏆 Glicko-2 勝率: {glicko.get('win_prob', 0):.1%}")
-    print(f"   🎲 [MonteCarlo] 主: {mc_probs['mc_home_win']:.1%} | 大 2.5: {mc_probs['mc_over_2.5']:.1%}")
 
-    # 4. 讀取全盤口賠率 (使用 API Key)
+    # 6. 讀取即時賠率
     print(f"\n📈 [2/4] 連線 API 讀取即時賠率...", flush=True)
-    # 使用 The Odds API 標準化後的隊名
     all_markets = odds_fetcher.get_real_odds(league_key, odds_home, odds_away)
     
     odds_summary_text = ""
@@ -935,14 +701,14 @@ def main():
         print("   ⚠️ 無有效賠率數據")
         odds_summary_text = "No Odds Data Available"
 
-    # 5. Grok 搜尋
+    # 7. Grok 搜尋
     print(f"\n🤖 [3/4] 請求 Grok 聯網搜尋市場情報...", flush=True)
     grok_input = odds_summary_text[:1500]
     grok_reaction = llm.search_and_analyze_market_reaction(f"{odds_home} vs {odds_away}", grok_input)
     print("\n--------- 🤖 Grok 市場觀點 ---------", flush=True)
     print(grok_reaction[:200] + "..." if len(grok_reaction) > 200 else grok_reaction, flush=True)
 
-    # 6. ChatGPT 決策
+    # 8. ChatGPT 決策
     print(f"\n🧠 [4/4] ChatGPT 綜合決策...", flush=True)
     odds_data_package = {
         "full_market_odds": odds_summary_text,
@@ -963,7 +729,7 @@ def main():
     
     print(f"分析理由: {rec.get('reasoning')}", flush=True)
 
-    # 7. 資金計算
+    # 9. 資金計算
     if "No Bet" in str(rec_market) or "Error" in str(rec_market):
         print("\n🚫 系統建議觀望 (No Bet)，跳過資金計算。")
         input("\n執行完畢，請按 Enter 離開...")
@@ -1018,57 +784,45 @@ def main():
         prob = float(model_p) if isinstance(model_p, (int, float)) else 0
         stake_info = calculate_kelly_stake(prob, target_odds, settings.INITIAL_BANKROLL)
         
-        # ========== [v3] 信心度 Kelly 資金管理 ==========
         print(f"\n   💰 [v3] 信心度 Kelly 資金管理:")
         try:
-            # 嘗試使用 v3 信心度 Kelly
             kelly_v3 = ConfidenceKelly(
-                base_fraction=0.75,  # 半Kelly
-                min_edge=0.08,       # 最小優勢 8%
+                base_fraction=0.75,
+                min_edge=0.08,
                 initial_bankroll=settings.INITIAL_BANKROLL
             )
             
-            # 獲取市場隱含概率
             market_prob = 1 / target_odds
-            
-            # 使用 v3 綜合勝率
             v3_prob = avg_v3_prob if 'avg_v3_prob' in dir() else prob
             
             kelly_result = kelly_v3.calculate(
                 prob=v3_prob,
                 odds=target_odds,
-                confidence=0.7,  # 模型信心度
+                confidence=0.7,
                 model_uncertainty=0.1,
                 market_prob=market_prob
             )
             
             print(f"      [信心度 Kelly]")
             print(f"         Kelly%: {kelly_result.kelly_pct:.2%}")
-            print(f"         信心度調整: {kelly_result.confidence_adj:.2%}")
             print(f"         期望值: {kelly_result.ev:.3f}")
             print(f"         優勢: {kelly_result.edge:.3f}")
-            print(f"         風險等級: {kelly_result.risk_level}")
             print(f"         建議投注: ${kelly_result.stake:.2f}")
             
-            # 保存信心度 Kelly 結果
             kelly_v3_result = kelly_result.to_dict()
         except Exception as e:
             kelly_v3_result = stake_info
             print(f"      [信心度 Kelly 計算失敗: {e}]")
         
-        # ========== [Advanced] RL 投注策略優化 ==========
         print(f"\n   🤖 [Adv] RL 投注策略:")
         try:
-            # 計算邊緣
             model_prob = v3_prob if 'v3_prob' in dir() else prob
             implied_prob = 1 / target_odds
             edge = model_prob - implied_prob
             
-            # 使用 LSTM 狀態數據
             home_form_score = home_form.get('form_score', 0.5) if isinstance(home_form, dict) else 0.5
             away_form_score = away_form.get('form_score', 0.5) if isinstance(away_form, dict) else 0.5
             
-            # 初始化 RL agent
             rl_agent = BettingRLAgent(
                 bankroll=settings.INITIAL_BANKROLL,
                 learning_rate=0.1,
@@ -1076,7 +830,6 @@ def main():
                 exploration_rate=0.1
             )
             
-            # 進行投注決策
             rl_decision = rl_agent.place_bet(
                 edge=edge,
                 confidence=1 - bayes_pred.get('uncertainty', {}).get('average', 0.3),
@@ -1088,11 +841,8 @@ def main():
             
             print(f"      [RL 策略]")
             print(f"         邊緣 (Edge): {edge:.3f}")
-            print(f"         投注比例: {rl_decision.get('bet_pct', 0):.2%}")
             print(f"         投注金額: ${rl_decision.get('bet_amount', 0):.2f}")
-            print(f"         Kelly分數: {rl_decision.get('kelly_frac', 0):.3f}")
             
-            # RL 建議
             if rl_decision.get('bet_amount', 0) > 0:
                 print(f"         >>> RL 建議投注: ${rl_decision['bet_amount']:.2f}")
             

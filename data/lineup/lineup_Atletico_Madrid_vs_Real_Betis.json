@@ -1,0 +1,177 @@
+{
+    "match_id": "4837332",
+    "match_time": "Sun, Feb 8, 2026, 17:30 UTC",
+    "timestamp": "2026-02-09 00:52:14",
+    "home_team": {
+        "name": "Atletico Madrid",
+        "id": 9906,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 177126,
+                "name": "Jan Oblak",
+                "number": "13",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 602563,
+                "name": "Marcos Llorente",
+                "number": "14",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 1323897,
+                "name": "Marc Pubill",
+                "number": "18",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 727897,
+                "name": "David Hancko",
+                "number": "17",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 1051097,
+                "name": "Matteo Ruggeri",
+                "number": "3",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 1419969,
+                "name": "Rodrigo Mendoza",
+                "number": "4",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 184533,
+                "name": "Koke",
+                "number": "6",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 1226147,
+                "name": "Giuliano Simeone",
+                "number": "20",
+                "position_id": 83,
+                "rating": null
+            },
+            {
+                "id": 955271,
+                "name": "Thiago Almada",
+                "number": "11",
+                "position_id": 85,
+                "rating": null
+            },
+            {
+                "id": 690516,
+                "name": "Ademola Lookman",
+                "number": "22",
+                "position_id": 87,
+                "rating": null
+            },
+            {
+                "id": 974753,
+                "name": "Julián Álvarez",
+                "number": "19",
+                "position_id": 115,
+                "rating": null
+            }
+        ],
+        "coach": "Diego Simeone"
+    },
+    "away_team": {
+        "name": "Real Betis",
+        "id": 8603,
+        "formation": "4-3-3",
+        "starters": [
+            {
+                "id": 999171,
+                "name": "Álvaro Vallés",
+                "number": "1",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 676533,
+                "name": "Aitor Ruibal",
+                "number": "24",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 420568,
+                "name": "Diego Llorente",
+                "number": "3",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 1188375,
+                "name": "Natan",
+                "number": "4",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 115591,
+                "name": "Ricardo Rodriguez",
+                "number": "12",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 640220,
+                "name": "Marc Roca",
+                "number": "21",
+                "position_id": 73,
+                "rating": null
+            },
+            {
+                "id": 683450,
+                "name": "Pablo Fornals",
+                "number": "8",
+                "position_id": 75,
+                "rating": null
+            },
+            {
+                "id": 895954,
+                "name": "Álvaro Fidalgo",
+                "number": "15",
+                "position_id": 77,
+                "rating": null
+            },
+            {
+                "id": 967622,
+                "name": "Antony",
+                "number": "7",
+                "position_id": 103,
+                "rating": null
+            },
+            {
+                "id": 201939,
+                "name": "Cédric Bakambu",
+                "number": "11",
+                "position_id": 105,
+                "rating": null
+            },
+            {
+                "id": 1209399,
+                "name": "Abdessamad Ezzalzouli",
+                "number": "10",
+                "position_id": 107,
+                "rating": null
+            }
+        ],
+        "coach": "Manuel Pellegrini"
+    },
+    "date": "2026-02-09",
+    "source": "fotmob_manual"
+}

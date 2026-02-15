@@ -1,0 +1,177 @@
+{
+    "match_id": "4813623",
+    "match_time": "Sat, Feb 7, 2026, 17:30 UTC",
+    "timestamp": "2026-02-08 01:23:14",
+    "home_team": {
+        "name": "Newcastle United",
+        "id": 10261,
+        "formation": "4-1-2-3",
+        "starters": [
+            {
+                "id": 280484,
+                "name": "Nick Pope",
+                "number": "1",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 191869,
+                "name": "Kieran Trippier",
+                "number": "2",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 1137407,
+                "name": "Malick Thiaw",
+                "number": "12",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 956682,
+                "name": "Sven Botman",
+                "number": "4",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 1197655,
+                "name": "Lewis Hall",
+                "number": "3",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 867414,
+                "name": "Sandro Tonali",
+                "number": "8",
+                "position_id": 65,
+                "rating": null
+            },
+            {
+                "id": 850354,
+                "name": "Bruno Guimaraes",
+                "number": "39",
+                "position_id": 84,
+                "rating": null
+            },
+            {
+                "id": 860975,
+                "name": "Joseph Willock",
+                "number": "28",
+                "position_id": 86,
+                "rating": null
+            },
+            {
+                "id": 521148,
+                "name": "Jacob Murphy",
+                "number": "23",
+                "position_id": 103,
+                "rating": null
+            },
+            {
+                "id": 666857,
+                "name": "Yoane Wissa",
+                "number": "9",
+                "position_id": 105,
+                "rating": null
+            },
+            {
+                "id": 760359,
+                "name": "Harvey Barnes",
+                "number": "11",
+                "position_id": 107,
+                "rating": null
+            }
+        ],
+        "coach": "Eddie Howe"
+    },
+    "away_team": {
+        "name": "Brentford",
+        "id": 9937,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 776689,
+                "name": "Caoimhin Kelleher",
+                "number": "1",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 1429912,
+                "name": "Michael Kayode",
+                "number": "33",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 552718,
+                "name": "Kristoffer Vassbakk Ajer",
+                "number": "20",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 919435,
+                "name": "Sepp van den Berg",
+                "number": "4",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 562892,
+                "name": "Rico Henry",
+                "number": "3",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 156008,
+                "name": "Jordan Henderson",
+                "number": "6",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 688273,
+                "name": "Vitaly Janelt",
+                "number": "27",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 1250253,
+                "name": "Dango Ouattara",
+                "number": "19",
+                "position_id": 83,
+                "rating": null
+            },
+            {
+                "id": 650616,
+                "name": "Mathias Jensen",
+                "number": "8",
+                "position_id": 85,
+                "rating": null
+            },
+            {
+                "id": 1010426,
+                "name": "Keane Lewis-Potter",
+                "number": "23",
+                "position_id": 87,
+                "rating": null
+            },
+            {
+                "id": 1302005,
+                "name": "Igor Thiago",
+                "number": "9",
+                "position_id": 115,
+                "rating": null
+            }
+        ],
+        "coach": "Keith Andrews"
+    },
+    "date": "2026-02-08",
+    "source": "fotmob_manual"
+}

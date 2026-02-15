@@ -1,0 +1,177 @@
+{
+    "match_id": "4829496",
+    "match_time": "Sat, Feb 7, 2026, 17:30 UTC",
+    "timestamp": "2026-02-08 01:35:22",
+    "home_team": {
+        "name": "Borussia Mönchengladbach",
+        "id": 9788,
+        "formation": "3-5-2",
+        "starters": [
+            {
+                "id": 784146,
+                "name": "Moritz Nicolas",
+                "number": "33",
+                "position_id": 11,
+                "rating": 6
+            },
+            {
+                "id": 951918,
+                "name": "Philipp Sander",
+                "number": "16",
+                "position_id": 33,
+                "rating": null
+            },
+            {
+                "id": 517346,
+                "name": "Nico Elvedi",
+                "number": "30",
+                "position_id": 35,
+                "rating": null
+            },
+            {
+                "id": 566158,
+                "name": "Kevin Diks",
+                "number": "4",
+                "position_id": 37,
+                "rating": null
+            },
+            {
+                "id": 1185902,
+                "name": "Jens Castrop",
+                "number": "17",
+                "position_id": 71,
+                "rating": 6.2
+            },
+            {
+                "id": 1174726,
+                "name": "Rocco Reitz",
+                "number": "27",
+                "position_id": 73,
+                "rating": 6.1
+            },
+            {
+                "id": 1269497,
+                "name": "Yannik Engelhardt",
+                "number": "6",
+                "position_id": 75,
+                "rating": null
+            },
+            {
+                "id": 276739,
+                "name": "Kevin Stöger",
+                "number": "7",
+                "position_id": 77,
+                "rating": null
+            },
+            {
+                "id": 1398483,
+                "name": "Lukas Ullrich",
+                "number": "26",
+                "position_id": 79,
+                "rating": null
+            },
+            {
+                "id": 501543,
+                "name": "Franck Honorat",
+                "number": "9",
+                "position_id": 104,
+                "rating": null
+            },
+            {
+                "id": 388903,
+                "name": "Haris Tabakovic",
+                "number": "15",
+                "position_id": 106,
+                "rating": null
+            }
+        ],
+        "coach": "Eugen Polanski"
+    },
+    "away_team": {
+        "name": "Bayer Leverkusen",
+        "id": 8178,
+        "formation": "3-4-2-1",
+        "starters": [
+            {
+                "id": 278814,
+                "name": "Janis Blaswich",
+                "number": "28",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 1107620,
+                "name": "Jarell Quansah",
+                "number": "4",
+                "position_id": 33,
+                "rating": null
+            },
+            {
+                "id": 1119461,
+                "name": "Loic Badé",
+                "number": "5",
+                "position_id": 35,
+                "rating": null
+            },
+            {
+                "id": 789914,
+                "name": "Edmond Tapsoba",
+                "number": "12",
+                "position_id": 37,
+                "rating": 6.3
+            },
+            {
+                "id": 1353457,
+                "name": "Arthur",
+                "number": "13",
+                "position_id": 62,
+                "rating": null
+            },
+            {
+                "id": 1199959,
+                "name": "Equi Fernandez",
+                "number": "6",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 642551,
+                "name": "Aleix Garcia",
+                "number": "24",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 288406,
+                "name": "Alejandro Grimaldo",
+                "number": "20",
+                "position_id": 68,
+                "rating": 6.1
+            },
+            {
+                "id": 1126058,
+                "name": "Malik Tillman",
+                "number": "10",
+                "position_id": 84,
+                "rating": null
+            },
+            {
+                "id": 331542,
+                "name": "Jonas Hofmann",
+                "number": "7",
+                "position_id": 86,
+                "rating": null
+            },
+            {
+                "id": 540097,
+                "name": "Patrik Schick",
+                "number": "14",
+                "position_id": 105,
+                "rating": null
+            }
+        ],
+        "coach": "Kasper Hjulmand"
+    },
+    "date": "2026-02-08",
+    "source": "fotmob_manual"
+}

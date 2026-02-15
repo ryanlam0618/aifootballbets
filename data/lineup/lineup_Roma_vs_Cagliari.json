@@ -1,0 +1,177 @@
+{
+    "match_id": "4803270",
+    "match_time": "Mon, Feb 9, 2026, 19:45 UTC",
+    "timestamp": "2026-02-10 03:44:20",
+    "home_team": {
+        "name": "Roma",
+        "id": 8686,
+        "formation": "3-4-2-1",
+        "starters": [
+            {
+                "id": 768474,
+                "name": "Mile Svilar",
+                "number": "99",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 588687,
+                "name": "Gianluca Mancini",
+                "number": "23",
+                "position_id": 33,
+                "rating": null
+            },
+            {
+                "id": 787242,
+                "name": "Evan N'Dicka",
+                "number": "5",
+                "position_id": 35,
+                "rating": null
+            },
+            {
+                "id": 1386006,
+                "name": "Daniele Ghilardi",
+                "number": "87",
+                "position_id": 37,
+                "rating": null
+            },
+            {
+                "id": 867225,
+                "name": "Mehmet Zeki Celik",
+                "number": "19",
+                "position_id": 62,
+                "rating": null
+            },
+            {
+                "id": 299799,
+                "name": "Bryan Cristante",
+                "number": "4",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 1451196,
+                "name": "Niccolo Pisilli",
+                "number": "61",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 1320176,
+                "name": "Wesley",
+                "number": "43",
+                "position_id": 68,
+                "rating": null
+            },
+            {
+                "id": 1280082,
+                "name": "Matias Soulé",
+                "number": "18",
+                "position_id": 84,
+                "rating": null
+            },
+            {
+                "id": 540307,
+                "name": "Lorenzo Pellegrini",
+                "number": "7",
+                "position_id": 86,
+                "rating": null
+            },
+            {
+                "id": 660301,
+                "name": "Donyell Malen",
+                "number": "14",
+                "position_id": 105,
+                "rating": null
+            }
+        ],
+        "coach": "Gian Piero Gasperini"
+    },
+    "away_team": {
+        "name": "Cagliari",
+        "id": 8529,
+        "formation": "3-5-2",
+        "starters": [
+            {
+                "id": 958422,
+                "name": "Elia Caprile",
+                "number": "1",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 957107,
+                "name": "Ze Pedro",
+                "number": "32",
+                "position_id": 33,
+                "rating": null
+            },
+            {
+                "id": 822789,
+                "name": "Alberto Dossena",
+                "number": "22",
+                "position_id": 35,
+                "rating": null
+            },
+            {
+                "id": 1621219,
+                "name": "Juan Rodriguez",
+                "number": "15",
+                "position_id": 37,
+                "rating": null
+            },
+            {
+                "id": 1473806,
+                "name": "Marco Palestra",
+                "number": "2",
+                "position_id": 71,
+                "rating": null
+            },
+            {
+                "id": 936164,
+                "name": "Michel Ndary Adopo",
+                "number": "8",
+                "position_id": 73,
+                "rating": null
+            },
+            {
+                "id": 1012842,
+                "name": "Gianluca Gaetano",
+                "number": "10",
+                "position_id": 75,
+                "rating": null
+            },
+            {
+                "id": 513982,
+                "name": "Luca Mazzitelli",
+                "number": "4",
+                "position_id": 77,
+                "rating": null
+            },
+            {
+                "id": 1289961,
+                "name": "Adam Obert",
+                "number": "33",
+                "position_id": 79,
+                "rating": null
+            },
+            {
+                "id": 1435689,
+                "name": "Semih Kilicsoy",
+                "number": "9",
+                "position_id": 104,
+                "rating": null
+            },
+            {
+                "id": 1030212,
+                "name": "Sebastiano Esposito",
+                "number": "94",
+                "position_id": 106,
+                "rating": null
+            }
+        ],
+        "coach": "Fabio Pisacane"
+    },
+    "date": "2026-02-10",
+    "source": "fotmob_manual"
+}

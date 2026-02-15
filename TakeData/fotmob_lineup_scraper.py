@@ -290,15 +290,7 @@ class FotMobLineupHarvester:
 
 
 if __name__ == "__main__":
-
-    # 方法 1: 直接輸入球隊名稱 (推薦)
-    print("使用方法: 直接輸入球隊名稱自動獲取陣容")
-    lineup = FotMobLineupHarvester.get_lineup_by_teams("Liverpool", "Arsenal")
-
-    if lineup:
-        print(f"\n成功獲取陣容！")
-
     # 方法 2: 手動輸入 Match ID
-    # MATCH_ID = "4830636"
-    # bot = FotMobLineupHarvester(MATCH_ID)
-    # bot.run(interval=60)
+    MATCH_ID = "4837336"
+    bot = FotMobLineupHarvester(MATCH_ID)
+    bot.run(interval=60)

@@ -1,0 +1,175 @@
+{
+    "match_id": "4829505",
+    "match_time": "Sat, Feb 14, 2026, 14:30 UTC",
+    "timestamp": "2026-02-14 22:40:09",
+    "home_team": {
+        "name": "Bayer Leverkusen",
+        "id": 8178,
+        "formation": "3-4-2-1",
+        "starters": [
+            {
+                "id": 278814,
+                "name": "Janis Blaswich",
+                "number": "28",
+                "position_id": 11,
+                "rating": 6
+            },
+            {
+                "id": 1107620,
+                "name": "Jarell Quansah",
+                "number": "4",
+                "position_id": 33,
+                "rating": 6.5
+            },
+            {
+                "id": 411851,
+                "name": "Robert Andrich",
+                "number": "8",
+                "position_id": 35,
+                "rating": 6.2
+            },
+            {
+                "id": 789914,
+                "name": "Edmond Tapsoba",
+                "number": "12",
+                "position_id": 37,
+                "rating": 6.8
+            },
+            {
+                "id": 359193,
+                "name": "Lucas Vázquez",
+                "number": "21",
+                "position_id": 62,
+                "rating": 6.1
+            },
+            {
+                "id": 693599,
+                "name": "Exequiel Palacios",
+                "number": "25",
+                "position_id": 64,
+                "rating": 6
+            },
+            {
+                "id": 642551,
+                "name": "Aleix Garcia",
+                "number": "24",
+                "position_id": 66,
+                "rating": 6.4
+            },
+            {
+                "id": 288406,
+                "name": "Alejandro Grimaldo",
+                "number": "20",
+                "position_id": 68,
+                "rating": 6.2
+            },
+            {
+                "id": 1457626,
+                "name": "Ibrahim Maza",
+                "number": "30",
+                "position_id": 84,
+                "rating": 6.1
+            },
+            {
+                "id": 1251666,
+                "name": "Ernest Poku",
+                "number": "19",
+                "position_id": 86,
+                "rating": 6.1
+            },
+            {
+                "id": 540097,
+                "name": "Patrik Schick",
+                "number": "14",
+                "position_id": 105,
+                "rating": 6.3
+            }
+        ],
+        "coach": "Kasper Hjulmand"
+    },
+    "away_team": {
+        "name": "St. Pauli",
+        "id": 8152,
+        "formation": "3-4-2-1",
+        "starters": [
+            {
+                "id": 466867,
+                "name": "Nikola Vasilj",
+                "number": "22",
+                "position_id": 11,
+                "rating": 6
+            },
+            {
+                "id": 361712,
+                "name": "Adam Dzwigala",
+                "number": "25",
+                "position_id": 33,
+                "rating": 6.3
+            },
+            {
+                "id": 1315546,
+                "name": "Tomoya Ando",
+                "number": "15",
+                "position_id": 35,
+                "rating": 6.5
+            },
+            {
+                "id": 462863,
+                "name": "Karol Mets",
+                "number": "3",
+                "position_id": 37,
+                "rating": 6.3
+            },
+            {
+                "id": 530197,
+                "name": "Manolis Saliakas",
+                "number": "2",
+                "position_id": 62,
+                "rating": 6.1
+            },
+            {
+                "id": 880095,
+                "name": "James Sands",
+                "number": "6",
+                "position_id": 64,
+                "rating": 6.2
+            },
+            {
+                "id": 369742,
+                "name": "Jackson Irvine",
+                "number": "7",
+                "position_id": 66,
+                "rating": 6.4
+            },
+            {
+                "id": 1112702,
+                "name": "Arkadiusz Pyrka",
+                "number": "11",
+                "position_id": 68,
+                "rating": 6.1
+            },
+            {
+                "id": 675023,
+                "name": "Danel Sinani",
+                "number": "10",
+                "position_id": 84,
+                "rating": 5.8
+            },
+            {
+                "id": 537853,
+                "name": "Mathias Rasmussen",
+                "number": "20",
+                "position_id": 86,
+                "rating": 6.2
+            },
+            {
+                "id": 812839,
+                "name": "Martijn Kaars",
+                "number": "19",
+                "position_id": 105,
+                "rating": 6.3
+            }
+        ],
+        "coach": "Alexander Blessin"
+    }
+}

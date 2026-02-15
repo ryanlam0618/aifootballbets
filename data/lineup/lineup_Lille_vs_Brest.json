@@ -1,0 +1,175 @@
+{
+    "match_id": "4830648",
+    "match_time": "Sat, Feb 14, 2026, 18:00 UTC",
+    "timestamp": "2026-02-15 02:09:02",
+    "home_team": {
+        "name": "Lille",
+        "id": 8639,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 815912,
+                "name": "Berke Özer",
+                "number": "1",
+                "position_id": 11,
+                "rating": 6
+            },
+            {
+                "id": 1561552,
+                "name": "Ayyoub Bouaddi",
+                "number": "32",
+                "position_id": 32,
+                "rating": 6.3
+            },
+            {
+                "id": 277761,
+                "name": "Chancel Mbemba",
+                "number": "18",
+                "position_id": 34,
+                "rating": 6.4
+            },
+            {
+                "id": 1186553,
+                "name": "Alexsandro Ribeiro",
+                "number": "4",
+                "position_id": 36,
+                "rating": 6.3
+            },
+            {
+                "id": 815465,
+                "name": "Romain Perraud",
+                "number": "15",
+                "position_id": 38,
+                "rating": 6.6
+            },
+            {
+                "id": 148830,
+                "name": "Benjamin André",
+                "number": "21",
+                "position_id": 64,
+                "rating": 6.4
+            },
+            {
+                "id": 1428153,
+                "name": "Ngal Ayel Mukau",
+                "number": "17",
+                "position_id": 66,
+                "rating": 6.8
+            },
+            {
+                "id": 1684579,
+                "name": "Soriba Diaoune",
+                "number": "35",
+                "position_id": 83,
+                "rating": 6.1
+            },
+            {
+                "id": 1044470,
+                "name": "Hákon Arnar Haraldsson",
+                "number": "10",
+                "position_id": 85,
+                "rating": 6.3
+            },
+            {
+                "id": 942358,
+                "name": "Felix Correia",
+                "number": "27",
+                "position_id": 87,
+                "rating": 6.2
+            },
+            {
+                "id": 1444231,
+                "name": "Matias Fernandez-Pardo",
+                "number": "7",
+                "position_id": 115,
+                "rating": 6
+            }
+        ],
+        "coach": "Bruno Genesio"
+    },
+    "away_team": {
+        "name": "Brest",
+        "id": 8521,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 864145,
+                "name": "Grégoire Coudert",
+                "number": "30",
+                "position_id": 11,
+                "rating": 6.3
+            },
+            {
+                "id": 279461,
+                "name": "Kenny Lala",
+                "number": "77",
+                "position_id": 32,
+                "rating": 6.3
+            },
+            {
+                "id": 1401205,
+                "name": "Michel Diaz",
+                "number": "4",
+                "position_id": 34,
+                "rating": 6.4
+            },
+            {
+                "id": 448865,
+                "name": "Brendan Chardonnet",
+                "number": "5",
+                "position_id": 36,
+                "rating": 6.5
+            },
+            {
+                "id": 1230286,
+                "name": "Daouda Guindo",
+                "number": "27",
+                "position_id": 38,
+                "rating": 6.5
+            },
+            {
+                "id": 1079548,
+                "name": "Joris Chotard",
+                "number": "13",
+                "position_id": 64,
+                "rating": 6.5
+            },
+            {
+                "id": 812415,
+                "name": "Hugo Magnetti",
+                "number": "8",
+                "position_id": 66,
+                "rating": 6.4
+            },
+            {
+                "id": 696263,
+                "name": "Romain Del Castillo",
+                "number": "10",
+                "position_id": 83,
+                "rating": 6.1
+            },
+            {
+                "id": 1040889,
+                "name": "Eric Ebimbe",
+                "number": "7",
+                "position_id": 85,
+                "rating": 6.1
+            },
+            {
+                "id": 1401248,
+                "name": "Rémy Lascary",
+                "number": "14",
+                "position_id": 87,
+                "rating": 6.3
+            },
+            {
+                "id": 471153,
+                "name": "Ludovic Ajorque",
+                "number": "19",
+                "position_id": 115,
+                "rating": 6.1
+            }
+        ],
+        "coach": "Eric Roy"
+    }
+}

@@ -364,7 +364,7 @@ class HistoryRepo:
         matches = difflib.get_close_matches(input_name, all_teams, n=1, cutoff=0.6)
         return matches[0] if matches else input_name
 
-    def get_match_context(self, home: str, away: str, league: str) -> Dict:
+    def get_match_context(self, home: str, away: str, league: str = None) -> Dict:
         if self.df is None or self.df.empty: self._create_mock_data()
         
         # 確保列是字符串類型

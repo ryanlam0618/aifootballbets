@@ -1,0 +1,177 @@
+{
+    "match_id": "4813619",
+    "match_time": "Sat, Feb 7, 2026, 15:00 UTC",
+    "timestamp": "2026-02-07 22:45:32",
+    "home_team": {
+        "name": "Fulham",
+        "id": 9879,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 215168,
+                "name": "Bernd Leno",
+                "number": "1",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 465750,
+                "name": "Timothy Castagne",
+                "number": "21",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 503659,
+                "name": "Joachim Andersen",
+                "number": "5",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 821728,
+                "name": "Jorge Cuenca",
+                "number": "15",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 773991,
+                "name": "Ryan Sessegnon",
+                "number": "30",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 604785,
+                "name": "Alex Iwobi",
+                "number": "17",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 540963,
+                "name": "Sander Berge",
+                "number": "16",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 494417,
+                "name": "Harry Wilson",
+                "number": "8",
+                "position_id": 83,
+                "rating": null
+            },
+            {
+                "id": 889534,
+                "name": "Emile Smith Rowe",
+                "number": "32",
+                "position_id": 85,
+                "rating": null
+            },
+            {
+                "id": 688300,
+                "name": "Samuel Chukwueze",
+                "number": "19",
+                "position_id": 87,
+                "rating": null
+            },
+            {
+                "id": 292313,
+                "name": "Raul Jiménez",
+                "number": "7",
+                "position_id": 115,
+                "rating": null
+            }
+        ],
+        "coach": "Marco Silva"
+    },
+    "away_team": {
+        "name": "Everton",
+        "id": 8668,
+        "formation": "4-2-3-1",
+        "starters": [
+            {
+                "id": 303919,
+                "name": "Jordan Pickford",
+                "number": "1",
+                "position_id": 11,
+                "rating": null
+            },
+            {
+                "id": 1098607,
+                "name": "Jake O'Brien",
+                "number": "15",
+                "position_id": 32,
+                "rating": null
+            },
+            {
+                "id": 243138,
+                "name": "James Tarkowski",
+                "number": "6",
+                "position_id": 34,
+                "rating": null
+            },
+            {
+                "id": 290410,
+                "name": "Michael Keane",
+                "number": "5",
+                "position_id": 36,
+                "rating": null
+            },
+            {
+                "id": 874025,
+                "name": "Vitaliy Mykolenko",
+                "number": "16",
+                "position_id": 38,
+                "rating": null
+            },
+            {
+                "id": 950474,
+                "name": "James Garner",
+                "number": "37",
+                "position_id": 64,
+                "rating": null
+            },
+            {
+                "id": 179410,
+                "name": "Idrissa Gana Gueye",
+                "number": "27",
+                "position_id": 66,
+                "rating": null
+            },
+            {
+                "id": 1559637,
+                "name": "Harrison Armstrong",
+                "number": "45",
+                "position_id": 83,
+                "rating": null
+            },
+            {
+                "id": 886016,
+                "name": "Kiernan Dewsbury-Hall",
+                "number": "22",
+                "position_id": 85,
+                "rating": null
+            },
+            {
+                "id": 965764,
+                "name": "Iliman Ndiaye",
+                "number": "10",
+                "position_id": 87,
+                "rating": null
+            },
+            {
+                "id": 1398392,
+                "name": "Thierno Barry",
+                "number": "11",
+                "position_id": 115,
+                "rating": null
+            }
+        ],
+        "coach": "David Moyes"
+    },
+    "date": "2026-02-07",
+    "source": "fotmob_manual"
+}
