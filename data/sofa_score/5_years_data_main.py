@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 五大聯賽 + 日本J1 + 韓國K聯賽 + 澳洲A聯賽 過往五個賽季數據爬蟲
-包括這些球隊參與的盃賽數據（欧冠、欧联、足总杯等）
+包括這些球隊參與的盃賽數據（歐冠、歐聯、足總杯等）
 帶重試機制和定期保存功能
 """
 
@@ -11,6 +11,9 @@ import csv
 import time
 import json
 from DrissionPage import ChromiumPage, ChromiumOptions
+
+# 用於去重的已處理比賽ID集合
+processed_event_ids = set()
 
 
 # 聯賽配置
@@ -24,7 +27,7 @@ LEAGUE_CONFIG = {
     # 亞洲聯賽
     'J1 League': {'country': 'Japan', 'id': 'J1'},
     'K League 1': {'country': 'South Korea', 'id': 'K1'},
-    'A-League': {'country': 'Australia', 'id': 'A-League'},
+    'A-League Men': {'country': 'Australia', 'id': 'A-League'},
 }
 
 # 盃賽配置 (使用 API 實際返回的名稱)
@@ -46,20 +49,21 @@ CUP_CONFIG = {
 
 # 獲取過去5個賽季
 def get_season_list():
-    """生成過去5個賽季列表"""
-    current_year = datetime.datetime.now().year
-    current_month = datetime.datetime.now().month
-    
-    # 如果是賽季中期（8月-次年5月），當前賽季是 2025/2026
-    if 8 <= current_month <= 12:
-        current_season = current_year
-    else:
-        current_season = current_year - 1
-    
-    seasons = []
-    for i in range(5):
-        season = current_season - i
-        seasons.append(f"{season}/{season+1}")
+    """生成賽季列表 (2015/2016 到 2025/2026)"""
+    # 固定賽季列表：從 2015/2016 賽季到 2025/2026 賽季
+    seasons = [
+        "2015/2016",
+        "2016/2017", 
+        "2017/2018",
+        "2018/2019",
+        "2019/2020",
+        "2020/2021",
+        "2021/2022",
+        "2022/2023",
+        "2023/2024",
+        "2024/2025",
+        "2025/2026",
+    ]
     
     return seasons
 
@@ -90,9 +94,16 @@ def parse_api_events(data):
             if not home_team or not away_team:
                 continue
             
+            # 獲取比賽日期時間 (使用 startTimestamp 轉換為日期)
+            start_timestamp = event.get('startTimestamp', '')
+            if start_timestamp:
+                match_date = datetime.datetime.fromtimestamp(start_timestamp).strftime('%Y-%m-%d')
+            else:
+                match_date = ''
+            
             match_info = {
                 'event_id': event.get('id'),
-                'match_date': event.get('startDate', {}).get('date', ''),
+                'match_date': match_date,
                 'tournament_name': tournament_name,
                 'category_name': category_name,
                 'home_team': home_team,
@@ -238,7 +249,7 @@ def detail(match_info, all_rows):
             rows = extract_statistics(data, match_info)
             if rows:
                 all_rows.extend(rows)
-                print(f"    统计: {len(rows)} 条")  # 添加调试输出
+                print(f"    统计: {len(rows)} 條")  # 添加调试输出
             else:
                 print(f"    无统计或提取失败")  # 添加调试输出
             return True  # 成功
@@ -271,7 +282,7 @@ def detail_shotmap(match_info, all_shot_rows):
             rows = extract_shotmap(data, match_info)
             if rows:
                 all_shot_rows.extend(rows)
-                print(f"    射门: {len(rows)} 条")  # 添加调试输出
+                print(f"    射门: {len(rows)} 條")  # 添加调试输出
             return True  # 成功
             
         except Exception as e:
@@ -343,9 +354,6 @@ def save_shotmap_to_csv(rows, filename):
 
 def get_season_dates(season_str):
     """根據賽季字符串獲取開始和結束日期"""
-    # 測試模式：使用固定日期範圍 2025-08-23 ~ 2025-08-26
-    return "2025-08-23", "2025-08-26"
-    
     # 賽季格式: 2021/2022
     start_year = int(season_str.split('/')[0])
     end_year = start_year + 1
@@ -353,6 +361,10 @@ def get_season_dates(season_str):
     # 賽季通常是從8月到次年5月
     start_date = f"{start_year}-08-01"
     end_date = f"{end_year}-05-31"
+    
+    # 特殊處理：如果結束日期超過 2026-02-17，則使用 2026-02-17
+    if end_date > "2026-02-17":
+        end_date = "2026-02-17"
     
     return start_date, end_date
 
@@ -365,6 +377,10 @@ def crawl_league(league_name, season_str, all_rows, all_shot_rows, data_dir):
     print(f"正在爬取: {league_name} - {season_str}")
     print(f"日期範圍: {start_date} ~ {end_date}")
     print(f"{'='*60}")
+    
+    # 創建該聯賽獨立的臨時數據列表
+    league_rows = []
+    league_shot_rows = []
     
     # 生成日期範圍
     start_dt = datetime.datetime.strptime(start_date, '%Y-%m-%d')
@@ -402,8 +418,14 @@ def crawl_league(league_name, season_str, all_rows, all_shot_rows, data_dir):
                 print(f"  {date}: 找到 {len(league_matches)} 場 {league_name} 比賽")
                 
                 for match_info in league_matches:
-                    detail(match_info, all_rows)
-                    detail_shotmap(match_info, all_shot_rows)
+                    # 去重：跳過已處理過的比賽
+                    event_id = match_info['event_id']
+                    if event_id in processed_event_ids:
+                        continue
+                    processed_event_ids.add(event_id)
+                    
+                    detail(match_info, league_rows)
+                    detail_shotmap(match_info, league_shot_rows)
                     page_tab.wait(0.3)
                 
                 break  # 成功，退出重試循環
@@ -427,9 +449,20 @@ def crawl_league(league_name, season_str, all_rows, all_shot_rows, data_dir):
         if (i + 1) % save_interval == 0:
             temp_stats_file = os.path.join(data_dir, f"temp_stats_{league_name}_{season_str}.csv")
             temp_shot_file = os.path.join(data_dir, f"temp_shot_{league_name}_{season_str}.csv")
-            save_to_csv(all_rows, temp_stats_file)
-            save_shotmap_to_csv(all_shot_rows, temp_shot_file)
-            print(f"  [進度保存] 已保存 {len(all_rows)} 條統計數據")
+            save_to_csv(league_rows, temp_stats_file)
+            save_shotmap_to_csv(league_shot_rows, temp_shot_file)
+            print(f"  [進度保存] 已保存 {len(league_rows)} 條統計數據")
+    
+    # 爬取完成後，將數據添加到總列表
+    all_rows.extend(league_rows)
+    all_shot_rows.extend(league_shot_rows)
+    
+    # 最終保存
+    temp_stats_file = os.path.join(data_dir, f"temp_stats_{league_name}_{season_str}.csv")
+    temp_shot_file = os.path.join(data_dir, f"temp_shot_{league_name}_{season_str}.csv")
+    save_to_csv(league_rows, temp_stats_file)
+    save_shotmap_to_csv(league_shot_rows, temp_shot_file)
+    print(f"  [{league_name}] 已保存 {len(league_rows)} 條統計數據，{len(league_shot_rows)} 條射門數據")
 
 
 def get_all_teams(all_matches):
@@ -482,6 +515,13 @@ def crawl_cups_for_teams(teams, season_str, all_rows, all_shot_rows):
                 
                 if is_cup and has_our_team:
                     print(f"  盃賽: {home_team} vs {away_team} ({tournament_name})")
+                    
+                    # 去重：跳過已處理過的比賽
+                    event_id = match['event_id']
+                    if event_id in processed_event_ids:
+                        continue
+                    processed_event_ids.add(event_id)
+                    
                     detail(match, all_rows)
                     detail_shotmap(match, all_shot_rows)
                     page_tab.wait(0.3)
@@ -492,6 +532,10 @@ def crawl_cups_for_teams(teams, season_str, all_rows, all_shot_rows):
 
 def start():
     """主程序"""
+    # 清空已處理記錄，確保每次運行都是完整的
+    global processed_event_ids
+    processed_event_ids = set()
+    
     seasons = get_season_list()
     print(f"將爬取以下賽季的數據: {seasons}")
     

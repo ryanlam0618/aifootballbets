@@ -8,9 +8,19 @@ import difflib
 class FotMobLineupHarvester:
     def __init__(self, match_id=None):
         self.match_id = match_id
+        # 更完整的 Headers 來繞過基本的反爬蟲
         self.headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Referer": "https://www.fotmob.com/"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "en-US,en;q=0.9,zh-TW;q=0.8,zh;q=0.7",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Referer": "https://www.fotmob.com/",
+            "Origin": "https://www.fotmob.com",
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Site": "same-origin",
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache"
         }
         if match_id:
             self.api_url = f"https://www.fotmob.com/api/matchDetails?matchId={match_id}"
@@ -91,9 +101,16 @@ class FotMobLineupHarvester:
     def fetch_data(self):
         try:
             print(f"📡 正在請求比賽數據 (ID: {self.match_id})...")
-            response = requests.get(self.api_url, headers=self.headers, timeout=10)
+            response = requests.get(self.api_url, headers=self.headers, timeout=15)
             if response.status_code == 200:
                 return response.json()
+            elif response.status_code == 403:
+                print(f"❌ API 請求失敗: 403 Forbidden - 可能需要驗證或 IP 被封鎖")
+                print(f"   [提示] 請嘗試以下解決方案:")
+                print(f"   1. 使用 VPN 或代理伺服器")
+                print(f"   2. 稍後再試")
+                print(f"   3. 手動從 https://www.fotmob.com/zhTW/matchId:{self.match_id} 獲取數據")
+                return None
             else:
                 print(f"❌ API 請求失敗: {response.status_code}")
                 return None
@@ -291,6 +308,6 @@ class FotMobLineupHarvester:
 
 if __name__ == "__main__":
     # 方法 2: 手動輸入 Match ID
-    MATCH_ID = "4837336"
+    MATCH_ID = "4803278"
     bot = FotMobLineupHarvester(MATCH_ID)
     bot.run(interval=60)
