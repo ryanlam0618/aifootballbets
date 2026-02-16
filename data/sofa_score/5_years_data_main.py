@@ -354,6 +354,12 @@ def save_shotmap_to_csv(rows, filename):
 
 def get_season_dates(season_str):
     """根據賽季字符串獲取開始和結束日期"""
+<<<<<<< HEAD
+=======
+    # 測試模式：使用固定日期範圍 2025-08-23 ~ 2025-08-26
+    #return "2025-08-23", "2025-08-26"
+    
+>>>>>>> 86f2a445801e08a24affd2e6d31be91dc5b131ae
     # 賽季格式: 2021/2022
     start_year = int(season_str.split('/')[0])
     end_year = start_year + 1
