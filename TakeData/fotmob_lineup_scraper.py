@@ -290,7 +290,8 @@ class FotMobLineupHarvester:
 
 
 if __name__ == "__main__":
-    # 方法 2: 手動輸入 Match ID
-    MATCH_ID = "4837336"
+    
+    MATCH_ID = "4813595"  # 替換為您想監控的比賽 ID
+    
     bot = FotMobLineupHarvester(MATCH_ID)
     bot.run(interval=60)
