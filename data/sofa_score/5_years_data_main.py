@@ -10,7 +10,18 @@ import os
 import csv
 import time
 import json
+import sys
 from DrissionPage import ChromiumPage, ChromiumOptions
+
+# 處理 exe 運行時的路徑問題
+def get_script_dir():
+    """獲取腳本所在目錄（支持 exe 和 py 運行）"""
+    if getattr(sys, 'frozen', False):
+        # 運行為 exe 時，使用 exe 所在目錄
+        return os.path.dirname(sys.executable)
+    else:
+        # 運行為 py 時，使用腳本所在目錄
+        return os.path.dirname(os.path.abspath(__file__))
 
 # 用於去重的已處理比賽ID集合
 processed_event_ids = set()
@@ -354,12 +365,6 @@ def save_shotmap_to_csv(rows, filename):
 
 def get_season_dates(season_str):
     """根據賽季字符串獲取開始和結束日期"""
-<<<<<<< HEAD
-=======
-    # 測試模式：使用固定日期範圍 2025-08-23 ~ 2025-08-26
-    #return "2025-08-23", "2025-08-26"
-    
->>>>>>> 86f2a445801e08a24affd2e6d31be91dc5b131ae
     # 賽季格式: 2021/2022
     start_year = int(season_str.split('/')[0])
     end_year = start_year + 1
@@ -550,9 +555,10 @@ def start():
     print(f"目標聯賽: {target_leagues}")
     
     # 數據存儲目錄
-    base_dir = os.path.dirname(os.path.abspath(__file__))
+    base_dir = get_script_dir()
     data_dir = os.path.join(base_dir, '5_years_data')
     os.makedirs(data_dir, exist_ok=True)
+    print(f"數據將保存至: {data_dir}")
     
     all_stats_rows = []
     all_shot_rows = []
