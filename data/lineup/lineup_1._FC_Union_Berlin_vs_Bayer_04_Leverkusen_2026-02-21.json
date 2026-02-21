@@ -1,0 +1,361 @@
+{
+    "event_id": 14062219,
+    "match_date": "2026-02-21",
+    "match_time": "22:30",
+    "tournament_name": "Bundesliga",
+    "category_name": "Germany",
+    "home_team": "1. FC Union Berlin",
+    "away_team": "Bayer 04 Leverkusen",
+    "home_formation": "3-4-2-1",
+    "away_formation": "3-4-2-1",
+    "home_coach": "",
+    "away_coach": "",
+    "home_starters": [
+        {
+            "id": 137692,
+            "name": "Frederik Rønnow",
+            "number": 1,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 830803,
+            "name": "Danilho Doekhi",
+            "number": 5,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1086547,
+            "name": "Leopold Querfeld",
+            "number": 14,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 904991,
+            "name": "Stanley N'Soki",
+            "number": 34,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 168985,
+            "name": "Janik Haberer",
+            "number": 19,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 149479,
+            "name": "Rani Khedira",
+            "number": 8,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1198074,
+            "name": "Aljoscha Kemlein",
+            "number": 6,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 886737,
+            "name": "Derrick Köhn",
+            "number": 39,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 877302,
+            "name": "András Schäfer",
+            "number": 13,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 927405,
+            "name": "Woo-Yeong Jeong",
+            "number": 11,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 953767,
+            "name": "Andrej Ilić",
+            "number": 23,
+            "position": "F",
+            "rating": ""
+        }
+    ],
+    "away_starters": [
+        {
+            "id": 96832,
+            "name": "Janis Blaswich",
+            "number": 28,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 1006489,
+            "name": "Loïc Badé",
+            "number": 5,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 168903,
+            "name": "Robert Andrich",
+            "number": 8,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 883262,
+            "name": "Edmond Tapsoba",
+            "number": 12,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1174761,
+            "name": "Arthur",
+            "number": 13,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1003012,
+            "name": "Ezequiel Fernández",
+            "number": 6,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 796047,
+            "name": "Aleix García",
+            "number": 24,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 177177,
+            "name": "Alejandro Grimaldo",
+            "number": 20,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1407524,
+            "name": "Ibrahim Maza",
+            "number": 30,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 975798,
+            "name": "Malik Tillman",
+            "number": 10,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 2029648,
+            "name": "Christian Kofane",
+            "number": 35,
+            "position": "F",
+            "rating": ""
+        }
+    ],
+    "home_substitutes": [
+        {
+            "id": 842718,
+            "name": "Matheo Raab",
+            "number": 31,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 1534045,
+            "name": "Andrik Markgraf",
+            "number": 3,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 800252,
+            "name": "Tim Skarke",
+            "number": 21,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 825740,
+            "name": "Alex Král",
+            "number": 33,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 48557,
+            "name": "Christopher Trimmel",
+            "number": 28,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 608362,
+            "name": "Oliver Burke",
+            "number": 7,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 1518974,
+            "name": "David Preu",
+            "number": 17,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 1462742,
+            "name": "Ilyas Ansah",
+            "number": 10,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 1513469,
+            "name": "Livan Burcu",
+            "number": 9,
+            "position": "F",
+            "rating": ""
+        }
+    ],
+    "away_substitutes": [
+        {
+            "id": 571622,
+            "name": "Jonas Omlin",
+            "number": 18,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 255239,
+            "name": "Lucas Vázquez",
+            "number": 21,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1003339,
+            "name": "Jarell Quansah",
+            "number": 4,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1138778,
+            "name": "Tim Oermann",
+            "number": 15,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1119502,
+            "name": "Ernest Poku",
+            "number": 19,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 822600,
+            "name": "Exequiel Palacios",
+            "number": 25,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 846445,
+            "name": "Martin Terrier",
+            "number": 11,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 280609,
+            "name": "Patrik Schick",
+            "number": 14,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 142390,
+            "name": "Jonas Hofmann",
+            "number": 7,
+            "position": "M",
+            "rating": ""
+        }
+    ],
+    "home_missing_players": [
+        {
+            "name": "Diogo Leite",
+            "position": "D",
+            "type": "missing",
+            "description": "Thigh Injury",
+            "expected_end_date": "2026-03-09T00:00:00+00:00"
+        },
+        {
+            "name": "Josip Juranović",
+            "position": "D",
+            "type": "missing",
+            "description": "Muscle Injury",
+            "expected_end_date": "2026-02-22T00:00:00+00:00"
+        },
+        {
+            "name": "Robert Skov",
+            "position": "M",
+            "type": "missing",
+            "description": "Calf Injury",
+            "expected_end_date": "2026-02-22T00:00:00+00:00"
+        },
+        {
+            "name": "Tom Rothe",
+            "position": "M",
+            "type": "missing",
+            "description": "Muscle Injury",
+            "expected_end_date": "2026-02-22T00:00:00+00:00"
+        },
+        {
+            "name": "Matheo Raab",
+            "position": "G",
+            "type": "doubtful",
+            "description": "Illness",
+            "expected_end_date": "2026-02-22T00:00:00+00:00"
+        }
+    ],
+    "away_missing_players": [
+        {
+            "name": "Eliesse Ben Seghir",
+            "position": "M",
+            "type": "missing",
+            "description": "Ankle Injury",
+            "expected_end_date": "2026-03-05T00:00:00+00:00"
+        },
+        {
+            "name": "Nathan Tella",
+            "position": "M",
+            "type": "missing",
+            "description": "Foot Injury",
+            "expected_end_date": "2026-03-05T00:00:00+00:00"
+        },
+        {
+            "name": "Mark Flekken",
+            "position": "G",
+            "type": "missing",
+            "description": "MCL Knee Injury",
+            "expected_end_date": "2026-03-05T00:00:00+00:00"
+        }
+    ]
+}

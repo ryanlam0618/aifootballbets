@@ -58,7 +58,7 @@ class Settings:
         EXCEL_FILEPATH = os.path.join(BASE_DIR, EXCEL_FILENAME)
 
     # --- 資金管理設定 ---
-    INITIAL_BANKROLL = 150
+    INITIAL_BANKROLL = 2000
     KELLY_FRACTION = 0.75
     MIN_EDGE = 0.09
 

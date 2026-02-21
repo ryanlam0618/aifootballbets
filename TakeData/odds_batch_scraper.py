@@ -136,80 +136,106 @@ LEAGUES = {
 }
 
 # 杯賽配置
+# url_template 用於動態生成URL (包含賽季)
+# latest_url 用於最新賽季
 CUPS = {
     # 歐洲盃賽
     "champions-league": {
         "name": "UEFA Champions League",
         "url_key": "champions-league",
-        "custom_url": "https://www.oddsportal.com/football/europe/champions-league",
+        "url_template": "https://www.oddsportal.com/football/europe/champions-league-{season}/results/",
+        "latest_url": "https://www.oddsportal.com/football/europe/champions-league/results/",
     },
     "europa-league": {
         "name": "UEFA Europa League",
         "url_key": "europa-league",
-        "custom_url": "https://www.oddsportal.com/football/europe/europa-league",
+        "url_template": "https://www.oddsportal.com/football/europe/europa-league-{season}/results/",
+        "latest_url": "https://www.oddsportal.com/football/europe/europa-league/results/",
     },
     "europa-conference-league": {
         "name": "UEFA Europa Conference League",
         "url_key": "europa-conference-league",
-        "custom_url": "https://www.oddsportal.com/football/europe/europa-conference-league",
+        "url_template": "https://www.oddsportal.com/football/europe/europa-conference-league-{season}/results/",
+        "latest_url": "https://www.oddsportal.com/football/europe/europa-conference-league/results/",
     },
-    # 各國杯賽
+    # 英格蘭杯賽
     "england-fa-cup": {
         "name": "FA Cup",
         "url_key": "england-fa-cup",
-        "custom_url": "https://www.oddsportal.com/football/england/fa-cup",
+        "url_template": "https://www.oddsportal.com/football/england/fa-cup-{season}/results/",
+        "latest_url": "https://www.oddsportal.com/football/england/fa-cup/results/",
     },
     "england-league-cup": {
-        "name": "EFL Cup",
+        "name": "EFL Cup (Capital One Cup)",
         "url_key": "england-league-cup",
-        "custom_url": "https://www.oddsportal.com/football/england/league-cup",
+        "url_template": "https://www.oddsportal.com/football/england/capital-one-cup-{season}/results/",
+        "latest_url": "https://www.oddsportal.com/football/england/efl-cup/results/",
     },
+    # 西班牙杯賽
     "spain-copa-del-rey": {
         "name": "Copa del Rey",
         "url_key": "spain-copa-del-rey",
-        "custom_url": "https://www.oddsportal.com/football/spain/copa-del-rey",
+        "url_template": "https://www.oddsportal.com/football/spain/copa-del-rey-{season}/results/",
+        "latest_url": "https://www.oddsportal.com/football/spain/copa-del-rey/results/",
     },
+    # 意大利杯賽
     "italy-coppa-italia": {
         "name": "Coppa Italia",
         "url_key": "italy-coppa-italia",
-        "custom_url": "https://www.oddsportal.com/football/italy/coppa-italia",
+        "url_template": "https://www.oddsportal.com/football/italy/coppa-italia-{season}/results/",
+        "latest_url": "https://www.oddsportal.com/football/italy/coppa-italia/results/",
     },
+    # 德國杯賽
     "germany-dfb-pokal": {
         "name": "DFB-Pokal",
         "url_key": "germany-dfb-pokal",
-        "custom_url": "https://www.oddsportal.com/football/germany/dfb-pokal",
+        "url_template": "https://www.oddsportal.com/football/germany/dfb-pokal-{season}/results/",
+        "latest_url": "https://www.oddsportal.com/football/germany/dfb-pokal/results/",
     },
+    # 法國杯賽
     "france-coupe-de-france": {
         "name": "Coupe de France",
         "url_key": "france-coupe-de-france",
-        "custom_url": "https://www.oddsportal.com/football/france/coupe-de-france",
+        "url_template": "https://www.oddsportal.com/football/france/coupe-de-france-{season}/results/",
+        "latest_url": "https://www.oddsportal.com/football/france/coupe-de-france/results/",
     },
     "france-coupe-de-la-ligue": {
         "name": "Coupe de la Ligue",
         "url_key": "france-coupe-de-la-ligue",
-        "custom_url": "https://www.oddsportal.com/football/france/coupe-de-la-ligue",
+        "url_template": "https://www.oddsportal.com/football/france/coupe-de-la-ligue-{season}/results/",
+        "latest_url": "https://www.oddsportal.com/football/france/coupe-de-la-ligue/results/",
     },
     # 亞洲杯賽
+    "afc-champions-league": {
+        "name": "AFC Champions League",
+        "url_key": "afc-champions-league",
+        "url_template": "https://www.oddsportal.com/football/asia/afc-champions-league-{season}/results/",
+        "latest_url": "https://www.oddsportal.com/football/asia/afc-champions-league/results/",
+    },
     "japan-emperors-cup": {
         "name": "Emperor's Cup",
         "url_key": "japan-emperors-cup",
-        "custom_url": "https://www.oddsportal.com/football/japan/emperors-cup",
+        "url_template": "https://www.oddsportal.com/football/japan/emperors-cup-{season}/results/",
+        "latest_url": "https://www.oddsportal.com/football/japan/emperors-cup/results/",
     },
     "japan-league-cup": {
         "name": "J.League Cup",
         "url_key": "japan-league-cup",
-        "custom_url": "https://www.oddsportal.com/football/japan/j-league-cup",
+        "url_template": "https://www.oddsportal.com/football/japan/j-league-cup-{season}/results/",
+        "latest_url": "https://www.oddsportal.com/football/japan/j-league-cup/results/",
     },
     "south-korea-fa-cup": {
         "name": "Korean FA Cup",
         "url_key": "south-korea-fa-cup",
-        "custom_url": "https://www.oddsportal.com/football/south-korea/fa-cup",
+        "url_template": "https://www.oddsportal.com/football/south-korea/fa-cup-{season}/results/",
+        "latest_url": "https://www.oddsportal.com/football/south-korea/fa-cup/results/",
     },
     # 澳洲杯賽
     "australia-fa-cup": {
         "name": "Australia Cup",
         "url_key": "australia-fa-cup",
-        "custom_url": "https://www.oddsportal.com/football/australia/fa-cup",
+        "url_template": "https://www.oddsportal.com/football/australia/fa-cup-{season}/results/",
+        "latest_url": "https://www.oddsportal.com/football/australia/fa-cup/results/",
     },
 }
 
@@ -337,7 +363,7 @@ def run_odds_harvester(
     output_dir: str,
     headless: bool = True,
     concurrency: int = 5,
-    scrape_history: bool = False,
+    scrape_history: bool = True,
     use_preview_mode: bool = False,
     log_logger: Optional[logging.Logger] = None
 ) -> Tuple[bool, str]:
@@ -414,7 +440,7 @@ def run_odds_harvester(
             text=True,
             encoding='utf-8',
             errors='replace',  # 忽略無法解碼的字元
-            timeout=3600  # 1小時超時
+            timeout=10800  # 3小時超時
         )
         
         if result.returncode == 0:
@@ -454,7 +480,7 @@ def run_odds_harvester_by_url(
     league_name: str = "custom",
     headless: bool = True,
     concurrency: int = 5,
-    scrape_history: bool = False,
+    scrape_history: bool = True,
     use_preview_mode: bool = False,
     log_logger: Optional[logging.Logger] = None
 ) -> Tuple[bool, str]:
@@ -559,7 +585,7 @@ def scrape_leagues(
     output_dir: str,
     headless: bool = True,
     concurrency: int = 5,
-    scrape_history: bool = False,
+    scrape_history: bool = True,
     use_preview_mode: bool = False,
     delay_between_requests: int = 5,
     log_logger: Optional[logging.Logger] = None
@@ -590,7 +616,7 @@ def scrape_leagues(
     
     for league_key, league_info in leagues.items():
         for season in seasons:
-            for market in [markets[0]]:  # 每次爬取一個市場
+            for market in markets:  # 遍歷所有市場
                 current_task += 1
                 logger.info(f"\n[{current_task}/{total_tasks}] 處理: {league_info['name']} - {season}")
                 
@@ -639,7 +665,7 @@ def scrape_cups(
     output_dir: str,
     headless: bool = True,
     concurrency: int = 5,
-    scrape_history: bool = False,
+    scrape_history: bool = True,
     use_preview_mode: bool = False,
     delay_between_requests: int = 5,
     log_logger: Optional[logging.Logger] = None
@@ -670,11 +696,28 @@ def scrape_cups(
     
     for cup_key, cup_info in cups.items():
         for season in seasons:
-            for market in [markets[0]]:
+            for market in markets:  # 遍歷所有市場
                 current_task += 1
                 logger.info(f"\n[{current_task}/{total_tasks}] 處理: {cup_info['name']} - {season}")
                 
-                if "custom_url" in cup_info:
+                # 使用動態URL模板，替換賽季
+                if "url_template" in cup_info:
+                    # 轉換賽季格式 (2015-2016 -> 2015-2016)
+                    season_url = season.replace("-", "-")
+                    cup_url = cup_info["url_template"].replace("{season}", season_url)
+                    success, _ = run_odds_harvester_by_url(
+                        url=cup_url,
+                        season=season,
+                        markets=[market],
+                        output_dir=output_dir,
+                        league_name=cup_key,
+                        headless=headless,
+                        concurrency=concurrency,
+                        scrape_history=scrape_history,
+                        use_preview_mode=use_preview_mode,
+                        log_logger=logger
+                    )
+                elif "custom_url" in cup_info:
                     success, _ = run_odds_harvester_by_url(
                         url=cup_info["custom_url"],
                         season=season,
@@ -717,7 +760,7 @@ def scrape_all_leagues_and_cups(
     markets: List[str] = MARKETS_SHORT,
     headless: bool = True,
     concurrency: int = 5,
-    scrape_history: bool = False,
+    scrape_history: bool = True,
     use_preview_mode: bool = False,
     delay_between_requests: int = 5,
     include_cups: bool = True,
@@ -820,7 +863,7 @@ def scrape_single_league(
     markets: List[str] = MARKETS_SHORT,
     headless: bool = True,
     concurrency: int = 5,
-    scrape_history: bool = False,
+    scrape_history: bool = True,
     use_preview_mode: bool = False,
     output_dir: Optional[str] = None
 ) -> Tuple[bool, str]:
@@ -884,7 +927,7 @@ def scrape_single_cup(
     markets: List[str] = MARKETS_SHORT,
     headless: bool = True,
     concurrency: int = 5,
-    scrape_history: bool = False,
+    scrape_history: bool = True,
     use_preview_mode: bool = False,
     output_dir: Optional[str] = None
 ) -> Tuple[bool, str]:
@@ -983,7 +1026,7 @@ python odds_batch_scraper.py --all --no-cups
     parser.add_argument("--full-markets", action="store_true", help="使用完整市場列表")
     parser.add_argument("--no-headless", action="store_true", help="不使用無頭模式")
     parser.add_argument("--concurrency", type=int, default=5, help="並發任務數 (默認: 5)")
-    parser.add_argument("--scrape-history", action="store_true", help="爬取歷史賠率")
+    parser.add_argument("--scrape-history", action="store_true", default=True, help="爬取歷史賠率 (默認開啟)")
     parser.add_argument("--no-preview", action="store_true", help="不使用預覽模式 (更慢但更詳細)")
     parser.add_argument("--no-cups", action="store_true", help="不包含杯賽")
     parser.add_argument("--delay", type=int, default=5, help="請求間隔秒數 (默認: 5)")

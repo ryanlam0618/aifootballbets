@@ -1,0 +1,375 @@
+{
+    "event_id": "15453051",
+    "match_date": "2026-02-20",
+    "match_time": "01:45",
+    "tournament_name": "UEFA Europa League, Knockout stage",
+    "category_name": "Europe",
+    "home_team": "Fenerbahçe",
+    "away_team": "Nottingham Forest",
+    "home_formation": "4-2-3-1",
+    "away_formation": "4-2-3-1",
+    "home_coach": "",
+    "away_coach": "",
+    "home_starters": [
+        {
+            "id": 254491,
+            "name": "Ederson",
+            "number": 31,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 252821,
+            "name": "Nélson Semedo",
+            "number": 27,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 187205,
+            "name": "Milan Škriniar",
+            "number": 37,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1048324,
+            "name": "Jayden Oosterwolde",
+            "number": 24,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 836683,
+            "name": "Mert Müldür",
+            "number": 18,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 852404,
+            "name": "Mattéo Guendouzi",
+            "number": 6,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 234148,
+            "name": "N'Golo Kanté",
+            "number": 17,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 361004,
+            "name": "Marco Asensio",
+            "number": 21,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 329245,
+            "name": "Anderson Talisca",
+            "number": 94,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 903324,
+            "name": "Kerem Aktürkoğlu",
+            "number": 9,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1514916,
+            "name": "Sidiki Cherif",
+            "number": 26,
+            "position": "F",
+            "rating": ""
+        }
+    ],
+    "away_starters": [
+        {
+            "id": 125274,
+            "name": "Stefan Ortega",
+            "number": 27,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 800417,
+            "name": "Ola Aina",
+            "number": 34,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 836168,
+            "name": "Nikola Milenković",
+            "number": 31,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1199282,
+            "name": "Murillo",
+            "number": 5,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 927356,
+            "name": "Neco Williams",
+            "number": 3,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 994546,
+            "name": "Elliot Anderson",
+            "number": 8,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 843754,
+            "name": "Ibrahim Sangaré",
+            "number": 6,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1090963,
+            "name": "Omari Hutchinson",
+            "number": 21,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 865912,
+            "name": "Morgan Gibbs-White",
+            "number": 10,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 867442,
+            "name": "Callum Hudson-Odoi",
+            "number": 7,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 981619,
+            "name": "Igor Jesus",
+            "number": 19,
+            "position": "F",
+            "rating": ""
+        }
+    ],
+    "home_substitutes": [
+        {
+            "id": 758608,
+            "name": "Çağlar Söyüncü",
+            "number": 4,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1085938,
+            "name": "Levent Mercan",
+            "number": 22,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1102788,
+            "name": "Dorgeles Nene",
+            "number": 45,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 952600,
+            "name": "İsmail Yüksek",
+            "number": 5,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 243623,
+            "name": "Fred",
+            "number": 7,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 913985,
+            "name": "Tarık Çetin",
+            "number": 13,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 1995427,
+            "name": "Engin Can Biterge",
+            "number": 39,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 1009738,
+            "name": "Archie Brown",
+            "number": 3,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1133200,
+            "name": "Yiğit Efe Demir",
+            "number": 14,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 999396,
+            "name": "Oğuz Aydın",
+            "number": 70,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 2421366,
+            "name": "Alaettin Ekici",
+            "number": 54,
+            "position": "F",
+            "rating": ""
+        }
+    ],
+    "away_substitutes": [
+        {
+            "id": 944327,
+            "name": "Dan Ndoye",
+            "number": 14,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 962364,
+            "name": "Lorenzo Lucca",
+            "number": 20,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 871765,
+            "name": "Nicolás Domínguez",
+            "number": 16,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 846252,
+            "name": "Ryan Yates",
+            "number": 22,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1003334,
+            "name": "James McAtee",
+            "number": 24,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 227946,
+            "name": "Angus Gunn",
+            "number": 18,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 1412863,
+            "name": "Keehan Willows",
+            "number": 67,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 985086,
+            "name": "Morato",
+            "number": 4,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1170722,
+            "name": "Jair",
+            "number": 23,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1390490,
+            "name": "Zach Abbott",
+            "number": 44,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 963298,
+            "name": "Dilane Bakwa",
+            "number": 29,
+            "position": "F",
+            "rating": ""
+        }
+    ],
+    "home_missing_players": [
+        {
+            "name": "Edson Álvarez",
+            "position": "M",
+            "type": "doubtful",
+            "description": "Ankle Injury",
+            "expected_end_date": ""
+        }
+    ],
+    "away_missing_players": [
+        {
+            "name": "Chris Wood",
+            "position": "F",
+            "type": "missing",
+            "description": "Knee Injury",
+            "expected_end_date": "2026-03-05T00:00:00+00:00"
+        },
+        {
+            "name": "John Victor",
+            "position": "G",
+            "type": "missing",
+            "description": "Knee Injury",
+            "expected_end_date": "2026-05-25T00:00:00+00:00"
+        },
+        {
+            "name": "Nicolò Savona",
+            "position": "D",
+            "type": "doubtful",
+            "description": "Knee Injury",
+            "expected_end_date": "2026-02-20T00:00:00+00:00"
+        },
+        {
+            "name": "Matz Sels",
+            "position": "G",
+            "type": "missing",
+            "description": "Groin Injury",
+            "expected_end_date": "2026-02-20T00:00:00+00:00"
+        },
+        {
+            "name": "Willy Boly",
+            "position": "D",
+            "type": "missing",
+            "description": "Knee Injury",
+            "expected_end_date": "2026-05-25T00:00:00+00:00"
+        }
+    ]
+}

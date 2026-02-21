@@ -1,197 +1,205 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-模型訓練腳本 - 使用更新後的歷史數據
+⚽ 足球 AI 模型訓練腳本 (整合版 v7.0)
+
+功能：
+- XGBoost 機器學習訓練
+- 滾動平均特徵工程
+- 負二項分布離散校準
+
+作者: AI Betting System
+版本: 7.0
 """
+
 import sys
 import os
 import pandas as pd
 import numpy as np
-from datetime import datetime
+import pickle
 
+# 強制 UTF-8 編碼
 sys.stdout.reconfigure(encoding='utf-8')
 
-print("="*70)
-print("足球 AI 投注系統 - 模型訓練")
-print("="*70)
+print("=" * 70)
+print("⚽ 足球 AI 投注系統 - 模型訓練 (整合版 v7.0)")
+print("=" * 70)
 
+# ============================================
 # 1. 載入數據
-print("\n[1/5] 載入歷史數據...")
-df = pd.read_csv('data/history_data.csv')
-print(f"  [OK] 載入 {len(df):,} 條記錄")
+# ============================================
+print("\n[1/6] 載入歷史數據...")
 
-# 2. 數據預處理
-print("\n[2/5] 數據預處理...")
-
-# 確保列名正確
-if 'league' not in df.columns:
-    print("  [ERROR] 缺少 league 列")
-    sys.exit(1)
-
-# 過濾有效的比賽（需要有結果）
-df = df[df['FTR'].notna()].copy()
-print(f"  [OK] 有效比賽: {len(df):,} 條")
-
-# 3. 特徵工程
-print("\n[3/5] 特徵工程...")
-
-# 創建目標變量
-df['target'] = (df['FTR'] == 'H').astype(int)  # 主勝 = 1, 其他 = 0
-
-# 特徵列表
-feature_cols = [
-    'home_weighted_xg', 'away_weighted_xg',  # xG
-    'home_goals_rolling', 'away_goals_rolling',  # 進球滚动平均
-    'home_xg_rolling', 'away_xg_rolling',  # xG滚动平均
-    'home_concede_rolling', 'away_concede_rolling',  # 失球滚动
-    'home_corners', 'away_corners',  # 角球
-    'home_shots', 'away_shots',  # 射門
-    'home_shots_on', 'away_shots_on',  # 射正
-    'home_yellow', 'away_yellow',  # 黃牌
-    'home_red', 'away_red',  # 紅牌
+possible_paths = [
+    'data/history_data.csv',
+    'data/test_historic.csv',
 ]
 
-# 計算滚动平均 (需要按球隊和主/客場分組)
-print("  計算滚动平均...")
+df = None
+for path in possible_paths:
+    if os.path.exists(path):
+        try:
+            df = pd.read_csv(path, encoding='utf-8-sig', low_memory=False)
+            print(f"  [OK] 載入: {path}")
+            break
+        except:
+            try:
+                df = pd.read_csv(path, encoding='latin-1', low_memory=False)
+                print(f"  [OK] 載入: {path}")
+                break
+            except:
+                continue
 
-def calculate_rolling(df, col, window=5):
-    """計算滚动平均"""
-    df[f'{col}_rolling'] = df.groupby('home_team')[col].transform(
-        lambda x: x.shift(1).rolling(window=window, min_periods=1).mean()
-    )
-    df[f'away_{col}_rolling'] = df.groupby('away_team')[col].transform(
-        lambda x: x.shift(1).rolling(window=window, min_periods=1).mean()
-    )
+if df is None:
+    print("  [ERROR] 無法找到歷史數據檔案")
+    sys.exit(1)
 
-# 使用 xG 作為主要特徵（如果可用）
-if 'xG' in df.columns and df['xG'].notna().sum() > 0:
-    df['home_weighted_xg'] = df['xG']
-    df['away_weighted_xg'] = df['xGA']
-else:
-    # 使用實際進球作為替代
-    df['home_weighted_xg'] = df['home_goals'].rolling(window=5, min_periods=1).transform('mean').shift(1)
-    df['away_weighted_xg'] = df['away_goals'].rolling(window=5, min_periods=1).transform('mean').shift(1)
+df.columns = df.columns.str.strip().str.lower().str.replace('\ufeff', '')
+print(f"  [OK] 總記錄: {len(df):,}")
 
-# 計算其他滚动統計
-if 'home_goals' in df.columns:
-    df['home_goals_rolling'] = df.groupby('home_team')['home_goals'].transform(
-        lambda x: x.shift(1).rolling(window=5, min_periods=1).mean()
-    )
-    df['away_goals_rolling'] = df.groupby('away_team')['away_goals'].transform(
-        lambda x: x.shift(1).rolling(window=5, min_periods=1).mean()
-    )
+# 欄位映射
+column_mapping = {
+    'fthg': 'home_goals', 'ftag': 'away_goals',
+    'hometeam': 'home_team', 'awayteam': 'away_team',
+    'xg': 'xg', 'xga': 'xga', 'league': 'league', 'div': 'div', 'date': 'date'
+}
+for old_col, new_col in column_mapping.items():
+    if old_col in df.columns:
+        df.rename(columns={old_col: new_col}, inplace=True)
 
-if 'xG' in df.columns:
-    df['home_xg_rolling'] = df.groupby('home_team')['xG'].transform(
-        lambda x: x.shift(1).rolling(window=5, min_periods=1).mean()
-    )
-    df['away_xg_rolling'] = df.groupby('away_team')['xG'].transform(
-        lambda x: x.shift(1).rolling(window=5, min_periods=1).mean()
-    )
-    df['home_concede_rolling'] = df.groupby('home_team')['xGA'].transform(
-        lambda x: x.shift(1).rolling(window=5, min_periods=1).mean()
-    )
-    df['away_concede_rolling'] = df.groupby('away_team')['xGA'].transform(
-        lambda x: x.shift(1).rolling(window=5, min_periods=1).mean()
-    )
+# ============================================
+# 2. 數據預處理
+# ============================================
+print("\n[2/6] 數據預處理...")
 
-# 填補缺失值
-for col in feature_cols:
-    if col in df.columns:
-        df[col] = df[col].fillna(df[col].mean())
+if 'date' in df.columns:
+    df['date'] = pd.to_datetime(df['date'], dayfirst=False, errors='coerce')
+    df = df.sort_values('date')
 
-print(f"  [OK] 特徵數: {len(feature_cols)}")
+df = df.dropna(subset=['home_goals', 'away_goals'])
+print(f"  [OK] 有效比賽: {len(df):,}")
 
+conditions = [
+    (df['home_goals'] > df['away_goals']),
+    (df['home_goals'] == df['away_goals']),
+    (df['home_goals'] < df['away_goals'])
+]
+df['result'] = np.select(conditions, [0, 1, 2])
+
+print(f"  主勝: {(df['result']==0).mean()*100:.1f}% | 和局: {(df['result']==1).mean()*100:.1f}% | 客勝: {(df['result']==2).mean()*100:.1f}%")
+
+# ============================================
+# 3. 特徵工程
+# ============================================
+print("\n[3/6] 特徵工程...")
+
+def calc_rolling(df, team_col, goals_col, xg_col=None, windows=[5, 10]):
+    for w in windows:
+        df[f'r{w}_{goals_col}'] = df.groupby(team_col)[goals_col].transform(
+            lambda x: x.shift(1).rolling(window=w, min_periods=1).mean())
+        if xg_col and xg_col in df.columns:
+            df[f'r{w}_{xg_col}'] = df.groupby(team_col)[xg_col].transform(
+                lambda x: x.shift(1).rolling(window=w, min_periods=1).mean())
+    return df
+
+if 'home_team' in df.columns:
+    df = calc_rolling(df, 'home_team', 'home_goals', 'xg', [5, 10])
+    df = calc_rolling(df, 'away_team', 'away_goals', 'xga', [5, 10])
+
+df['home_advantage'] = 1
+if 'div' in df.columns:
+    try:
+        lha = df.groupby('div')['result'].apply(lambda x: (x==0).mean()-(x==2).mean()).to_dict()
+        df['league_home_adv'] = df['div'].map(lha)
+    except: df['league_home_adv'] = 0
+else: df['league_home_adv'] = 0
+
+features = ['home_advantage', 'league_home_adv', 'r5_home_goals', 'r5_away_goals', 'r10_home_goals', 'r10_away_goals']
+if 'r5_xg' in df.columns:
+    features.extend(['r5_xg', 'r10_xg', 'r5_xga', 'r10_xga'])
+
+print(f"  [OK] 特徵數: {len(features)}")
+
+# ============================================
 # 4. 訓練 XGBoost 模型
-print("\n[4/5] 訓練 XGBoost 模型...")
+# ============================================
+print("\n[4/6] 訓練 XGBoost 模型...")
+
+df_clean = df.dropna(subset=features + ['result'])
+print(f"  [OK] 訓練樣本: {len(df_clean):,}")
+
+X = df_clean[features].fillna(0)
+y = df_clean['result']
+
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
 try:
-    import xgboost as xgb
-    from sklearn.model_selection import train_test_split
-    from sklearn.metrics import accuracy_score, brier_score_loss
+    from xgboost import XGBClassifier
+    from sklearn.metrics import accuracy_score, brier_score_loss, log_loss
     
-    # 準備數據
-    X = df[feature_cols].fillna(0)
-    y = df['target']
-    
-    # 分割
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    
-    # 訓練
-    model = xgb.XGBClassifier(
-        n_estimators=100,
-        max_depth=4,
-        learning_rate=0.1,
-        subsample=0.8,
-        colsample_bytree=0.8,
-        random_state=42,
-        use_label_encoder=False,
-        eval_metric='logloss'
-    )
+    model = XGBClassifier(n_estimators=200, learning_rate=0.05, max_depth=6,
+        min_child_weight=3, subsample=0.8, colsample_bytree=0.8,
+        reg_alpha=0.1, reg_lambda=1, eval_metric='mlogloss', random_state=42, use_label_encoder=False)
     
     model.fit(X_train, y_train)
+    preds = model.predict(X_test)
+    preds_proba = model.predict_proba(X_test)
     
-    # 評估
-    y_pred = model.predict(X_test)
-    y_prob = model.predict_proba(X_test)[:, 1]
+    acc = accuracy_score(y_test, preds)
+    brier = brier_score_loss(y_test, preds_proba, labels=[0,1,2])
+    ce = log_loss(y_test, preds_proba, labels=[0,1,2])
     
-    acc = accuracy_score(y_test, y_pred)
-    brier = brier_score_loss(y_test, y_prob)
+    print(f"\n  準確率: {acc:.2%} | Brier: {brier:.4f} | LogLoss: {ce:.4f}")
     
-    print(f"  [OK] 準確率: {acc:.1%}")
-    print(f"  [OK] Brier Score: {brier:.4f}")
+    print(f"\n  特徵重要性 (Top 5):")
+    for feat, imp in sorted(zip(features, model.feature_importances_), key=lambda x: -x[1])[:5]:
+        print(f"    {feat}: {imp:.4f}")
     
-    # 特徵重要性
-    importance = model.feature_importances_
-    feat_imp = pd.DataFrame({
-        'feature': feature_cols,
-        'importance': importance
-    }).sort_values('importance', ascending=False)
-    
-    print("\n  特徵重要性 (Top 5):")
-    for i, row in feat_imp.head(5).iterrows():
-        print(f"    {row['feature']}: {row['importance']:.3f}")
-    
-    # 保存模型
-    model_path = 'data/xgb_model.json'
-    model.save_model(model_path)
+    model_path = os.path.join(os.path.dirname(__file__), 'xgb_model.pkl')
+    with open(model_path, "wb") as f:
+        pickle.dump(model, f)
     print(f"\n  [OK] 模型已保存: {model_path}")
-    
-    success = True
-    
+    ml_success = True
 except ImportError:
-    print("  [WARN] XGBoost 未安裝，跳過 ML 模型訓練")
-    print("  [INFO] 請運行: pip install xgboost")
-    success = False
+    print("  [WARN] 請安裝 XGBoost: pip install xgboost")
+    ml_success = False
 except Exception as e:
-    print(f"  [ERROR] 訓練失敗: {e}")
-    success = False
+    print(f"  [ERROR] {e}")
+    ml_success = False
 
-# 5. 數學模型準備
-print("\n[5/5] 數學模型配置...")
+# ============================================
+# 5. 離散參數估計
+# ============================================
+print("\n[5/6] 負二項分布校準...")
 
-# 計算聯賽平均 xG
-league_xg = df.groupby('league').agg({
-    'xG': 'mean',
-    'xGA': 'mean'
-}).round(3)
+def est_disp(goals, mu):
+    var = np.var(goals)
+    if var <= mu: return 0.1
+    return max(0.1, min(3.0, (var - mu) / (mu ** 2)))
 
-print("  聯賽平均 xG:")
-for league, row in league_xg.iterrows():
-    print(f"    {league}: {row['xG']:.2f} - {row['xGA']:.2f}")
+if 'home_goals' in df.columns and 'league' in df.columns:
+    league_disp = {}
+    for league in df['league'].unique():
+        ld = df[df['league']==league]
+        league_disp[league] = (est_disp(ld['home_goals'].dropna(), ld['home_goals'].mean()) + 
+                               est_disp(ld['away_goals'].dropna(), ld['away_goals'].mean())) / 2
+    print(f"  [OK] 離散參數已計算")
+    disp_path = os.path.join(os.path.dirname(__file__), 'dispersion_params.pkl')
+    with open(disp_path, "wb") as f:
+        pickle.dump(league_disp, f)
 
-# 計算主場優勢
-home_advantage = df.groupby('FTR').size()
-print(f"  比賽結果分布:")
-print(f"    主勝 (H): {(df['FTR']=='H').sum():,} ({(df['FTR']=='H').mean()*100:.1f}%)")
-print(f"    和局 (D): {(df['FTR']=='D').sum():,} ({(df['FTR']=='D').mean()*100:.1f}%)")
-print(f"    客勝 (A): {(df['FTR']=='A').sum():,} ({(df['FTR']=='A').mean()*100:.1f}%)")
+# ============================================
+# 6. 數據摘要
+# ============================================
+print("\n[6/6] 數據摘要...")
+print(f"\n  總比賽: {len(df):,} | 聯賽: {df['league'].nunique() if 'league' in df.columns else 'N/A'}")
+if 'xg' in df.columns:
+    print(f"  xG覆蓋: {df['xg'].notna().mean()*100:.1f}%")
 
-print("\n" + "="*70)
-print("訓練完成!")
-print("="*70)
-print(f"\n數據摘要:")
-print(f"  - 總比賽數: {len(df):,}")
-print(f"  - 聯賽數: {df['league'].nunique()}")
-print(f"  - 日期範圍: {df['Date'].min()} 至 {df['Date'].max()}")
-print(f"  - xG 數據覆蓋: {df['xG'].notna().sum():,} ({df['xG'].notna().mean()*100:.1f}%)")
+print("\n" + "=" * 70)
+print("✅ 訓練完成!")
+print("=" * 70)
+print("\n後續步驟:")
+print("  1. 運行 'python app.py' 啟動分析系統")
+print("  2. 選擇比賽並進行分析")

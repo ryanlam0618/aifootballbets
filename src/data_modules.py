@@ -119,9 +119,9 @@ class HistoryRepo:
         self.ranking_system = None
         self.lineup_model_class = None
         
-        # 延遲匯入 math_models_v2
+        # 從整合版 math_models 導入 (v7.0)
         try:
-            from src.math_models_v2 import Glicko2System, LineupModel
+            from src.math_models import Glicko2System, LineupModel
             self.ranking_system = Glicko2System() 
             self.lineup_model_class = LineupModel
         except ImportError:
@@ -415,7 +415,12 @@ class HistoryRepo:
             if self.df is None or self.df.empty:
                 return 1.35  # 一般聯賽平均 xG
             try:
-                if 'xG' in self.df.columns and 'xGA' in self.df.columns:
+                # 支援大小寫 column names
+                if 'xg' in self.df.columns and 'xga' in self.df.columns:
+                    valid = self.df.dropna(subset=['xg', 'xga'])
+                    if not valid.empty:
+                        return float(valid['xg'].mean())
+                elif 'xG' in self.df.columns and 'xGA' in self.df.columns:
                     valid = self.df.dropna(subset=['xG', 'xGA'])
                     if not valid.empty:
                         return float(valid['xG'].mean())
@@ -430,9 +435,12 @@ class HistoryRepo:
             weights = []
             
             for i, (_, row) in enumerate(games.iterrows()):
-                # 優先使用 xG, 否則使用實際進球
-                if use_xg and 'xG' in games.columns and pd.notna(row.get('xG')) and pd.notna(row.get('xGA')):
-                    g = row['xG'] if row['hl'] == team_l else row['xGA']
+                # 優先使用 xG, 否則使用實際進球 (支援大小寫)
+                xg_col = 'xg' if 'xg' in games.columns else ('xG' if 'xG' in games.columns else None)
+                xga_col = 'xga' if 'xga' in games.columns else ('xGA' if 'xGA' in games.columns else None)
+                
+                if use_xg and xg_col and xga_col and pd.notna(row.get(xg_col)) and pd.notna(row.get(xga_col)):
+                    g = row[xg_col] if row['hl'] == team_l else row[xga_col]
                 else:
                     g = row["home_goals"] if row["hl"] == team_l else row["away_goals"]
                 goals.append(g)
@@ -441,36 +449,40 @@ class HistoryRepo:
             return np.average(goals, weights=weights) if weights else league_xg_avg
 
         def get_avg_xg(games, team_l):
-            """計算球隊的平均 xG (支援新舊格式)"""
+            """計算球隊的平均 xG (支援新舊格式和大小寫)"""
             if games.empty:
                 return {'xg_for': league_xg_avg, 'xg_against': league_xg_avg}
+            
+            # 支援大小寫 column names
+            xg_col = 'xg' if 'xg' in games.columns else ('xG' if 'xG' in games.columns else None)
+            xga_col = 'xga' if 'xga' in games.columns else ('xGA' if 'xGA' in games.columns else None)
             
             xg_for = []
             xg_against = []
             
             for _, row in games.iterrows():
                 # 嘗試從新格式獲取 xG
-                has_xg = 'xG' in games.columns and pd.notna(row.get('xG'))
-                has_xga = 'xGA' in games.columns and pd.notna(row.get('xGA'))
+                has_xg = xg_col and pd.notna(row.get(xg_col))
+                has_xga = xga_col and pd.notna(row.get(xga_col))
                 
                 if row["hl"] == team_l:
                     if has_xg:
-                        xg_for.append(row['xG'])
+                        xg_for.append(row[xg_col])
                     else:
                         xg_for.append(row["home_goals"])
                     
                     if has_xga:
-                        xg_against.append(row['xGA'])
+                        xg_against.append(row[xga_col])
                     else:
                         xg_against.append(row["away_goals"])
                 else:
                     if has_xga:
-                        xg_for.append(row['xGA'])
+                        xg_for.append(row[xga_col])
                     else:
                         xg_for.append(row["away_goals"])
                     
                     if has_xg:
-                        xg_against.append(row['xG'])
+                        xg_against.append(row[xg_col])
                     else:
                         xg_against.append(row["home_goals"])
             

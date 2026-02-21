@@ -1,0 +1,459 @@
+{
+    "event_id": "13981681",
+    "match_date": "2026-02-21",
+    "match_time": "03:45",
+    "tournament_name": "Serie A",
+    "category_name": "Italy",
+    "home_team": "Sassuolo",
+    "away_team": "Hellas Verona",
+    "home_formation": "4-3-3",
+    "away_formation": "3-5-2",
+    "home_coach": "",
+    "away_coach": "",
+    "home_starters": [
+        {
+            "id": 888971,
+            "name": "Arijanet Murić",
+            "number": 49,
+            "position": "G",
+            "rating": 7.13
+        },
+        {
+            "id": 989894,
+            "name": "Woyo Coulibaly",
+            "number": 25,
+            "position": "D",
+            "rating": 6.58
+        },
+        {
+            "id": 886243,
+            "name": "Sebastian Walukiewicz",
+            "number": 6,
+            "position": "D",
+            "rating": 6.69
+        },
+        {
+            "id": 933641,
+            "name": "Jay Idzes",
+            "number": 21,
+            "position": "D",
+            "rating": 6.6
+        },
+        {
+            "id": 558320,
+            "name": "Ulisses Garcia",
+            "number": 23,
+            "position": "D",
+            "rating": 7.2
+        },
+        {
+            "id": 924973,
+            "name": "Kristian Thorstvedt",
+            "number": 42,
+            "position": "M",
+            "rating": 6.79
+        },
+        {
+            "id": 1154898,
+            "name": "Luca Lipani",
+            "number": 35,
+            "position": "M",
+            "rating": 6.49
+        },
+        {
+            "id": 1134351,
+            "name": "Ismael Koné",
+            "number": 90,
+            "position": "M",
+            "rating": 7.01
+        },
+        {
+            "id": 253367,
+            "name": "Domenico Berardi",
+            "number": 10,
+            "position": "F",
+            "rating": 7.07
+        },
+        {
+            "id": 826198,
+            "name": "Andrea Pinamonti",
+            "number": 99,
+            "position": "F",
+            "rating": 6.58
+        },
+        {
+            "id": 932643,
+            "name": "Armand Laurienté",
+            "number": 45,
+            "position": "F",
+            "rating": 6.86
+        }
+    ],
+    "away_starters": [
+        {
+            "id": 253391,
+            "name": "Lorenzo Montipò",
+            "number": 1,
+            "position": "G",
+            "rating": 6.55
+        },
+        {
+            "id": 976025,
+            "name": "Armel Bella-Kotchap",
+            "number": 37,
+            "position": "D",
+            "rating": 6.75
+        },
+        {
+            "id": 846148,
+            "name": "Victor Nelsson",
+            "number": 15,
+            "position": "D",
+            "rating": 6.66
+        },
+        {
+            "id": 906963,
+            "name": "Andrias Edmundsson",
+            "number": 5,
+            "position": "D",
+            "rating": 7.05
+        },
+        {
+            "id": 897594,
+            "name": "Domagoj Bradarić",
+            "number": 12,
+            "position": "M",
+            "rating": 6.64
+        },
+        {
+            "id": 972523,
+            "name": "Cheikh Niasse",
+            "number": 36,
+            "position": "M",
+            "rating": 6.62
+        },
+        {
+            "id": 868958,
+            "name": "Mutassim Al-Musrati",
+            "number": 73,
+            "position": "M",
+            "rating": 6.61
+        },
+        {
+            "id": 915812,
+            "name": "Abdou Harroui",
+            "number": 21,
+            "position": "M",
+            "rating": 6.52
+        },
+        {
+            "id": 874812,
+            "name": "Martin Frese",
+            "number": 3,
+            "position": "M",
+            "rating": 6.69
+        },
+        {
+            "id": 983601,
+            "name": "Kieron Bowie",
+            "number": 18,
+            "position": "F",
+            "rating": 6.3
+        },
+        {
+            "id": 1022204,
+            "name": "Amin Sarr",
+            "number": 9,
+            "position": "F",
+            "rating": 6.49
+        }
+    ],
+    "home_substitutes": [
+        {
+            "id": 893752,
+            "name": "Stefano Turati",
+            "number": 13,
+            "position": "G",
+            "rating": 6.3
+        },
+        {
+            "id": 832375,
+            "name": "Giacomo Satalino",
+            "number": 12,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 1012165,
+            "name": "Gioele Zacchi",
+            "number": 16,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 356032,
+            "name": "Filippo Romagna",
+            "number": 19,
+            "position": "D",
+            "rating": 6.63
+        },
+        {
+            "id": 1485292,
+            "name": "Pedro Felipe",
+            "number": 66,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 989276,
+            "name": "Josh Doig",
+            "number": 3,
+            "position": "D",
+            "rating": 6.62
+        },
+        {
+            "id": 989371,
+            "name": "Aster Vranckx",
+            "number": 40,
+            "position": "M",
+            "rating": 6.54
+        },
+        {
+            "id": 1823916,
+            "name": "Darryl Bakola",
+            "number": 50,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1013239,
+            "name": "Edoardo Iannoni",
+            "number": 44,
+            "position": "M",
+            "rating": 6.54
+        },
+        {
+            "id": 1155625,
+            "name": "Cristian Volpato",
+            "number": 7,
+            "position": "M",
+            "rating": 6.76
+        },
+        {
+            "id": 1031548,
+            "name": "Alieu Fadera",
+            "number": 20,
+            "position": "F",
+            "rating": 6.7
+        },
+        {
+            "id": 949780,
+            "name": "Luca Moro",
+            "number": 24,
+            "position": "F",
+            "rating": 6.5
+        },
+        {
+            "id": 788061,
+            "name": "M'Bala Nzola",
+            "number": 8,
+            "position": "F",
+            "rating": 6.61
+        }
+    ],
+    "away_substitutes": [
+        {
+            "id": 253369,
+            "name": "Simone Perilli",
+            "number": 34,
+            "position": "G",
+            "rating": 6.6
+        },
+        {
+            "id": 1137380,
+            "name": "Giacomo Toniolo",
+            "number": 94,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 1133236,
+            "name": "Tobias Slotsager",
+            "number": 19,
+            "position": "D",
+            "rating": 6.75
+        },
+        {
+            "id": 998830,
+            "name": "Daniel Oyegoke",
+            "number": 2,
+            "position": "D",
+            "rating": 6.57
+        },
+        {
+            "id": 1945133,
+            "name": "Fallou Cham",
+            "number": 70,
+            "position": "D",
+            "rating": 6.58
+        },
+        {
+            "id": 1144747,
+            "name": "Luca Szimionas",
+            "number": 30,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1938364,
+            "name": "Jurgen Peci",
+            "number": 99,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1492265,
+            "name": "Davide De Battisti",
+            "number": 71,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 964154,
+            "name": "Tomáš Suslov",
+            "number": 10,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1152477,
+            "name": "Ioan Vermesan",
+            "number": 90,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 1018179,
+            "name": "Daniel Mosquera",
+            "number": 25,
+            "position": "F",
+            "rating": 6.36
+        },
+        {
+            "id": 1149141,
+            "name": "Luca Monticelli",
+            "number": 92,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1471239,
+            "name": "Isaac",
+            "number": 41,
+            "position": "F",
+            "rating": 6.5
+        }
+    ],
+    "home_missing_players": [
+        {
+            "name": "Edoardo Pieragnolo",
+            "position": "D",
+            "type": "missing",
+            "description": "ACL Knee Injury",
+            "expected_end_date": "2026-04-05T00:00:00+00:00"
+        },
+        {
+            "name": "Fali Candé",
+            "position": "D",
+            "type": "missing",
+            "description": "ACL Knee Injury",
+            "expected_end_date": "2026-05-25T00:00:00+00:00"
+        },
+        {
+            "name": "Nemanja Matić",
+            "position": "M",
+            "type": "missing",
+            "description": "Red card suspension",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Daniel Boloca",
+            "position": "M",
+            "type": "doubtful",
+            "description": "Unknown",
+            "expected_end_date": "2026-03-02T00:00:00+00:00"
+        },
+        {
+            "name": "Tarik Muharemović",
+            "position": "D",
+            "type": "missing",
+            "description": "Yellow card accumulation suspension",
+            "expected_end_date": ""
+        }
+    ],
+    "away_missing_players": [
+        {
+            "name": "Nicolás Valentini",
+            "position": "D",
+            "type": "doubtful",
+            "description": "Muscle Injury",
+            "expected_end_date": "2026-03-01T00:00:00+00:00"
+        },
+        {
+            "name": "Antoine Bernede",
+            "position": "M",
+            "type": "doubtful",
+            "description": "Ankle Injury",
+            "expected_end_date": "2026-03-01T00:00:00+00:00"
+        },
+        {
+            "name": "Sandi Lovrić",
+            "position": "M",
+            "type": "doubtful",
+            "description": "Muscle Injury",
+            "expected_end_date": "2026-03-01T00:00:00+00:00"
+        },
+        {
+            "name": "Roberto Gagliardini",
+            "position": "M",
+            "type": "doubtful",
+            "description": "Rib Injury",
+            "expected_end_date": "2026-03-16T00:00:00+00:00"
+        },
+        {
+            "name": "Rafik Belghali",
+            "position": "M",
+            "type": "doubtful",
+            "description": "Unknown",
+            "expected_end_date": "2026-02-21T00:00:00+00:00"
+        },
+        {
+            "name": "Jean-Daniel Akpa Akpro",
+            "position": "M",
+            "type": "missing",
+            "description": "Yellow card accumulation suspension",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Pol Lirola",
+            "position": "D",
+            "type": "doubtful",
+            "description": "Muscle Injury",
+            "expected_end_date": "2026-02-21T00:00:00+00:00"
+        },
+        {
+            "name": "Gift Orban",
+            "position": "F",
+            "type": "missing",
+            "description": "Red card suspension",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Suat Serdar",
+            "position": "M",
+            "type": "missing",
+            "description": "ACL Knee Injury",
+            "expected_end_date": "2026-05-25T00:00:00+00:00"
+        }
+    ]
+}

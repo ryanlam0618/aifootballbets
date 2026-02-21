@@ -1,0 +1,240 @@
+{
+    "event_id": 14083549,
+    "match_date": "2026-02-21",
+    "match_time": "04:00",
+    "tournament_name": "LaLiga",
+    "category_name": "Spain",
+    "home_team": "Athletic Club",
+    "away_team": "Elche",
+    "home_formation": "4-2-3-1",
+    "away_formation": "3-5-2",
+    "home_coach": "",
+    "away_coach": "",
+    "home_starters": [
+        {
+            "id": 797291,
+            "name": "Unai Simón",
+            "number": 1,
+            "position": "G",
+            "rating": 6.98
+        },
+        {
+            "id": 866810,
+            "name": "Andoni Gorosabel",
+            "number": 2,
+            "position": "D",
+            "rating": 6.55
+        },
+        {
+            "id": 959872,
+            "name": "Aitor Paredes",
+            "number": 4,
+            "position": "D",
+            "rating": 6.77
+        },
+        {
+            "id": 149734,
+            "name": "Aymeric Laporte",
+            "number": 14,
+            "position": "D",
+            "rating": 7.01
+        },
+        {
+            "id": 84531,
+            "name": "Yuri Berchiche",
+            "number": 17,
+            "position": "D",
+            "rating": 6.91
+        },
+        {
+            "id": 96365,
+            "name": "Iñigo Ruiz de Galarreta",
+            "number": 16,
+            "position": "M",
+            "rating": 7
+        },
+        {
+            "id": 2110897,
+            "name": "Alejandro Rego",
+            "number": 30,
+            "position": "M",
+            "rating": 6.7
+        },
+        {
+            "id": 783374,
+            "name": "Iñaki Williams",
+            "number": 9,
+            "position": "M",
+            "rating": 6.58
+        },
+        {
+            "id": 966801,
+            "name": "Oihan Sancet",
+            "number": 8,
+            "position": "M",
+            "rating": 6.41
+        },
+        {
+            "id": 944165,
+            "name": "Robert Navarro",
+            "number": 23,
+            "position": "M",
+            "rating": 6.7
+        },
+        {
+            "id": 605672,
+            "name": "Gorka Guruzeta",
+            "number": 11,
+            "position": "F",
+            "rating": 6.5
+        }
+    ],
+    "away_starters": [
+        {
+            "id": 556884,
+            "name": "Matías Dituro",
+            "number": 1,
+            "position": "G",
+            "rating": 7.51
+        },
+        {
+            "id": 827504,
+            "name": "Léo Pétrot",
+            "number": 21,
+            "position": "D",
+            "rating": 6.64
+        },
+        {
+            "id": 855831,
+            "name": "Víctor Chust",
+            "number": 23,
+            "position": "D",
+            "rating": 6.93
+        },
+        {
+            "id": 141832,
+            "name": "Pedro Bigas",
+            "number": 6,
+            "position": "D",
+            "rating": 7.03
+        },
+        {
+            "id": 605374,
+            "name": "Tete Morente",
+            "number": 15,
+            "position": "F",
+            "rating": 6.2
+        },
+        {
+            "id": 1126447,
+            "name": "Lucas Cepeda",
+            "number": 24,
+            "position": "M",
+            "rating": 6.7
+        },
+        {
+            "id": 1014595,
+            "name": "Marc Aguado",
+            "number": 8,
+            "position": "M",
+            "rating": 6.8
+        },
+        {
+            "id": 286167,
+            "name": "Aleix Febas",
+            "number": 14,
+            "position": "M",
+            "rating": 7.22
+        },
+        {
+            "id": 962710,
+            "name": "Germán Valera",
+            "number": 11,
+            "position": "M",
+            "rating": 7
+        },
+        {
+            "id": 1154587,
+            "name": "Álvaro Rodriguez",
+            "number": 20,
+            "position": "F",
+            "rating": 7.02
+        },
+        {
+            "id": 190159,
+            "name": "André Silva",
+            "number": 9,
+            "position": "F",
+            "rating": 6.78
+        }
+    ],
+    "home_substitutes": [],
+    "away_substitutes": [],
+    "home_missing_players": [
+        {
+            "name": "Beñat Prados",
+            "position": "M",
+            "type": "missing",
+            "description": "ACL Knee Injury",
+            "expected_end_date": "2026-05-25T00:00:00+00:00"
+        },
+        {
+            "name": "Maroan Sannadi",
+            "position": "F",
+            "type": "missing",
+            "description": "Knee Injury",
+            "expected_end_date": "2026-03-01T00:00:00+00:00"
+        },
+        {
+            "name": "Álex Berenguer",
+            "position": "M",
+            "type": "missing",
+            "description": "Foot Injury",
+            "expected_end_date": "2026-02-21T00:00:00+00:00"
+        },
+        {
+            "name": "Mikel Jauregizar",
+            "position": "M",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Unai Eguíluz",
+            "position": "D",
+            "type": "missing",
+            "description": "ACL Knee Injury",
+            "expected_end_date": "2026-03-22T00:00:00+00:00"
+        },
+        {
+            "name": "Nico Williams",
+            "position": "M",
+            "type": "missing",
+            "description": "Groin Injury",
+            "expected_end_date": "2026-02-21T00:00:00+00:00"
+        },
+        {
+            "name": "Yeray Álvarez",
+            "position": "D",
+            "type": "missing",
+            "description": "Doping violation",
+            "expected_end_date": ""
+        }
+    ],
+    "away_missing_players": [
+        {
+            "name": "Grady Diangana",
+            "position": "M",
+            "type": "missing",
+            "description": "Unknown",
+            "expected_end_date": "2026-02-21T00:00:00+00:00"
+        },
+        {
+            "name": "Hector Fort",
+            "position": "D",
+            "type": "missing",
+            "description": "Shoulder Injury",
+            "expected_end_date": "2026-03-16T00:00:00+00:00"
+        }
+    ]
+}
