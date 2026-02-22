@@ -1,0 +1,8 @@
+Outcome values: ['save' 'block' 'miss' 'goal' 'post']
+Goal count: 69592
+    event_id          home_team          away_team  is_home
+13   6767929  Manchester United  Tottenham Hotspur     True
+22   6767928        Bournemouth        Aston Villa    False
+39   6767936            Everton            Watford     True
+40   6767936            Everton            Watford    False
+42   6767936            Everton            Watford     True

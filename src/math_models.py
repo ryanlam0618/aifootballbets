@@ -80,9 +80,11 @@ class NegativeBinomialModel:
     解決 Poisson 的過離散問題：
     - 足球進球的方差通常 > 均值
     - 負二項分布通過離散參數(alpha)捕捉這種變異
+    
+    v7.1 更新：新增靜態方法 estimate_alpha_from_data 從歷史數據計算真實 alpha
     """
     
-    def __init__(self, home_expect: float, away_expect: float, dispersion: float = 1.5):
+    def __init__(self, home_expect: float, away_expect: float, dispersion: float = None):
         """
         Args:
             home_expect: 主隊預期進球
@@ -90,10 +92,78 @@ class NegativeBinomialModel:
             dispersion: 離散參數 (alpha > 0)
                         alpha = 1: 接近 Poisson
                         alpha > 1: 過離散 (實際足球數據通常 alpha=1.2-2.0)
+                        如果為 None，會嘗試從歷史數據估算
         """
         self.mu_h = home_expect
         self.mu_a = away_expect
         self.alpha = dispersion
+        
+        # 如果沒有提供 alpha，嘗試從數據估算
+        if dispersion is None:
+            self.alpha = self._estimate_default_alpha()
+    
+    def _estimate_default_alpha(self) -> float:
+        """估算默認 alpha 值（基於一般足球數據）"""
+        return 1.5  # 默認值，可被 override
+    
+    @staticmethod
+    def estimate_alpha_from_data(goals: List[int], min_games: int = 10) -> float:
+        """
+        從歷史進球數據估算離散參數 alpha
+        
+        使用矩估計法：
+        方差 = 均值 + alpha * 均值^2
+        => alpha = (方差 - 均值) / 均值^2
+        
+        Args:
+            goals: 歷史進球數列表
+            min_games: 最小比賽數（數據不足返回默認值）
+            
+        Returns:
+            alpha: 離散參數
+        """
+        if len(goals) < min_games:
+            return 1.5  # 返回默認值
+        
+        goals = np.array(goals)
+        mean_goals = np.mean(goals)
+        
+        if mean_goals <= 0:
+            return 1.5
+        
+        var_goals = np.var(goals)
+        
+        # 避免負值或過小的 alpha
+        alpha = max(0.1, (var_goals - mean_goals) / (mean_goals ** 2))
+        
+        # 限制在合理範圍內
+        return min(3.0, max(0.5, alpha))
+    
+    @staticmethod
+    def estimate_alpha_from_dataframe(df: pd.DataFrame, team_col: str, is_home: bool = True, 
+                                       min_games: int = 10) -> float:
+        """
+        從 DataFrame 估算球隊的 alpha 值
+        
+        Args:
+            df: 包含歷史比賽數據的 DataFrame
+            team_col: 球隊名稱列
+            is_home: 是否為主隊
+            min_games: 最小比賽數
+            
+        Returns:
+            alpha: 離散參數
+        """
+        if is_home:
+            goals_col = 'home_goals'
+        else:
+            goals_col = 'away_goals'
+        
+        if goals_col not in df.columns:
+            return 1.5
+        
+        goals = df[goals_col].dropna().astype(int).tolist()
+        return NegativeBinomialModel.estimate_alpha_from_data(goals, min_games)
         
     def _calculate_nbinom_params(self, mu: float, alpha: float) -> Tuple[float, float]:
         """轉換為 scipy 參數格式"""
@@ -311,7 +381,9 @@ class Glicko2System:
     def update_ratings(self, home: str, away: str, h_goals: int, a_goals: int,
                       xg_home: Optional[float] = None, xg_away: Optional[float] = None):
         """
-        更新評分系統
+        更新評分系統 - 加入運氣調整
+        
+        如果提供了 xG 數據，會根據 xG 差 vs 實際進球差 來調整評分更新
         
         Args:
             home: 主隊名稱
@@ -325,15 +397,22 @@ class Glicko2System:
         elif h_goals == a_goals: s_h = 0.5; s_a = 0.5
         else: s_h = 0; s_a = 1
 
-        # 如果有 xG 數據，計算加權結果
-        if xg_home is not None and xg_away is not None:
+        # xG 運氣調整
+        if xg_home is not None and xg_away is not None and xg_home > 0 and xg_away > 0:
             xg_diff = xg_home - xg_away
             goal_diff = h_goals - a_goals
+            luck_adjustment = xg_diff - goal_diff
             
-            if (xg_diff > 0.3 and s_h == 0):  # xG 領先但輸球
-                s_h = 0.3
-            elif (xg_diff < -0.3 and s_h == 1):  # xG 落後但贏球
-                s_h = 0.7
+            # 運氣因子權重
+            luck_weight = 0.3
+            
+            # 調整結果
+            s_h = s_h - luck_adjustment * luck_weight * 0.1
+            s_a = s_a + luck_adjustment * luck_weight * 0.1
+            
+            # 確保在 [0, 1] 範圍內
+            s_h = max(0, min(1, s_h))
+            s_a = max(0, min(1, s_a))
 
         rh, rdh = self._scale_down(self.get_rating(home)['rating'], self.get_rating(home)['rd'])
         ra, rda = self._scale_down(self.get_rating(away)['rating'], self.get_rating(away)['rd'])
@@ -414,7 +493,14 @@ class DynamicKEloSystem:
     
     def update_ratings(self, home: str, away: str, h_goals: int, a_goals: int,
                       xg_home: Optional[float] = None, xg_away: Optional[float] = None):
-        """更新評分"""
+        """
+        更新評分 - 加入運氣調整
+        
+        如果提供了 xG 數據，會根據 xG 差 vs 實際進球差 來調整評分更新：
+        - xG 領先但輸球：運氣不佳，減少懲罰
+        - xG 落後但贏球：運氣好，減少獎勵
+        - xG 與實際一致：真實表現，正常更新
+        """
         if h_goals > a_goals:
             result_h, result_a = 1, 0
         elif h_goals == a_goals:
@@ -431,11 +517,31 @@ class DynamicKEloSystem:
         expected_h = self.expected_score(r_h + self.home_advantage, r_a)
         expected_a = self.expected_score(r_a, r_h + self.home_advantage)
         
-        # xG加權調整
-        if xg_home is not None and xg_away is not None:
-            perf_h = (xg_home - xg_away) - (h_goals - a_goals)
-            result_h = max(0, min(1, result_h - perf_h * 0.1))
-            result_a = max(0, min(1, result_a + perf_h * 0.1))
+        # xG 運氣調整
+        if xg_home is not None and xg_away is not None and xg_home > 0 and xg_away > 0:
+            # 計算 xG 差異和實際進球差異
+            xg_diff = xg_home - xg_away
+            goal_diff = h_goals - a_goals
+            
+            # 運氣因子：xG 預期 vs 實際的差異
+            luck_adjustment = xg_diff - goal_diff
+            
+            # 如果 luck_adjustment > 0，表示實際表現比 xG 預期差（運氣不好）
+            # 如果 luck_adjustment < 0，表示實際表現比 xG 預期好（運氣好）
+            
+            # 調整權重：運氣因素佔 30% 影響
+            luck_weight = 0.3
+            
+            # 調整結果
+            adjusted_result_h = result_h - luck_adjustment * luck_weight * 0.1
+            adjusted_result_a = result_a + luck_adjustment * luck_weight * 0.1
+            
+            # 確保結果在 [0, 1] 範圍內
+            adjusted_result_h = max(0, min(1, adjusted_result_h))
+            adjusted_result_a = max(0, min(1, adjusted_result_a))
+            
+            result_h = adjusted_result_h
+            result_a = adjusted_result_a
         
         self.ratings[home] = r_h + k_h * (result_h - expected_h)
         self.ratings[away] = r_a + k_a * (result_a - expected_a)

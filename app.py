@@ -37,8 +37,43 @@ try:
         ExponentialDecayXGForecaster,   # 指數衰減 xG
         BayesianGoalModel,              # 貝葉斯進球模型
         TeamFormLSTM,                  # LSTM 時序模型
-        BettingRLAgent                  # RL 投注策略
+        BettingRLAgent,                # RL 投注策略
+        XGOTEfficiencyModel,           # xGOT 效率模型
+        DefensiveQualityModel,         # 防守質量模型
+        ShotPositionModel              # 射門位置模型
     )
+    
+    # 導入數學模型 V3 (ML 集成)
+    from src.math_models_v3 import (
+        StackingEnsemble,              # Stacking 集成
+        DutchingCalculator,            # Dutching 投注計算器
+        PortfolioKelly,                # 組合 Kelly 管理
+        XGBoostModel,                 # XGBoost 模型
+        RandomForestModel,            # 隨機森林模型
+        GradientBoostingModel,         # 梯度提升模型
+        LogisticRegressionModel        # 邏輯回歸模型
+    )
+    
+    # 導入模型評估模組
+    from src.model_evaluation import (
+        CrossValidator,                # 交叉驗證
+        Backtester,                   # 回測系統
+        ModelMonitor,                 # 模型監控
+        DataValidator                 # 數據驗證
+    )
+    
+    # 導入特徵工程模組
+    from src.feature_engineering import (
+        FeatureEngineer,              # 特徵工程
+        TimeSeriesFeatureGenerator    # 時間序列特徵
+    )
+    
+    # 導入角球模型
+    from src.corner_models import (
+        CornerPredictionModel,        # 角球預測
+        CornerValueBetModel           # 角球價值投注
+    )
+    
     from src.injury_api import InjuryDataAggregator, get_injury_report
     from src.lineup_api import LineupAggregator, get_lineup
 except ImportError as e:
@@ -50,10 +85,24 @@ except ImportError as e:
 # Load Historical Team Names from CSV
 # ============================================
 HISTORICAL_TEAMS = {}
+# [v7.1] 數據驗證器
+data_validator = DataValidator()
+
 try:
     # 從 CSV 加載歷史數據的球隊名稱
     df_hist = pd.read_csv(settings.HISTORY_CSV_PATH)
-    all_teams_hist = set(df_hist['home_team'].unique()) | set(df_hist['away_team'].unique())
+    
+    # [v7.1] 驗證數據質量
+    validation_result = data_validator.validate_match_data(df_hist)
+    if not validation_result['is_valid']:
+        print(f"[WARN] 數據質量問題: {validation_result['issues']}")
+        print(f"       質量分數: {validation_result['quality_score']}/100")
+    
+    # [v7.1] 清洗異常數據
+    df_hist_clean = data_validator.clean_data(df_hist, strategy='clip')
+    print(f"[INFO] 數據驗證通過，質量分數: {validation_result['quality_score']}/100")
+    
+    all_teams_hist = set(df_hist_clean['home_team'].unique()) | set(df_hist_clean['away_team'].unique())
     HISTORICAL_TEAMS['csv_names'] = sorted(list(all_teams_hist))
     print(f"[INFO] 已載入 {len(HISTORICAL_TEAMS['csv_names'])} 個歷史球隊名稱")
 except Exception as e:
@@ -65,24 +114,34 @@ except Exception as e:
 # Load The Odds API Team Names
 # ============================================
 ODDS_API_TEAMS = {}
+ODDS_API_TEAMS_LIST = {}  # 簡化的球隊名稱列表
 try:
-    odds_teams_file = 'data/odds_api_teams.json'
+    odds_teams_file = 'data/top5_leagues_teams.json'
     if os.path.exists(odds_teams_file):
         with open(odds_teams_file, 'r', encoding='utf-8') as f:
             ODDS_API_TEAMS = json.load(f)
+        
+        # 提取簡化的球隊名稱列表（按聯賽分組）
+        for league_key, league_data in ODDS_API_TEAMS.items():
+            teams_dict = league_data.get('teams', {})
+            team_names = list(teams_dict.keys())
+            ODDS_API_TEAMS_LIST[league_key] = team_names
+        
         print(f"[INFO] 已載入 The Odds API 球隊數據")
     else:
         # 如果沒有本地檔案，創建空結構
         ODDS_API_TEAMS = {
-            'soccer_epl': [],
-            'soccer_spain_la_liga': [],
-            'soccer_germany_bundesliga': [],
-            'soccer_italy_serie_a': [],
-            'soccer_france_ligue_one': []
+            'soccer_epl': {'league_name': 'Premier League', 'teams': {}},
+            'soccer_spain_la_liga': {'league_name': 'La Liga', 'teams': {}},
+            'soccer_germany_bundesliga': {'league_name': 'Bundesliga', 'teams': {}},
+            'soccer_italy_serie_a': {'league_name': 'Serie A', 'teams': {}},
+            'soccer_france_ligue_one': {'league_name': 'Ligue 1', 'teams': {}}
         }
+        ODDS_API_TEAMS_LIST = {k: [] for k in ODDS_API_TEAMS.keys()}
 except Exception as e:
     print(f"[WARN] 無法載入 The Odds API 球隊數據: {e}")
     ODDS_API_TEAMS = {}
+    ODDS_API_TEAMS_LIST = {}
 
 
 # ============================================
@@ -188,37 +247,6 @@ Respond in this exact format (JSON):
     except Exception as e:
         print(f"[WARN] Gemini matching failed: {e}")
     
-    # Fallback: 使用 fuzzy matching 智能匹配
-    try:
-        import difflib
-        home_matched = home_input
-        away_matched = away_input
-        home_conf = 'low'
-        away_conf = 'low'
-        
-        # 智能匹配主隊
-        if historical_names:
-            home_matches = difflib.get_close_matches(home_input, historical_names, n=3, cutoff=0.5)
-            if home_matches:
-                home_matched = home_matches[0]
-                home_conf = 'medium'
-        
-        # 智能匹配客隊
-        if historical_names:
-            away_matches = difflib.get_close_matches(away_input, historical_names, n=3, cutoff=0.5)
-            if away_matches:
-                away_matched = away_matches[0]
-                away_conf = 'medium'
-        
-        # 返回匹配結果
-        return {
-            'home': home_matched,
-            'away': away_matched,
-            'confidence': 'medium' if home_conf == 'medium' and away_conf == 'medium' else 'low'
-        }
-    except:
-        pass
-    
     # 最後 fallback: 返回原始輸入
     return {'home': home_input, 'away': away_input, 'confidence': 'low'}
 
@@ -235,8 +263,11 @@ def match_to_odds_api(home_input, away_input, league_key):
     if not odds_teams:
         return {'home': home_input, 'away': away_input}
     
+    # 先取得 teams 字典
+    teams_dict = odds_teams.get('teams', {})
+    
     # 提取球隊名稱列表
-    team_names = [t.get('name', t.get('id', '')) for t in odds_teams if t.get('name')]
+    team_names = list(teams_dict.keys())[:50]
     
     prompt = f"""Match these football teams to The Odds API names.
 
@@ -257,7 +288,15 @@ Respond in JSON format:
         response = llm.fetch_data_helper(prompt)
         if response:
             import json as json_mod
-            result = json_mod.loads(response.strip())
+            # 移除 markdown code blocks (```json ... ```)
+            response_clean = response.strip()
+            if response_clean.startswith('```'):
+                response_clean = response_clean.split('```')[1]
+                # 移除語言標籤（如 "json"）
+                response_clean = response_clean.strip()
+                if response_clean.startswith('json'):
+                    response_clean = response_clean[4:].strip()
+            result = json_mod.loads(response_clean)
             return {
                 'home': result.get('home', home_input),
                 'away': result.get('away', away_input)
@@ -266,6 +305,119 @@ Respond in JSON format:
         print(f"[WARN] Odds API matching failed: {e}")
     
     return {'home': home_input, 'away': away_input}
+
+
+def match_to_json_teams(home_input, away_input, league_key):
+    """
+    使用 Gemini API 智能匹配球隊名稱到 data/top5_leagues_teams.json
+    返回: {'home': matched_name, 'away': matched_name, 'confidence': 'high/medium/low'}
+    """
+    # 獲取當前聯賽的球隊名稱列表
+    teams_list = ODDS_API_TEAMS_LIST.get(league_key, [])
+    
+    # 如果沒有特定聯賽的球隊，嘗試所有聯賽
+    if not teams_list:
+        for key, teams in ODDS_API_TEAMS_LIST.items():
+            teams_list.extend(teams)
+    
+    if not teams_list:
+        return {'home': home_input, 'away': away_input, 'confidence': 'low'}
+    
+    # 獲取聯賽名稱
+    league_info = ODDS_API_TEAMS.get(league_key, {})
+    league_name = league_info.get('league_name', '')
+    
+    # 精簡球隊名稱列表 (避免超過 token limit)
+    if len(teams_list) > 50:
+        teams_list = teams_list[:50]
+    
+    prompt = f"""Match these 2 football teams to the JSON database (top5_leagues_teams.json).
+
+Input: {home_input} vs {away_input}
+League: {league_name}
+
+Available Teams in JSON:
+{', '.join(teams_list)}
+
+IMPORTANT RULES:
+- Use EXACT names from the list above
+- "Manchester United" -> "Manchester United" (not "Man Utd")
+- "Tottenham" -> "Tottenham Hotspur"
+- "AC Milan" -> "AC Milan"
+- "Inter Milan" -> "Inter Milan"
+- "Bayern Munich" -> "Bayern Munich"
+- "PSG" -> "Paris Saint Germain"
+- "Napoli" -> "Napoli"
+- "Atletico Madrid" -> "Atlético Madrid"
+
+Respond in this exact JSON format:
+{{"home": "exact name from list", "away": "exact name from list", "confidence": "high/medium/low"}}"""
+
+    try:
+        response = llm.fetch_data_helper(prompt)
+        
+        # 檢查回應是否有效
+        if not response or response == "Data Error" or len(response.strip()) == 0:
+            raise ValueError("Empty or error response from LLM")
+        
+        # 清理回應 - 移除 markdown code blocks
+        response = response.strip()
+        if response.startswith("```"):
+            lines = response.split('\n')
+            cleaned_lines = []
+            for line in lines:
+                if line.strip().startswith("```"):
+                    continue
+                cleaned_lines.append(line)
+            response = '\n'.join(cleaned_lines).strip()
+        
+        # 嘗試解析 JSON
+        import json as json_mod
+        result = json_mod.loads(response)
+        
+        print(f"   [GEMINI JSON] API 返回結果: {result}")
+        
+        # 驗證結果是否在數據庫中
+        home_matched = result.get('home', home_input)
+        away_matched = result.get('away', away_input)
+        
+        # 標準化比對
+        home_lower = home_matched.lower().strip()
+        away_lower = away_matched.lower().strip()
+
+        
+        # 檢查主隊是否在列表中
+        for team_name in teams_list:
+            if home_lower == team_name.lower():
+                home_matched = team_name
+                break
+            if team_name.lower() in home_lower or home_lower in team_name.lower():
+                home_matched = team_name
+                break
+        
+        # 檢查客隊是否在列表中
+        for team_name in teams_list:
+            if away_lower == team_name.lower():
+                away_matched = team_name
+                break
+            if team_name.lower() in away_lower or away_lower in team_name.lower():
+                away_matched = team_name
+                break
+        
+        return {
+            'home': home_matched,
+            'away': away_matched,
+            'confidence': result.get('confidence', 'medium')
+        }
+        
+    except json.JSONDecodeError as e:
+        print(f"[WARN] Gemini JSON matching returned invalid JSON: {e}")
+        print(f"       原始回應: {response[:200] if response else 'None'}...")
+    except Exception as e:
+        print(f"[WARN] Gemini JSON matching failed: {e}")
+    
+    # 最後 fallback: 返回原始輸入
+    return {'home': home_input, 'away': away_input, 'confidence': 'low'}
 
 
 def find_best_sofa_match(home_input, away_input, league_name, sofa_matches):
@@ -590,7 +742,7 @@ def main():
     print(f"   聯賽上下文: {league_name}")
 
     # Step 1: 匹配到歷史數據庫 (CSV)
-    print(f"\n   [1/3] 匹配到歷史數據庫...")
+    print(f"\n   [1/4] 匹配到歷史數據庫...")
     hist_match = match_with_gemini(home, away, HISTORICAL_TEAMS.get('csv_names', []), league_name)
     db_home = hist_match['home']
     db_away = hist_match['away']
@@ -598,12 +750,20 @@ def main():
     print(f"      [HIST] {away} -> {db_away} (confidence: {hist_match['confidence']})")
 
     # Step 2: 匹配到 The Odds API
-    print(f"\n   [2/3] 匹配到 The Odds API...")
+    print(f"\n   [2/4] 匹配到 The Odds API...")
     odds_match = match_to_odds_api(home, away, league_key)
     odds_home = odds_match['home']
     odds_away = odds_match['away']
     print(f"      [ODDS] {home} -> {odds_home}")
     print(f"      [ODDS] {away} -> {odds_away}")
+
+    # Step 3: 匹配到 JSON 檔案 (top5_leagues_teams.json)
+    print(f"\n   [3/4] 匹配到 JSON 檔案 (top5_leagues_teams.json)...")
+    json_match = match_to_json_teams(home, away, league_key)
+    json_home = json_match['home']
+    json_away = json_match['away']
+    print(f"      [JSON] {home} -> {json_home} (confidence: {json_match['confidence']})")
+    print(f"      [JSON] {away} -> {json_away} (confidence: {json_match['confidence']})")
 
     # 初始化
     repo = HistoryRepo(settings.HISTORY_CSV_PATH)
@@ -1105,6 +1265,141 @@ def main():
     except Exception as e:
         print(f"      ⚠️ 狀態追蹤失敗: {str(e)[:80]}")
 
+    # ============================================
+    # [v7.1] xGOT 效率分析
+    # ============================================
+    print(f"\n   🎯 [v7.1] xGOT 效率分析:")
+    try:
+        xgot_model = XGOTEfficiencyModel(min_samples=3)
+        
+        if hasattr(repo, 'df') and not repo.df.empty:
+            valid_df = repo.df.dropna(subset=['home_goals', 'away_goals'])
+            
+            # 載入球隊數據
+            for team in [db_home, db_away]:
+                team_data = valid_df[(valid_df['home_team'] == team) | (valid_df['away_team'] == team)].tail(30)
+                for _, row in team_data.iterrows():
+                    try:
+                        is_home = row['home_team'] == team
+                        xg = float(row.get('xg', 1.5)) if pd.notna(row.get('xg')) else float(row['home_goals'] if is_home else row['away_goals'])
+                        xgot = float(row.get('xgot', xg)) if pd.notna(row.get('xgot')) else xg
+                        xgot_model.add_match_data(team, xg, xgot)
+                    except: continue
+            
+            # 計算效率
+            home_eff = xgot_model.calculate_efficiency(db_home, is_home=True)
+            away_eff = xgot_model.calculate_efficiency(db_away, is_home=False)
+            
+            print(f"      {odds_home} xGOT 效率: {home_eff.get('efficiency', 1.0):.2f} (樣本: {home_eff.get('n_samples', 0)})")
+            print(f"      {odds_away} xGOT 效率: {away_eff.get('efficiency', 1.0):.2f} (樣本: {away_eff.get('n_samples', 0)})")
+            
+            xgot_analysis = {
+                'home_efficiency': home_eff.get('efficiency', 1.0),
+                'away_efficiency': away_eff.get('efficiency', 1.0),
+                'home_expected_goals': home_eff.get('expected_xg', h_exp_adj),
+                'away_expected_goals': away_eff.get('expected_xg', a_exp_adj)
+            }
+    except Exception as e:
+        print(f"      ⚠️ xGOT 效率分析失敗: {str(e)[:50]}")
+        xgot_analysis = {'home_efficiency': 1.0, 'away_efficiency': 1.0}
+
+    # ============================================
+    # [v7.1] 防守質量分析
+    # ============================================
+    print(f"\n   🛡️ [v7.1] 防守質量分析:")
+    try:
+        def_model = DefensiveQualityModel(min_samples=3)
+        
+        if hasattr(repo, 'df') and not repo.df.empty:
+            valid_df = repo.df.dropna(subset=['home_goals', 'away_goals'])
+            
+            for team in [db_home, db_away]:
+                team_data = valid_df[(valid_df['home_team'] == team) | (valid_df['away_team'] == team)].tail(30)
+                for _, row in team_data.iterrows():
+                    try:
+                        is_home = row['home_team'] == team
+                        xg_against = float(row['away_goals']) if is_home else float(row['home_goals'])
+                        shots = int(row.get('away_shots', 5)) if is_home else int(row.get('home_shots', 5))
+                        def_model.add_match_data(team, xg_against, shots)
+                    except: continue
+            
+            home_def = def_model.calculate_defensive_quality(db_home, is_home=True)
+            away_def = def_model.calculate_defensive_quality(db_away, is_home=False)
+            
+            print(f"      {odds_home} 防守評分: {home_def.get('quality_score', 0.5):.2f} (失球預期: {home_def.get('expected_conceded', 1.2):.2f})")
+            print(f"      {odds_away} 防守評分: {away_def.get('quality_score', 0.5):.2f} (失球預期: {away_def.get('expected_conceded', 1.2):.2f})")
+            
+            defense_analysis = {
+                'home_quality': home_def.get('quality_score', 0.5),
+                'away_quality': away_def.get('quality_score', 0.5),
+                'home_expected_conceded': home_def.get('expected_conceded', 1.2),
+                'away_expected_conceded': away_def.get('expected_conceded', 1.2)
+            }
+    except Exception as e:
+        print(f"      ⚠️ 防守質量分析失敗: {str(e)[:50]}")
+        defense_analysis = {'home_quality': 0.5, 'away_quality': 0.5}
+
+    # ============================================
+    # [v7.1] 角球預測
+    # ============================================
+    print(f"\n   📐 [v7.1] 角球預測:")
+    try:
+        corner_model = CornerPredictionModel(decay_rate=0.15)
+        
+        if hasattr(repo, 'df') and not repo.df.empty:
+            valid_df = repo.df.dropna(subset=['home_corners', 'away_corners'])
+            
+            for team in [db_home, db_away]:
+                team_data = valid_df[(valid_df['home_team'] == team) | (valid_df['away_team'] == team)].tail(20)
+                for _, row in team_data.iterrows():
+                    try:
+                        is_home = row['home_team'] == team
+                        corners = row['home_corners'] if is_home else row['away_corners']
+                        if pd.notna(corners):
+                            corner_model.add_match(team, int(corners), is_home)
+                    except: continue
+        
+        # 預測角球
+        corner_pred = corner_model.predict(db_home, db_away)
+        
+        print(f"      {odds_home} 預測角球: {corner_pred.get('home_corners', 5.5):.1f}")
+        print(f"      {odds_away} 預測角球: {corner_pred.get('away_corners', 4.5):.1f}")
+        print(f"      預測總角球: {corner_pred.get('total_corners', 10.0):.1f}")
+        
+        # 角球價值投注
+        corner_value = CornerValueBetModel(corner_model)
+        if all_markets:
+            # 嘗試找到角球市場
+            corner_odds_over = None
+            corner_odds_under = None
+            for market, selections in all_markets.items():
+                if 'corner' in market.lower():
+                    for sel, stats in selections.items():
+                        if stats.get('avg'):
+                            odds = stats['avg'][-1].decimal_odds
+                            if 'over' in sel.lower():
+                                corner_odds_over = odds
+                            elif 'under' in sel.lower():
+                                corner_odds_under = odds
+            
+            if corner_odds_over and corner_odds_under:
+                value_bets = corner_value.find_value_bets(
+                    corner_pred.get('total_corners', 10.0),
+                    corner_odds_over,
+                    corner_odds_under
+                )
+                if value_bets:
+                    print(f"      💡 角球價值投注: {value_bets.get('recommendation', 'N/A')}")
+        
+        corner_analysis = {
+            'home_corners': corner_pred.get('home_corners', 5.5),
+            'away_corners': corner_pred.get('away_corners', 4.5),
+            'total_corners': corner_pred.get('total_corners', 10.0)
+        }
+    except Exception as e:
+        print(f"      ⚠️ 角球預測失敗: {str(e)[:50]}")
+        corner_analysis = {'home_corners': 5.5, 'away_corners': 4.5, 'total_corners': 10.0}
+
     # 計算綜合勝率
     avg_v3_prob = (nb_probs['home_win'] + mc_v3_probs['mc_home_win'] + elo_win_prob) / 3
     print(f"\n   📊 [v3] 綜合勝率: {avg_v3_prob:.1%}")
@@ -1396,6 +1691,48 @@ def main():
             
         except Exception as e:
             print(f"      [RL 策略計算失敗: {str(e)[:50]}]")
+        
+        # ============================================
+        # [v7.1] Dutching 投注選項
+        # ============================================
+        print(f"\n   📊 [v7.1] Dutching 投注選項:")
+        try:
+            if all_markets and '1x2_home' in structured_odds:
+                dutching = DutchingCalculator(target_return=0.5)  # 目標回報 50%
+                
+                odds_dict = {
+                    'home': structured_odds.get('1x2_home', 2.0),
+                    'draw': structured_odds.get('1x2_draw', 3.5),
+                    'away': structured_odds.get('1x2_away', 3.0)
+                }
+                
+                # 使用模型概率
+                prob_dict = {
+                    'home': nb_probs.get('home_win', 0.33),
+                    'draw': nb_probs.get('draw', 0.33),
+                    'away': nb_probs.get('away_win', 0.33)
+                }
+                
+                # Kelly + Dutching 結合
+                dutch_kelly = dutching.calculate_kelly_dutching(
+                    prob_dict=prob_dict,
+                    odds_dict=odds_dict,
+                    total_stake=settings.INITIAL_BANKROLL * 0.1,  # 10% 資金
+                    min_edge=0.08
+                )
+                
+                if dutch_kelly.get('bets'):
+                    print(f"      [Dutching 投注]")
+                    for bet in dutch_kelly['bets']:
+                        print(f"         {bet['selection']}: ${bet['stake']:.2f} @ {bet['odds']:.2f}")
+                    print(f"      總投注: ${dutch_kelly.get('total_stake', 0):.2f}")
+                    print(f"      預期回報: ${dutch_kelly.get('expected_return', 0):.2f}")
+                else:
+                    print(f"      [Dutching] 無足夠優勢，跳過")
+            else:
+                print(f"      [Dutching] 1x2 市場數據不足")
+        except Exception as e:
+            print(f"      [Dutching] 計算失敗: {str(e)[:50]}")
         
         print(f"\n   [{target_label}] 賠率 {target_odds}:")
         # 使用 ConfidenceKelly 的結果

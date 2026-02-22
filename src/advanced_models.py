@@ -539,6 +539,163 @@ class BayesianGoalModel:
                 })
         
         return sorted(value_bets, key=lambda x: x['edge'], reverse=True)
+    
+    def load_from_dataframe(self, df: pd.DataFrame, team: str, is_home: bool = True,
+                           xg_weight: float = 0.5, max_games: int = 20):
+        """
+        從 DataFrame 加載球隊歷史數據
+        
+        Args:
+            df: 包含歷史比賽數據的 DataFrame
+            team: 球隊名稱
+            is_home: 是否為主隊
+            xg_weight: xG 數據權重 (0-1)，1 表示完全使用 xG
+            max_games: 最大比賽數量（使用最近的比賽）
+        """
+        if is_home:
+            team_mask = df['home_team'] == team
+            goals_col = 'home_goals'
+            xg_col = 'home_xg_total'
+            xgot_col = 'home_xgot_total'
+        else:
+            team_mask = df['away_team'] == team
+            goals_col = 'away_goals'
+            xg_col = 'away_xg_total'
+            xgot_col = 'away_xgot_total'
+        
+        team_data = df[team_mask].sort_values('match_date', ascending=False).head(max_games)
+        
+        for _, row in team_data.iterrows():
+            goals = row.get(goals_col, 0)
+            xg = row.get(xg_col, goals) if pd.notna(row.get(xg_col)) else goals
+            xgot = row.get(xgot_col, xg) if pd.notna(row.get(xgot_col)) else xg
+            
+            # 混合 xG 和實際進球
+            if xg_weight > 0:
+                adjusted_xg = xg_weight * xg + (1 - xg_weight) * goals
+            else:
+                adjusted_xg = goals
+            
+            self.observations.append({
+                'home_goals': goals if is_home else 0,
+                'away_goals': 0 if is_home else goals,
+                'home_xg': adjusted_xg if is_home else 0,
+                'away_xg': 0 if is_home else adjusted_xg,
+                'home_xgot': xgot if is_home else 0,
+                'away_xgot': 0 if is_home else xgot,
+                'is_home': is_home,
+                'date': pd.Timestamp(row['match_date'])
+            })
+        
+        return len(team_data)
+    
+    def calculate_xgot_posterior(self, team: str, is_home: bool = True) -> Dict:
+        """
+        使用 xGOT 數據計算後驗分布（更精確的射門質量評估）
+        
+        xGOT 考慮了射門位置、類型等因素，比 xG 更準確
+        
+        Returns:
+            Dict:
+            - lambda: 預期進球率
+            - ci: 置信區間
+            - quality_score: 射門質量分數 (0-100)
+        """
+        # 篩選球隊觀察
+        team_obs = [o for o in self.observations 
+                   if (o['is_home'] == is_home) and 
+                   ((is_home and o.get('home_xgot', 0) > 0) or 
+                    (not is_home and o.get('away_xgot', 0) > 0))]
+        
+        if not team_obs:
+            return {'lambda': 1.3, 'ci': (0.5, 2.5), 'quality_score': 50}
+        
+        # 提取 xGOT 數據
+        xgots = []
+        for o in team_obs:
+            if is_home:
+                xgots.append(o.get('home_xgot', o.get('home_xg', 1)))
+            else:
+                xgots.append(o.get('away_xgot', o.get('away_xg', 1)))
+        
+        # 使用 xGOT 計算後驗
+        posterior_alpha = self.prior_alpha + sum(xgots)
+        posterior_beta = self.prior_beta + len(xgots)
+        
+        lambda_est = posterior_alpha / posterior_beta
+        ci = self._gamma_ci(posterior_alpha, posterior_beta, self.confidence_level)
+        
+        # 計算射門質量分數
+        # 比較 xGOT vs 實際進球
+        actual_goals = [o['home_goals'] if is_home else o['away_goals'] for o in team_obs]
+        avg_goals = np.mean(actual_goals)
+        
+        if lambda_est > 0:
+            quality_ratio = avg_goals / lambda_est
+            quality_score = min(100, max(0, 50 + (quality_ratio - 1) * 50))
+        else:
+            quality_score = 50
+        
+        return {
+            'lambda': lambda_est,
+            'ci': ci,
+            'quality_score': quality_score,
+            'sample_size': len(team_obs),
+            'avg_xgot': np.mean(xgots),
+            'avg_goals': avg_goals
+        }
+    
+    def get_team_strength(self, team: str, df: pd.DataFrame = None) -> Dict:
+        """
+        計算球隊整體實力指標
+        
+        Returns:
+            Dict:
+            - overall_xg: 平均預期進球
+            - attack_strength: 進攻實力分數 (0-100)
+            - defense_strength: 防守實力分數 (0-100)
+            - home_advantage: 主場優勢
+            - recent_form: 最近5場狀態
+        """
+        # 如果提供了 DataFrame，重新加載數據
+        if df is not None:
+            self.load_from_dataframe(df, team, is_home=True)
+            self.load_from_dataframe(df, team, is_home=False)
+        
+        # 主場觀察
+        home_obs = [o for o in self.observations if o['is_home']]
+        # 客場觀察
+        away_obs = [o for o in self.observations if not o['is_home']]
+        
+        # 計算平均 xG
+        home_xg = np.mean([o['home_xg'] for o in home_obs]) if home_obs else 1.3
+        away_xg = np.mean([o['away_xg'] for o in away_obs]) if away_obs else 1.1
+        
+        # 主場優勢
+        home_advantage = home_xg - away_xg if (home_xg > 0 and away_xg > 0) else 0.1
+        
+        # 進攻/防守實力（基於 xG 和被 xG）
+        if home_obs:
+            home_goals = np.mean([o['home_goals'] for o in home_obs])
+            attack_strength = min(100, home_xg * 35)  # xG 2.0 -> 70分
+            defense_strength = min(100, max(0, 70 - (home_goals - home_xg) * 20))
+        else:
+            attack_strength = 50
+            defense_strength = 50
+        
+        # 最近5場狀態
+        recent = sorted(self.observations, key=lambda x: x['date'], reverse=True)[:5]
+        recent_goals = [o['home_goals'] if o['is_home'] else o['away_goals'] for o in recent]
+        recent_form = np.mean(recent_goals) if recent_goals else 1.0
+        
+        return {
+            'overall_xg': (home_xg + away_xg) / 2,
+            'attack_strength': attack_strength,
+            'defense_strength': defense_strength,
+            'home_advantage': home_advantage,
+            'recent_form': recent_form,
+            'total_games': len(self.observations)
+        }
 
 
 # ============================================================
@@ -691,8 +848,183 @@ class TeamFormLSTM:
             loss='mse',
             metrics=['mae']
         )
-
+        
         return model
+    
+    def load_from_dataframe(self, df: pd.DataFrame, team: str, max_games: int = 20):
+        """
+        從 DataFrame 加載球隊歷史數據
+        
+        Args:
+            df: 包含歷史比賽數據的 DataFrame
+            team: 球隊名稱
+            max_games: 最大比賽數量
+        """
+        # 主場比賽
+        home_matches = df[df['home_team'] == team].sort_values('match_date', ascending=False).head(max_games)
+        
+        for _, row in home_matches.iterrows():
+            self.add_match(
+                team=team,
+                goals_scored=int(row.get('home_goals', 0)),
+                goals_conceded=int(row.get('away_goals', 0)),
+                xg=row.get('home_xg_total', row.get('home_goals', 1)),
+                possession=row.get('home_poss', 50) if pd.notna(row.get('home_poss')) else 50,
+                shots_on_target=int(row.get('home_shots_on', row.get('home_shots', 5))),
+                is_home=True,
+                date=row['match_date']
+            )
+        
+        # 客場比賽
+        away_matches = df[df['away_team'] == team].sort_values('match_date', ascending=False).head(max_games)
+        
+        for _, row in away_matches.iterrows():
+            self.add_match(
+                team=team,
+                goals_scored=int(row.get('away_goals', 0)),
+                goals_conceded=int(row.get('home_goals', 0)),
+                xg=row.get('away_xg_total', row.get('away_goals', 1)),
+                possession=row.get('away_poss', 50) if pd.notna(row.get('away_poss')) else 50,
+                shots_on_target=int(row.get('away_shots_on', row.get('away_shots', 5))),
+                is_home=False,
+                date=row['match_date']
+            )
+    
+    def add_match_with_xgot(self, team: str, goals_scored: int, goals_conceded: int,
+                           xg: float, xgot: float, xga: float,
+                           possession: float, shots_on_target: int,
+                           result: str = None, is_home: bool = True, date=None):
+        """
+        添加包含 xGOT 數據的比賽（增強版）
+        
+        Args:
+            xgot: Expected Goals on Target (預期射正進球)
+            xga: Expected Goals Against (預期被進球)
+        """
+        if team not in self.team_sequences:
+            self.team_sequences[team] = []
+        
+        # 處理 result 欄位
+        if result is None:
+            if goals_scored > goals_conceded:
+                result = 'W'
+            elif goals_scored < goals_conceded:
+                result = 'L'
+            else:
+                result = 'D'
+        
+        self.team_sequences[team].append({
+            'goals_scored': goals_scored,
+            'goals_conceded': goals_conceded,
+            'xg': xg,
+            'xgot': xgot,
+            'xga': xga,
+            'possession': possession,
+            'shots_on_target': shots_on_target,
+            'won': result == 'W',
+            'draw': result == 'D',
+            'home_advantage': 1.0 if is_home else 0.0,
+            'date': pd.Timestamp(date) if date else pd.Timestamp.now()
+        })
+    
+    def get_team_form(self, team: str) -> Dict:
+        """
+        獲取球隊當前狀態
+        
+        Returns:
+            Dict:
+            - form_score: 狀態分數 (0-100)
+            - attack_trend: 進攻趨勢
+            - defense_trend: 防守趨勢
+            - momentum: 勢頭
+        """
+        if team not in self.team_sequences or len(self.team_sequences[team]) < self.min_games:
+            return {'form_score': 50, 'attack_trend': 0, 'defense_trend': 0, 'momentum': 0}
+        
+        matches = sorted(self.team_sequences[team], key=lambda x: x['date'], reverse=True)
+        
+        # 最近5場
+        recent = matches[:5]
+        # 之前5場
+        previous = matches[5:10] if len(matches) > 5 else []
+        
+        # 計算狀態分數
+        recent_xg = np.mean([m['xg'] for m in recent])
+        recent_goals = np.mean([m['goals_scored'] for m in recent])
+        recent_xga = np.mean([m.get('xga', m['goals_conceded']) for m in recent])
+        
+        form_score = min(100, (recent_xg * 20 + recent_goals * 15 + (1 - recent_xga/3) * 20 + 20))
+        
+        # 計算趨勢
+        if previous:
+            prev_xg = np.mean([m['xg'] for m in previous])
+            attack_trend = recent_xg - prev_xg
+            prev_xga = np.mean([m.get('xga', m['goals_conceded']) for m in previous])
+            defense_trend = prev_xga - recent_xga  # 減少失球 = 正向
+        else:
+            attack_trend = 0
+            defense_trend = 0
+        
+        # 計算勢頭 (最近3場 vs 之前2場)
+        last_3 = matches[:3]
+        wins_last_3 = sum([m['won'] for m in last_3])
+        momentum = (wins_last_3 / 3 - 0.5) * 100  # -50 to +50
+        
+        return {
+            'form_score': form_score,
+            'attack_trend': attack_trend,
+            'defense_trend': defense_trend,
+            'momentum': momentum,
+            'recent_xg': recent_xg,
+            'recent_xga': recent_xga,
+            'games_played': len(matches)
+        }
+    
+    def predict_next_match(self, team: str, opponent: str = None, is_home: bool = True) -> Dict:
+        """
+        預測下一場比賽結果
+        
+        Returns:
+            Dict:
+            - expected_goals: 預期進球
+            - expected_conceded: 預期失球
+            - win_probability: 贏球概率
+            - confidence: 信心度
+        """
+        form = self.get_team_form(team)
+        
+        if form['games_played'] < self.min_games:
+            return {
+                'expected_goals': 1.3,
+                'expected_conceded': 1.2,
+                'win_probability': 0.4,
+                'confidence': 0.3
+            }
+        
+        # 基礎預測
+        expected_goals = form['recent_xg'] * (1 + form['attack_trend'] * 0.1)
+        expected_conceded = form['recent_xga'] * (1 - form['defense_trend'] * 0.1)
+        
+        # 主場優勢
+        if is_home:
+            expected_goals *= 1.15
+            expected_conceded *= 0.95
+        
+        # 信心度基於數據量和趨勢穩定性
+        confidence = min(1.0, form['games_played'] / 20) * (1 - abs(form['momentum']) / 100)
+        
+        # 簡單的贏球概率計算
+        goal_diff = expected_goals - expected_conceded
+        win_prob = 0.3 + goal_diff * 0.2 + form['momentum'] / 200
+        win_prob = max(0.1, min(0.8, win_prob))
+        
+        return {
+            'expected_goals': round(expected_goals, 2),
+            'expected_conceded': round(expected_conceded, 2),
+            'win_probability': round(win_prob, 3),
+            'confidence': round(confidence, 3),
+            'form_score': form['form_score']
+        }
 
     def fit_team(self, team: str, epochs: int = 50, verbose: int = 0) -> bool:
         """訓練球隊狀態模型"""
@@ -956,13 +1288,18 @@ class TeamFormLSTM:
 
 class BettingRLAgent:
     """
-    強化學習投注策略優化器
+    強化學習投注策略優化器 v2
     
     特點：
     - Q-Learning 框架
     - 自動學習最優策略
     - 風險管理整合
     - 可訓練和部署
+    
+    v2 更新：
+    - 添加與新數據源的整合
+    - 添加批量訓練功能
+    - 添加策略導出/導入
     """
     
     def __init__(self,
@@ -973,7 +1310,7 @@ class BettingRLAgent:
                  exploration_decay: float = 0.995,
                  bankroll: float = 1000.0,
                  max_bet_pct: float = 0.1):  # 最大投注比例
-    
+        
         self.lr = learning_rate
         self.gamma = discount_factor
         self.epsilon = exploration_rate
@@ -1001,6 +1338,207 @@ class BettingRLAgent:
         self.total_bets = 0
         self.wins = 0
         self.profit = 0.0
+        
+        # v2 新增
+        self.training_data = []
+        self.is_trained = False
+    
+    def load_training_data(self, df: pd.DataFrame, n_games: int = 5):
+        """
+        從 DataFrame 加載訓練數據
+        
+        Args:
+            df: 包含比賽數據的 DataFrame
+            n_games: 用於計算狀態的比賽數
+        """
+        # 需要的列
+        required_cols = ['home_goals', 'away_goals', 'home_xg_total', 'away_xg_total']
+        
+        if not all(c in df.columns for c in required_cols):
+            print(f"警告：缺少必要列，跳過訓練數據加載")
+            return
+        
+        df = df.sort_values('match_date')
+        
+        for idx in range(n_games, len(df)):
+            row = df.iloc[idx]
+            prev_games = df.iloc[idx-n_games:idx]
+            
+            # 計算特徵
+            home_team = row['home_team']
+            away_team = row['away_team']
+            
+            # 主隊最近狀態
+            home_prev = prev_games[prev_games['home_team'] == home_team]
+            if len(home_prev) > 0:
+                home_form = home_prev['home_goals'].mean() / 3.0
+            else:
+                home_form = 0.5
+            
+            # 客隊最近狀態
+            away_prev = prev_games[prev_games['away_team'] == away_team]
+            if len(away_prev) > 0:
+                away_form = away_prev['away_goals'].mean() / 3.0
+            else:
+                away_form = 0.5
+            
+            # 實際結果
+            if row['home_goals'] > row['away_goals']:
+                result = 1.0  # 主勝
+            elif row['home_goals'] < row['away_goals']:
+                result = 0.0  # 客勝
+            else:
+                result = 0.5  # 平
+            
+            # xG 優勢
+            xg_edge = row.get('home_xg_total', 1.5) - row.get('away_xg_total', 1.2)
+            
+            self.training_data.append({
+                'home_team': home_team,
+                'away_team': away_team,
+                'home_form': home_form,
+                'away_form': away_form,
+                'xg_edge': xg_edge,
+                'result': result,
+                'home_goals': row['home_goals'],
+                'away_goals': row['away_goals']
+            })
+    
+    def train_from_history(self, epochs: int = 100):
+        """
+        從歷史數據訓練 RL 代理
+        
+        Args:
+            epochs: 訓練輪數
+        """
+        if not self.training_data:
+            print("沒有訓練數據，請先調用 load_training_data()")
+            return
+        
+        print(f"開始訓練，共 {len(self.training_data)} 條數據，{epochs} 輪...")
+        
+        for epoch in range(epochs):
+            np.random.shuffle(self.training_data)
+            
+            for data in self.training_data:
+                edge = data['xg_edge']
+                confidence = 0.5 + abs(edge) * 2  # 模擬信心度
+                confidence = min(1.0, confidence)
+                
+                # 模擬赔率 (基於 xG)
+                base_prob = 1 / (1 + np.exp(-edge))
+                odds = 1 / base_prob + np.random.uniform(-0.1, 0.1)
+                odds = max(1.1, min(10.0, odds))
+                
+                # 獲取狀態
+                state = self.get_state_key(
+                    edge, confidence, odds, 
+                    data['home_form'], data['away_form']
+                )
+                
+                # 選擇動作
+                action_idx = self.choose_action(state)
+                action = self.actions[action_idx]
+                
+                # 計算獎勵
+                kelly = self.calculate_kelly(base_prob, odds)
+                bet_size = action * kelly * self.bankroll
+                
+                if bet_size > 0:
+                    # 計算結果
+                    won = np.random.random() < data['result']
+                    if won:
+                        reward = bet_size * (odds - 1)
+                        self.wins += 1
+                    else:
+                        reward = -bet_size
+                else:
+                    reward = 0
+                
+                # 更新 Q 表
+                old_q = self.q_table.get((state, action_idx), 0.0)
+                
+                # 估計下一個狀態的最大 Q (簡化)
+                next_state = state
+                next_max_q = max([self.q_table.get((next_state, a), 0.0) 
+                                for a in range(len(self.actions))])
+                
+                new_q = old_q + self.lr * (reward + self.gamma * next_max_q - old_q)
+                self.q_table[(state, action_idx)] = new_q
+                
+                self.total_bets += 1
+            
+            # 衰減探索率
+            self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
+            
+            if (epoch + 1) % 20 == 0:
+                print(f"  Epoch {epoch+1}/{epochs}, epsilon: {self.epsilon:.3f}")
+        
+        self.is_trained = True
+        print(f"訓練完成！總共更新 {self.total_bets} 次，勝率 {self.wins/max(1,self.total_bets)*100:.1f}%")
+    
+    def get_optimal_action(self, edge: float, confidence: float, odds: float,
+                          home_form: float, away_form: float) -> Dict:
+        """
+        獲取最優動作（訓練後使用）
+        
+        Returns:
+            Dict: 包含動作和原因的字典
+        """
+        state = self.get_state_key(edge, confidence, odds, home_form, away_form)
+        
+        if not self.is_trained:
+            # 如果未訓練，使用貪心策略
+            action_idx = self.choose_action(state, exploit=False)
+        else:
+            action_idx = self.choose_action(state, exploit=True)
+        
+        action = self.actions[action_idx]
+        kelly = self.calculate_kelly(0.5 + edge, odds)
+        
+        return {
+            'action_idx': action_idx,
+            'kelly_pct': action,
+            'bet_size': action * kelly,
+            'q_value': self.q_table.get((state, action_idx), 0),
+            'state': state,
+            'is_trained': self.is_trained
+        }
+    
+    def export_policy(self, filepath: str):
+        """導出策略到文件"""
+        import json
+        
+        policy_data = {
+            'q_table': {f"{k[0]}-{k[1]}": v for k, v in self.q_table.items()},
+            'epsilon': self.epsilon,
+            'actions': self.actions,
+            'state_bins': self.state_bins,
+            'total_bets': self.total_bets,
+            'wins': self.wins
+        }
+        
+        with open(filepath, 'w') as f:
+            json.dump(policy_data, f)
+        
+        print(f"策略已導出到 {filepath}")
+    
+    def import_policy(self, filepath: str):
+        """從文件導入策略"""
+        import json
+        
+        with open(filepath, 'r') as f:
+            policy_data = json.load(f)
+        
+        self.q_table = {tuple(k.split('-')): v for k, v in policy_data['q_table'].items()}
+        self.epsilon = policy_data['epsilon']
+        self.actions = policy_data['actions']
+        self.state_bins = policy_data['state_bins']
+        self.total_bets = policy_data['total_bets']
+        self.wins = policy_data['wins']
+        self.is_trained = True
+        
+        print(f"策略已從 {filepath} 導入")
     
     def _discretize(self, value: float, bins: List[float]) -> int:
         """將連續值離散化"""
@@ -1275,6 +1813,295 @@ def run_advanced_prediction(home_team: str, away_team: str,
     }
     
     return results
+
+
+# ============================================================
+# 新增部分：xG/xGOT 效率模型和防守質量模型
+# ============================================================
+
+class XGOTEfficiencyModel:
+    """
+    xGOT (Expected Goals on Target) 效率模型
+    
+    用於評估球隊/球員的射門質量 vs 實際表現
+    - xGOT: 預期射正進球概率
+    - 比較 xGOT vs 實際進球，評估射門效率
+    """
+    
+    def __init__(self, min_samples: int = 5):
+        """
+        Args:
+            min_samples: 最小樣本數（樣本不足返回默認值）
+        """
+        self.min_samples = min_samples
+        self.team_data = {}  # {team: {'xg_total': [], 'xgot_total': [], 'goals': [], 'shots': []}}
+        
+    def add_match_data(self, team: str, xg_total: float, xgot_total: float, 
+                      goals: int, shots: int, is_home: bool = True):
+        """添加比賽數據"""
+        if team not in self.team_data:
+            self.team_data[team] = {
+                'home': {'xg': [], 'xgot': [], 'goals': [], 'shots': []},
+                'away': {'xg': [], 'xgot': [], 'goals': [], 'shots': []}
+            }
+        
+        key = 'home' if is_home else 'away'
+        self.team_data[team][key]['xg'].append(xg_total)
+        self.team_data[team][key]['xgot'].append(xgot_total)
+        self.team_data[team][key]['goals'].append(goals)
+        self.team_data[team][key]['shots'].append(shots)
+    
+    def calculate_efficiency(self, team: str, is_home: bool = True) -> Dict:
+        """
+        計算球隊的 xGOT 效率
+        
+        Returns:
+            Dict:
+            - xg_total: 平均總 xG
+            - xgot_total: 平均總 xGOT
+            - goals: 平均進球
+            - goals_vs_xg: 進球 - xG (正值表示超預期)
+            - goals_vs_xgot: 進球 - xGOT
+            - conversion_rate: 實際進球率 (goals/shots)
+            - xgot_conversion_rate: xGOT 轉化率
+            - efficiency_score: 效率分數 (0-100)
+        """
+        if team not in self.team_data:
+            return self._default_efficiency()
+        
+        key = 'home' if is_home else 'away'
+        data = self.team_data[team][key]
+        
+        if len(data['goals']) < self.min_samples:
+            return self._default_efficiency()
+        
+        # 計算平均值
+        avg_xg = np.mean(data['xg'])
+        avg_xgot = np.mean(data['xgot'])
+        avg_goals = np.mean(data['goals'])
+        avg_shots = np.mean(data['shots'])
+        
+        # 計算效率指標
+        goals_vs_xg = avg_goals - avg_xg
+        goals_vs_xgot = avg_goals - avg_xgot
+        
+        # 轉化率
+        conversion_rate = avg_goals / avg_shots if avg_shots > 0 else 0
+        xgot_conversion_rate = avg_xgot / avg_shots if avg_shots > 0 else 0
+        
+        # 效率分數：比較預期和實際
+        # 如果實際 > 預期，效率高
+        if avg_xg > 0:
+            efficiency_score = min(100, max(0, 50 + (goals_vs_xg / avg_xg) * 50))
+        else:
+            efficiency_score = 50
+        
+        return {
+            'xg_total': avg_xg,
+            'xgot_total': avg_xgot,
+            'goals': avg_goals,
+            'goals_vs_xg': goals_vs_xg,
+            'goals_vs_xgot': goals_vs_xgot,
+            'conversion_rate': conversion_rate,
+            'xgot_conversion_rate': xgot_conversion_rate,
+            'efficiency_score': efficiency_score,
+            'sample_size': len(data['goals'])
+        }
+    
+    def _default_efficiency(self) -> Dict:
+        """返回默認效率值"""
+        return {
+            'xg_total': 1.3,
+            'xgot_total': 1.0,
+            'goals': 1.3,
+            'goals_vs_xg': 0,
+            'goals_vs_xgot': 0.3,
+            'conversion_rate': 0.1,
+            'xgot_conversion_rate': 0.08,
+            'efficiency_score': 50,
+            'sample_size': 0
+        }
+
+
+class DefensiveQualityModel:
+    """
+    防守質量模型 (xGA - Expected Goals Against)
+    
+    用於評估球隊的防守質量：
+    - 計算球隊平均被射門 xG (xGA)
+    - 評估對手射門位置的防守壓力
+    - 識別防守漏洞
+    """
+    
+    def __init__(self, min_samples: int = 5):
+        """
+        Args:
+            min_samples: 最小樣本數
+        """
+        self.min_samples = min_samples
+        self.team_data = {}  # {team: {'home': {}, 'away': {}}}
+        
+    def add_match_data(self, team: str, xg_against: float, shots_against: int,
+                      goals_against: int, is_home: bool = True):
+        """
+        添加比賽防守數據
+        
+        Args:
+            team: 球隊名稱
+            xg_against: 被對手獲得的總 xG
+            shots_against: 被對手射門次數
+            goals_against: 被對手進球數
+            is_home: 是否為主場
+        """
+        if team not in self.team_data:
+            self.team_data[team] = {
+                'home': {'xga': [], 'shots_against': [], 'goals_against': []},
+                'away': {'xga': [], 'shots_against': [], 'goals_against': []}
+            }
+        
+        key = 'home' if is_home else 'away'
+        self.team_data[team][key]['xga'].append(xg_against)
+        self.team_data[team][key]['shots_against'].append(shots_against)
+        self.team_data[team][key]['goals_against'].append(goals_against)
+    
+    def calculate_defensive_quality(self, team: str, is_home: bool = True) -> Dict:
+        """
+        計算球隊的防守質量
+        
+        Returns:
+            Dict:
+            - xga: 平均被射門 xG
+            - shots_against: 平均被射門次數
+            - goals_against: 平均被進球
+            - goals_vs_xga: 被進球 - xGA (負值表示防守好)
+            - save_rate: 撲救率 (1 - goals/shots)
+            - defensive_score: 防守分數 (0-100, 100=最好)
+        """
+        if team not in self.team_data:
+            return self._default_defensive()
+        
+        key = 'home' if is_home else 'away'
+        data = self.team_data[team][key]
+        
+        if len(data['goals_against']) < self.min_samples:
+            return self._default_defensive()
+        
+        # 計算平均值
+        avg_xga = np.mean(data['xga'])
+        avg_shots = np.mean(data['shots_against'])
+        avg_goals = np.mean(data['goals_against'])
+        
+        # 計算防守指標
+        goals_vs_xga = avg_goals - avg_xga  # 負值表示比預期好
+        
+        # 撲救率
+        if avg_shots > 0:
+            save_rate = 1 - (avg_goals / avg_shots)
+        else:
+            save_rate = 1.0
+        
+        # 防守分數
+        # 低 xGA = 好防守，高分
+        # 高 save_rate = 好門將，高分
+        if avg_xga > 0:
+            xga_score = max(0, 100 - avg_xga * 30)  # xGA 1.0 -> 70分
+        else:
+            xga_score = 100
+        
+        save_score = save_rate * 100
+        defensive_score = (xga_score * 0.6 + save_score * 0.4)
+        
+        return {
+            'xga': avg_xga,
+            'shots_against': avg_shots,
+            'goals_against': avg_goals,
+            'goals_vs_xga': goals_vs_xga,
+            'save_rate': save_rate,
+            'defensive_score': defensive_score,
+            'sample_size': len(data['goals_against'])
+        }
+    
+    def _default_defensive(self) -> Dict:
+        """返回默認防守值"""
+        return {
+            'xga': 1.3,
+            'shots_against': 10,
+            'goals_against': 1.3,
+            'goals_vs_xga': 0,
+            'save_rate': 0.7,
+            'defensive_score': 50,
+            'sample_size': 0
+        }
+
+
+class ShotPositionModel:
+    """
+    射門位置分布模型
+    
+    用於分析球隊的射門位置特征：
+    - 禁區內 vs 禁區外射門比例
+    - 射門位置熱力圖特征
+    - 識別進攻風格
+    """
+    
+    def __init__(self):
+        self.team_data = {}
+        
+    def add_shot_data(self, team: str, shots_inside_box: int, shots_outside_box: int,
+                      is_home: bool = True):
+        """添加射門位置數據"""
+        if team not in self.team_data:
+            self.team_data[team] = {
+                'home': {'inside': [], 'outside': []},
+                'away': {'inside': [], 'outside': []}
+            }
+        
+        key = 'home' if is_home else 'away'
+        self.team_data[team][key]['inside'].append(shots_inside_box)
+        self.team_data[team][key]['outside'].append(shots_outside_box)
+    
+    def analyze_position_style(self, team: str, is_home: bool = True) -> Dict:
+        """
+        分析球隊的射門位置風格
+        
+        Returns:
+            Dict:
+            - avg_inside: 平均禁區內射門
+            - avg_outside: 平均禁區外射門
+            - inside_ratio: 禁區內射門比例
+            - style: 風格描述 ('inside', 'outside', 'balanced')
+        """
+        if team not in self.team_data:
+            return {'style': 'unknown', 'inside_ratio': 0.5}
+        
+        key = 'home' if is_home else 'away'
+        data = self.team_data[team][key]
+        
+        if not data['inside']:
+            return {'style': 'unknown', 'inside_ratio': 0.5}
+        
+        avg_inside = np.mean(data['inside'])
+        avg_outside = np.mean(data['outside'])
+        total = avg_inside + avg_outside
+        
+        if total == 0:
+            return {'style': 'unknown', 'inside_ratio': 0.5}
+        
+        inside_ratio = avg_inside / total
+        
+        if inside_ratio > 0.7:
+            style = 'inside'
+        elif inside_ratio < 0.3:
+            style = 'outside'
+        else:
+            style = 'balanced'
+        
+        return {
+            'avg_inside': avg_inside,
+            'avg_outside': avg_outside,
+            'inside_ratio': inside_ratio,
+            'style': style
+        }
 
 
 if __name__ == "__main__":

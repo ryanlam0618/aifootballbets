@@ -19,7 +19,17 @@ fb_ai_bets/
 │   ├── networking_llm.py       # 聯網 LLM 功能
 │   ├── finance.py              # 資金管理
 │   ├── math_models.py          # 數學模型 v1
-│   └── math_models_v2.py       # 數學模型 v2
+│   ├── math_models_v2.py       # 數學模型 v2
+│   ├── math_models_v3.py       # 數學模型 v3 (ML集成)
+│   ├── advanced_models.py      # 高級模型 (xG, 貝葉斯, LSTM, RL)
+│   ├── model_evaluation.py     # 模型評估與監控
+│   ├── feature_engineering.py # 特徵工程
+│   ├── corner_models.py        # 角球預測模型
+│   ├── lineup_api.py           # 陣容 API
+│   ├── injury_api.py          # 傷停 API
+│   ├── league_parameter_estimator.py # 聯賽參數估計
+│   ├── team_name_matcher.py    # 球隊名稱匹配
+│   └── fotmob_api.py          # Fotmob API
 │
 ├── tests/                      # 測試文件目錄
 │   ├── __init__.py
@@ -104,6 +114,55 @@ LLM 客戶端協調器，整合：
 - `LineupModel`: 陣容評分模型
 - `OptimizedDixonColes`: 優化版 Dixon-Coles
 - `MonteCarloSimulator`: 進階蒙地卡羅模擬
+
+### math_models_v3.py
+數學模型 v3（ML 集成版），包含：
+- `StackingEnsemble`: Stacking 集成學習
+- `DutchingCalculator`: Dutching 投注計算
+- `PortfolioKelly`: 組合 Kelly 管理
+- `XGBoostModel`, `RandomForestModel`, `GradientBoostingModel`, `LogisticRegressionModel`: ML 模型
+- `MonteCarloSimulatorV3`: 進階蒙地卡羅模擬
+- `ConfidenceKelly`: 信心度 Kelly (v3.1)
+
+### advanced_models.py
+高級 AI 模型，包含：
+- `ExponentialDecayXGForecaster`: 指數衰減 xG 預測
+- `BayesianGoalModel`: 貝葉斯進球模型
+- `TeamFormLSTM`: LSTM 球隊形態追蹤
+- `BettingRLAgent`: 強化學習投注策略
+- `XGOTEfficiencyModel`: xGOT 效率模型
+- `DefensiveQualityModel`: 防守質量模型
+- `ShotPositionModel`: 射門位置模型
+
+### model_evaluation.py
+模型評估與監控（v7.1 新增）：
+- `CrossValidator`: 時間序列交叉驗證
+- `Backtester`: 回測系統
+- `ModelMonitor`: 模型監控與漂移檢測
+- `DataValidator`: 數據驗證與清洗
+
+### feature_engineering.py
+特徵工程：
+- `FeatureEngineer`: 特徵工程工具
+- `TimeSeriesFeatureGenerator`: 時間序列特徵生成
+
+### corner_models.py
+角球預測模型：
+- `CornerPredictionModel`: 角球數量預測
+- `CornerValueBetModel`: 角球價值投注識別
+
+### lineup_api.py
+陣容 API 整合，包含：
+- `APIFootballLineups`: API-Football 陣容
+- `FotMobLineups`: FotMob 陣容
+- `LineupAggregator`: 陣容聚合器
+
+### injury_api.py
+傷停數據 API，包含：
+- `TransfermarktInjuryScraper`: Transfermarkt 傷停爬蟲
+- `APIFootballIntegration`: API-Football 整合
+- `InjurySimulator`: 傷停模擬器
+- `InjuryDataAggregator`: 傷停數據聚合
 
 ## 🧪 tests/ 目錄
 
@@ -193,7 +252,9 @@ API 文檔，包含：
 app.py (主程式)
     ↓
 ├─→ data_modules.py (獲取歷史數據)
-├─→ math_models_v2.py (數學模型預測)
+├─→ math_models.py / math_models_v2.py / math_models_v3.py (數學模型預測)
+├─→ advanced_models.py (AI 高級模型)
+├─→ model_evaluation.py (模型評估)
 ├─→ data_modules.py (獲取即時賠率)
 ├─→ llm_clients.py (Grok 市場情報)
 ├─→ llm_clients.py (GPT-4 綜合決策)

@@ -29,7 +29,16 @@ cp .env.example .env
 ODDS_API_KEY=你的_odds_api_金鑰
 OPENAI_API_KEY=你的_openai_金鑰
 GROK_API_KEY=你的_grok_金鑰
+GEMINI_API_KEY=你的_gemini_金鑰
 ```
+
+### 3. 測試模式（驗證安裝）
+
+```bash
+python app.py test
+```
+
+這會使用模擬數據測試所有組件是否正常運作。
 
 ### 3. 下載歷史數據（可選）
 
@@ -70,6 +79,63 @@ python scripts/train_model.py
 ```
 
 這會訓練一個 XGBoost 模型並儲存為 `xgb_model.pkl`。
+
+### 使用模型評估框架
+
+```python
+from src.model_evaluation import CrossValidator, Backtester, DataValidator
+
+# 數據驗證
+validator = DataValidator()
+result = validator.validate_match_data(df)
+print(f"數據質量分數: {result['quality_score']}")
+
+# 交叉驗證
+cv = CrossValidator(n_splits=5)
+metrics = cv.evaluate_model(df, my_prediction_function)
+
+# 回測
+backtester = Backtester(initial_bankroll=10000)
+result = backtester.run_backtest(df, prediction_fn)
+print(f"ROI: {result.roi * 100:.2f}%")
+```
+
+### 使用投注策略
+
+```python
+from src.math_models_v3 import ConfidenceKelly, DutchingCalculator, PortfolioKelly
+
+# 信心度 Kelly
+kelly = ConfidenceKelly(base_fraction=0.5)
+result = kelly.calculate(prob=0.55, odds=2.0, confidence=0.8)
+print(f"建議投注: ${result.stake:.2f}")
+
+# Dutching
+dutching = DutchingCalculator(target_return=1.0)
+odds = {'home': 2.0, 'draw': 3.5, 'away': 4.0}
+result = dutching.calculate(odds_dict=odds, total_stake=100)
+print(result['bets'])
+
+# 組合 Kelly
+portfolio = PortfolioKelly([kelly], risk_tolerance='moderate')
+results = portfolio.allocate_bets(bets, bankroll, markets, outcomes)
+```
+
+### 模型監控
+
+```python
+from src.model_evaluation import ModelMonitor
+
+monitor = ModelMonitor("my_model")
+monitor.set_baseline(metrics)
+
+# 記錄預測
+monitor.record_prediction(features, prediction, actual)
+
+# 檢查漂移
+drift_report = monitor.check_performance_drift()
+print(f"狀態: {drift_report['status']}")
+```
 
 ### 測試 API 連線
 

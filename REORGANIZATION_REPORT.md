@@ -255,5 +255,101 @@ python tests/test_debug.py
 
 ---
 
+## 🚀 v7.1 更新記錄 (2026-02-22)
+
+### Section C: 投注策略改進
+
+#### C1: ConfidenceKelly 改進 (math_models_v3.py)
+- 添加波動率調整 (`calculate_volatility_adjustment()`)
+- 添加連勝/連敗調整 (`calculate_streak_adjustment()`)
+- 添加投注後狀態更新 (`update_after_bet()`)
+- 添加風險狀態查詢 (`get_risk_status()`)
+- 添加冷卻期功能（連續失敗後暫停投注）
+
+#### C2: Dutching 投注策略 (math_models_v3.py)
+- 新增 `DutchingCalculator` 類別
+- 標準 Dutching 計算 (`calculate()`)
+- Kelly + Dutching 結合 (`calculate_kelly_dutching()`)
+
+#### C3: PortfolioKelly 改進 (math_models_v3.py)
+- 風險偏好設置（保守/適度/激進）
+- 多元化獎勵計算 (`calculate_diversity_bonus()`)
+- 相關性懲罰計算 (`calculate_correlation_penalty()`)
+- 組合統計 (`get_portfolio_stats()`)
+
+#### C4: BettingRLAgent 整合 (advanced_models.py)
+- 從 DataFrame 加載訓練數據 (`load_training_data()`)
+- 從歷史數據訓練 (`train_from_history()`)
+- 獲取最優動作 (`get_optimal_action()`)
+- 策略導出/導入 (`export_policy()`, `import_policy()`)
+
+---
+
+### Section D: 模型評估框架
+
+#### D1: 模型評估 (model_evaluation.py - 新檔案)
+- `CrossValidator`: 時間序列友好的交叉驗證
+- `Backtester`: 回測系統，計算 ROI、Sharpe Ratio、最大回撤
+
+#### D2: 數據驗證 (model_evaluation.py)
+- `DataValidator`: 數據驗證器
+  - 比分、xG、赔率合理性檢查
+  - IQR 和 Z-score 異常值檢測
+  - 自動清洗異常數據
+
+#### D3: 模型監控 (model_evaluation.py)
+- `ModelMonitor`: 模型監控系統
+  - 性能漂移檢測
+  - 特徵漂移檢測
+  - 監控報告導出
+
+---
+
+### Section E: 整合到 app.py
+
+新增 imports:
+```python
+# 高級模型
+from src.advanced_models import (
+    XGOTEfficiencyModel,
+    DefensiveQualityModel,
+    ShotPositionModel
+)
+
+# 數學模型 V3
+from src.math_models_v3 import (
+    StackingEnsemble,
+    DutchingCalculator,
+    PortfolioKelly,
+    XGBoostModel,
+    RandomForestModel,
+    GradientBoostingModel,
+    LogisticRegressionModel
+)
+
+# 模型評估
+from src.model_evaluation import (
+    CrossValidator,
+    Backtester,
+    ModelMonitor,
+    DataValidator
+)
+
+# 特徵工程
+from src.feature_engineering import (
+    FeatureEngineer,
+    TimeSeriesFeatureGenerator
+)
+
+# 角球模型
+from src.corner_models import (
+    CornerPredictionModel,
+    CornerValueBetModel
+)
+```
+
+---
+
 **整理完成時間**: 2026-01-23 06:18  
+**v7.1 更新時間**: 2026-02-22  
 **整理狀態**: ✅ 完成

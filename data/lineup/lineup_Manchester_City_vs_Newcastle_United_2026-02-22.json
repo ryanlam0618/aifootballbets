@@ -1,0 +1,382 @@
+{
+    "event_id": 14024010,
+    "match_date": "2026-02-22",
+    "match_time": "04:00",
+    "tournament_name": "Premier League",
+    "category_name": "England",
+    "home_team": "Manchester City",
+    "away_team": "Newcastle United",
+    "home_formation": "4-1-3-2",
+    "away_formation": "4-3-3",
+    "home_coach": "",
+    "away_coach": "",
+    "home_starters": [
+        {
+            "id": 824509,
+            "name": "Gianluigi Donnarumma",
+            "number": 25,
+            "position": "G",
+            "rating": 7.03
+        },
+        {
+            "id": 945122,
+            "name": "Matheus Nunes",
+            "number": 27,
+            "position": "D",
+            "rating": 6.93
+        },
+        {
+            "id": 318941,
+            "name": "Rúben Dias",
+            "number": 3,
+            "position": "D",
+            "rating": 7.2
+        },
+        {
+            "id": 877994,
+            "name": "Marc Guéhi",
+            "number": 15,
+            "position": "D",
+            "rating": 7.29
+        },
+        {
+            "id": 931278,
+            "name": "Rayan Aït-Nouri",
+            "number": 21,
+            "position": "D",
+            "rating": 6.79
+        },
+        {
+            "id": 827606,
+            "name": "Rodri",
+            "number": 16,
+            "position": "M",
+            "rating": 7.32
+        },
+        {
+            "id": 934354,
+            "name": "Antoine Semenyo",
+            "number": 42,
+            "position": "M",
+            "rating": 7.09
+        },
+        {
+            "id": 331209,
+            "name": "Bernardo Silva",
+            "number": 20,
+            "position": "M",
+            "rating": 6.77
+        },
+        {
+            "id": 1142703,
+            "name": "Nico O'Reilly",
+            "number": 33,
+            "position": "M",
+            "rating": 6.76
+        },
+        {
+            "id": 839956,
+            "name": "Erling Haaland",
+            "number": 9,
+            "position": "F",
+            "rating": 7.43
+        },
+        {
+            "id": 873554,
+            "name": "Omar Marmoush",
+            "number": 7,
+            "position": "F",
+            "rating": 6.66
+        }
+    ],
+    "away_starters": [
+        {
+            "id": 162653,
+            "name": "Nick Pope",
+            "number": 1,
+            "position": "G",
+            "rating": 6.92
+        },
+        {
+            "id": 69256,
+            "name": "Kieran Trippier",
+            "number": 2,
+            "position": "D",
+            "rating": 6.74
+        },
+        {
+            "id": 1014286,
+            "name": "Malick Thiaw",
+            "number": 12,
+            "position": "D",
+            "rating": 7.08
+        },
+        {
+            "id": 99090,
+            "name": "Dan Burn",
+            "number": 33,
+            "position": "D",
+            "rating": 6.56
+        },
+        {
+            "id": 1136730,
+            "name": "Lewis Hall",
+            "number": 3,
+            "position": "D",
+            "rating": 6.88
+        },
+        {
+            "id": 975937,
+            "name": "Jacob Ramsey",
+            "number": 41,
+            "position": "M",
+            "rating": 6.62
+        },
+        {
+            "id": 892673,
+            "name": "Sandro Tonali",
+            "number": 8,
+            "position": "M",
+            "rating": 6.9
+        },
+        {
+            "id": 888550,
+            "name": "Joe Willock",
+            "number": 28,
+            "position": "M",
+            "rating": 6.53
+        },
+        {
+            "id": 979232,
+            "name": "Anthony Elanga",
+            "number": 20,
+            "position": "F",
+            "rating": 6.56
+        },
+        {
+            "id": 980623,
+            "name": "Nick Woltemade",
+            "number": 27,
+            "position": "F",
+            "rating": 6.67
+        },
+        {
+            "id": 914902,
+            "name": "Anthony Gordon",
+            "number": 10,
+            "position": "F",
+            "rating": 7.01
+        }
+    ],
+    "home_substitutes": [
+        {
+            "id": 980643,
+            "name": "James Trafford",
+            "number": 1,
+            "position": "G",
+            "rating": 7.4
+        },
+        {
+            "id": 152077,
+            "name": "John Stones",
+            "number": 5,
+            "position": "D",
+            "rating": 6.57
+        },
+        {
+            "id": 1194333,
+            "name": "Abdukodir Khusanov",
+            "number": 45,
+            "position": "D",
+            "rating": 6.88
+        },
+        {
+            "id": 1136731,
+            "name": "Rico Lewis",
+            "number": 82,
+            "position": "D",
+            "rating": 6.73
+        },
+        {
+            "id": 893549,
+            "name": "Tijjani Reijnders",
+            "number": 4,
+            "position": "M",
+            "rating": 6.84
+        },
+        {
+            "id": 979128,
+            "name": "Rayan Cherki",
+            "number": 10,
+            "position": "M",
+            "rating": 7.2
+        },
+        {
+            "id": 1046795,
+            "name": "Savinho",
+            "number": 26,
+            "position": "F",
+            "rating": 6.7
+        },
+        {
+            "id": 954056,
+            "name": "Nico González",
+            "number": 14,
+            "position": "M",
+            "rating": 7
+        },
+        {
+            "id": 859765,
+            "name": "Phil Foden",
+            "number": 47,
+            "position": "M",
+            "rating": 7.06
+        }
+    ],
+    "away_substitutes": [
+        {
+            "id": 1131,
+            "name": "John Ruddy",
+            "number": 26,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 839410,
+            "name": "Aaron Ramsdale",
+            "number": 32,
+            "position": "G",
+            "rating": 6.57
+        },
+        {
+            "id": 1125214,
+            "name": "Alex Murphy",
+            "number": 37,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1479682,
+            "name": "Leo Shahar",
+            "number": 61,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 560128,
+            "name": "Joelinton",
+            "number": 7,
+            "position": "M",
+            "rating": 6.84
+        },
+        {
+            "id": 855647,
+            "name": "Harvey Barnes",
+            "number": 11,
+            "position": "M",
+            "rating": 6.81
+        },
+        {
+            "id": 1122603,
+            "name": "William Osula",
+            "number": 18,
+            "position": "F",
+            "rating": 6.49
+        },
+        {
+            "id": 372336,
+            "name": "Jacob Murphy",
+            "number": 23,
+            "position": "M",
+            "rating": 6.8
+        },
+        {
+            "id": 1511675,
+            "name": "Sean Neave",
+            "number": 62,
+            "position": "F",
+            "rating": ""
+        }
+    ],
+    "home_missing_players": [
+        {
+            "name": "Mateo Kovačić",
+            "position": "M",
+            "type": "missing",
+            "description": "Ankle Injury",
+            "expected_end_date": "2026-03-05T00:00:00+00:00"
+        },
+        {
+            "name": "Joško Gvardiol",
+            "position": "D",
+            "type": "missing",
+            "description": "Broken Leg",
+            "expected_end_date": "2026-05-25T00:00:00+00:00"
+        },
+        {
+            "name": "Max Alleyne",
+            "position": "D",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Jérémy Doku",
+            "position": "M",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        }
+    ],
+    "away_missing_players": [
+        {
+            "name": "Emil Krafth",
+            "position": "D",
+            "type": "missing",
+            "description": "Knee Injury",
+            "expected_end_date": "2026-02-22T00:00:00+00:00"
+        },
+        {
+            "name": "Yoane Wissa",
+            "position": "F",
+            "type": "missing",
+            "description": "Knock",
+            "expected_end_date": "2026-02-22T00:00:00+00:00"
+        },
+        {
+            "name": "Bruno Guimarães",
+            "position": "M",
+            "type": "missing",
+            "description": "Hamstring",
+            "expected_end_date": "2026-04-26T00:00:00+00:00"
+        },
+        {
+            "name": "Valentino Livramento",
+            "position": "D",
+            "type": "missing",
+            "description": "Hamstring",
+            "expected_end_date": "2026-03-05T00:00:00+00:00"
+        },
+        {
+            "name": "Fabian Schär",
+            "position": "D",
+            "type": "missing",
+            "description": "Ankle Injury",
+            "expected_end_date": "2026-04-19T00:00:00+00:00"
+        },
+        {
+            "name": "Lewis Miley",
+            "position": "M",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Sven Botman",
+            "position": "D",
+            "type": "missing",
+            "description": "Back Injury",
+            "expected_end_date": "2026-02-22T00:00:00+00:00"
+        }
+    ]
+}

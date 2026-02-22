@@ -620,13 +620,20 @@ class KellyResult:
 
 class ConfidenceKelly:
     """
-    信心度調整 Kelly 資金管理 v3
+    信心度調整 Kelly 資金管理 v3.1
     
     創新點：
     1. 根據模型信心度調整Kelly分數
     2. 動態分數因子（根據歷史表現）
     3. 馬爾可夫鏈風險狀態追蹤
     4. 多市場 Kelly 分配
+    5. 波動率調整
+    6. 連勝/連敗追蹤
+    
+    v3.1 更新：
+    - 添加波動率調整
+    - 添加連勝/連敗調整
+    - 添加最大回撤保護
     """
     
     def __init__(self, 
@@ -655,6 +662,15 @@ class ConfidenceKelly:
         self.state = 'normal'  # normal/warning/critical
         self.max_drawdown = 0.2
         self.peak_bankroll = initial_bankroll
+        
+        # v3.1 新增
+        self.streak_wins = 0  # 連勝
+        self.streak_losses = 0  # 連敗
+        self.volatility_history = []  # 波動率歷史
+        
+        # 風險控制
+        self.max_daily_bets = 10
+        self.cooldown_bets = 0  # 冷卻期
         
     def _calculate_confidence(self, 
                              model_prob: float,
@@ -704,6 +720,104 @@ class ConfidenceKelly:
         factor = 1 + sharpe_like * 0.2
         return min(1.5, max(0.5, factor))
     
+    def _calculate_volatility_adjustment(self) -> float:
+        """
+        計算波動率調整因子
+        
+        高波動率時降低投注，低波動率時增加投注
+        """
+        if len(self.volatility_history) < 5:
+            return 1.0
+        
+        recent_vol = np.mean(self.volatility_history[-5:])
+        historical_vol = np.mean(self.volatility_history[-20:]) if len(self.volatility_history) >= 20 else recent_vol
+        
+        if historical_vol == 0:
+            return 1.0
+        
+        vol_ratio = recent_vol / historical_vol
+        
+        # 如果近期波動率上升，降低投注
+        if vol_ratio > 1.5:
+            return 0.7
+        elif vol_ratio > 1.2:
+            return 0.85
+        elif vol_ratio < 0.8:
+            return 1.15
+        elif vol_ratio < 0.5:
+            return 1.3
+        return 1.0
+    
+    def _calculate_streak_adjustment(self) -> float:
+        """
+        計算連勝/連敗調整因子
+        
+        連勝時稍微增加投注，連敗時減少投注
+        """
+        # 連勝調整
+        if self.streak_wins >= 3:
+            streak_bonus = min(0.2, (self.streak_wins - 2) * 0.05)
+            return 1.0 + streak_bonus
+        
+        # 連敗調整
+        if self.streak_losses >= 2:
+            streak_penalty = min(0.4, self.streak_losses * 0.15)
+            return 1.0 - streak_penalty
+        
+        return 1.0
+    
+    def update_after_bet(self, won: bool, profit: float):
+        """
+        更新投注後的狀態
+        
+        Args:
+            won: 是否獲勝
+            profit: 利潤（正數為贏，負數為輸）
+        """
+        self.bet_history.append(won)
+        self.win_history.append(1 if won else 0)
+        self.profit_history.append(profit)
+        
+        # 計算波動率
+        if len(self.profit_history) >= 3:
+            vol = np.std(self.profit_history[-3:])
+            self.volatility_history.append(abs(vol))
+        
+        # 更新連勝/連敗
+        if won:
+            self.streak_wins += 1
+            self.streak_losses = 0
+        else:
+            self.streak_losses += 1
+            self.streak_wins = 0
+        
+        # 更新資金
+        self.bankroll += profit
+        
+        # 觸發冷卻
+        if not won and self.streak_losses >= 3:
+            self.cooldown_bets = 2  # 冷卻2場
+        
+        # 記錄巔峰
+        if self.bankroll > self.peak_bankroll:
+            self.peak_bankroll = self.bankroll
+    
+    def get_risk_status(self) -> Dict:
+        """獲取當前風險狀態"""
+        current_drawdown = (self.peak_bankroll - self.bankroll) / self.peak_bankroll if self.peak_bankroll > 0 else 0
+        
+        return {
+            'bankroll': self.bankroll,
+            'peak_bankroll': self.peak_bankroll,
+            'drawdown': round(current_drawdown * 100, 2),
+            'state': self.state,
+            'streak_wins': self.streak_wins,
+            'streak_losses': self.streak_losses,
+            'cooldown': self.cooldown_bets,
+            'total_bets': len(self.bet_history),
+            'win_rate': round(sum(self.win_history) / len(self.win_history) * 100, 2) if self.win_history else 0
+        }
+    
     def _update_state(self) -> str:
         """更新馬爾可夫風險狀態"""
         current_drawdown = (self.peak_bankroll - self.bankroll) / self.peak_bankroll
@@ -737,7 +851,7 @@ class ConfidenceKelly:
                   model_uncertainty: float = 0.1,
                   market_prob: Optional[float] = None) -> KellyResult:
         """
-        計算信心度調整後的Kelly投注
+        計算信心度調整後的Kelly投注 v3.1
         
         Args:
             prob: 模型預測概率
@@ -746,6 +860,10 @@ class ConfidenceKelly:
             model_uncertainty: 模型不確定性 (0-1)
             market_prob: 市場隱含概率 (用於計算優勢)
         """
+        # 檢查冷卻期
+        if self.cooldown_bets > 0:
+            return KellyResult(0, 0, 0, 0, confidence, 'cooldown')
+        
         if prob <= 0 or odds <= 1:
             return KellyResult(0, 0, 0, 0, 0, 'low')
         
@@ -774,15 +892,23 @@ class ConfidenceKelly:
         # 5. 表現因子
         perf_factor = self._calculate_performance_factor()
         
-        # 6. 風險狀態
+        # 6. 波動率調整 (v3.1)
+        vol_adjustment = self._calculate_volatility_adjustment()
+        
+        # 7. 連勝/連敗調整 (v3.1)
+        streak_adjustment = self._calculate_streak_adjustment()
+        
+        # 8. 風險狀態
         self._update_state()
         state_multiplier = self._state_risk_multiplier()
         
-        # 7. 計算最終Kelly分數
+        # 9. 計算最終Kelly分數
         final_kelly = (
             raw_kelly * 
             confidence_adj * 
             perf_factor * 
+            vol_adjustment *
+            streak_adjustment *
             state_multiplier *
             self.base_fraction
         )
@@ -864,45 +990,296 @@ class ConfidenceKelly:
 
 class PortfolioKelly:
     """
-    組合 Kelly 管理
+    組合 Kelly 管理 v2
     
     管理多個市場的投注分配
+    
+    v2 更新：
+    - 添加多元化係數
+    - 添加相關性調整
+    - 支持多種風險偏好
     """
     
-    def __init__(self, kelly_managers: List[ConfidenceKelly]):
+    def __init__(self, kelly_managers: List[ConfidenceKelly],
+                 risk_tolerance: str = 'moderate'):  # conservative/moderate/aggressive
         self.managers = kelly_managers
         self.total_allocated = 0
         self.max_allocation = 0.25  # 最多投入25%資金
+        self.risk_tolerance = risk_tolerance
+        
+        # 風險參數
+        self.risk_params = {
+            'conservative': {'max_allocation': 0.15, 'min_odds': 1.5, 'max_odds': 3.0},
+            'moderate': {'max_allocation': 0.25, 'min_odds': 1.3, 'max_odds': 4.0},
+            'aggressive': {'max_allocation': 0.40, 'min_odds': 1.2, 'max_odds': 6.0}
+        }
+        
+        # 多元化追蹤
+        self.market_exposure = {}  # {market: total_exposure}
+        self.correlation_matrix = {}
+        
+        # 歷史記錄
+        self.allocation_history = []
+    
+    def set_risk_tolerance(self, tolerance: str):
+        """設置風險偏好"""
+        if tolerance in self.risk_params:
+            self.risk_tolerance = tolerance
+            self.max_allocation = self.risk_params[tolerance]['max_allocation']
+    
+    def calculate_diversity_bonus(self, markets: List[str]) -> float:
+        """
+        計算多元化獎勵
+        
+        投注在不同市場可以降低整體風險
+        """
+        unique_markets = len(set(markets))
+        if unique_markets == 1:
+            return 1.0
+        elif unique_markets == 2:
+            return 1.1
+        elif unique_markets >= 3:
+            return 1.2
+        return 1.0
+    
+    def calculate_correlation_penalty(self, outcomes: List[str]) -> float:
+        """
+        計算相關性懲罰
+        
+        避免過度集中在相關的結果上
+        """
+        # 簡單的相關性檢測
+        # 例如：主勝和讓球主勝視為相關
+        correlation_groups = [
+            {'home_win', 'asian_home', 'handicap_home'},
+            {'draw', 'under', 'under_2.5'},
+            {'away_win', 'asian_away', 'handicap_away'}
+        ]
+        
+        for group in correlation_groups:
+            overlap = len(set(outcomes) & group)
+            if overlap > 1:
+                return 0.8  # 懲罰
+        
+        return 1.0
     
     def allocate_bets(self, 
                      bets: List[Tuple[float, float, float, float, float]],
-                     bankroll: float) -> List[KellyResult]:
+                     bankroll: float,
+                     markets: List[str] = None,
+                     outcomes: List[str] = None) -> List[KellyResult]:
         """
-        分配組合投注
+        分配組合投注 v2
         
         Args:
             bets: List of (prob, odds, confidence, uncertainty, market_prob) tuples
+            bankroll: 總資金
+            markets: 市場列表（用於多元化計算）
+            outcomes: 結果列表（用於相關性計算）
         Returns: List of KellyResult
         """
         results = []
         total_kelly = 0
         
-        for prob, odds, conf, unc, market_prob in bets:
-            # 使用第一個manager計算
+        # 獲取風險參數
+        params = self.risk_params.get(self.risk_tolerance, self.risk_params['moderate'])
+        
+        for i, (prob, odds, conf, unc, market_prob) in enumerate(bets):
+            # 過濾不符合風險參數的投注
+            if odds < params['min_odds'] or odds > params['max_odds']:
+                results.append(KellyResult(0, 0, 0, 0, conf, 'filtered'))
+                continue
+            
+            # 使用 manager 計算
             result = self.managers[0].calculate(
                 prob, odds, conf, unc, market_prob
             )
             results.append(result)
             total_kelly += result.kelly_pct
         
+        # 多元化獎勵
+        if markets and len(markets) > 1:
+            diversity_bonus = self.calculate_diversity_bonus(markets)
+            total_kelly *= diversity_bonus
+        
+        # 相關性懲罰
+        if outcomes:
+            correlation_penalty = self.calculate_correlation_penalty(outcomes)
+            total_kelly *= correlation_penalty
+        
         # 調整過度集中的投注
         if total_kelly > self.max_allocation:
             scale = self.max_allocation / total_kelly
             for r in results:
-                r.stake *= scale
-                r.kelly_pct *= scale
+                if r.stake > 0:
+                    r.stake *= scale
+                    r.kelly_pct *= scale
+        
+        # 記錄分配歷史
+        self.allocation_history.append({
+            'total_kelly': total_kelly,
+            'n_bets': len(bets),
+            'risk_tolerance': self.risk_tolerance
+        })
         
         return results
+    
+    def get_portfolio_stats(self) -> Dict:
+        """獲取組合統計"""
+        if not self.allocation_history:
+            return {'status': 'no_data'}
+        
+        recent = self.allocation_history[-20:]
+        
+        return {
+            'avg_allocation': np.mean([h['total_kelly'] for h in recent]),
+            'avg_bets': np.mean([h['n_bets'] for h in recent]),
+            'risk_tolerance': self.risk_tolerance,
+            'max_allocation': self.max_allocation,
+            'market_exposure': self.market_exposure
+        }
+
+
+class DutchingCalculator:
+    """
+    Dutching (荷蘭投注) 計算器
+    
+    在多個選項上投注，無論哪個選項獲勝都能獲得相同回報
+    """
+    
+    def __init__(self, target_return: float = 1.0, min_odds: float = 1.1):
+        """
+        Args:
+            target_return: 目標回報率 (例如 1.0 = 100% 回報)
+            min_odds: 最小赔率過濾
+        """
+        self.target_return = target_return
+        self.min_odds = min_odds
+    
+    def calculate(self, odds_dict: Dict[str, float], 
+                  total_stake: float = 100) -> Dict[str, Dict]:
+        """
+        計算 Dutching 投注
+        
+        Args:
+            odds_dict: {outcome: odds} 例如 {'home': 2.0, 'draw': 3.5, 'away': 4.0}
+            total_stake: 總投注額
+            
+        Returns:
+            Dict: {outcome: {stake, odds, profit, win_prob}}
+        """
+        # 過濾低赔率
+        valid_odds = {k: v for k, v in odds_dict.items() if v >= self.min_odds}
+        
+        if not valid_odds:
+            return {}
+        
+        # 計算隱含概率
+        implied_probs = {k: 1/v for k, v in valid_odds.items()}
+        total_implied = sum(implied_probs.values())
+        
+        # 檢查是否有價值
+        if total_implied > 1.0:
+            # 無利可圖，返回空結果
+            return {}
+        
+        # 計算每個選項的投注額
+        stakes = {}
+        for outcome, odds in valid_odds.items():
+            # 根據隱含概率比例分配
+            adjusted_prob = implied_probs[outcome] / total_implied
+            stake = total_stake * adjusted_prob
+            
+            # 計算如果該選項獲勝的利潤
+            profit = stake * (odds - 1) - (total_stake - stake)
+            
+            stakes[outcome] = {
+                'stake': round(stake, 2),
+                'odds': odds,
+                'implied_prob': round(implied_probs[outcome], 4),
+                'profit_if_win': round(profit, 2),
+                'roi': round(profit / total_stake * 100, 2)
+            }
+        
+        # 計算預期回報
+        expected_return = sum(
+            s['implied_prob'] * s['profit_if_win'] 
+            for s in stakes.values()
+        )
+        
+        return {
+            'bets': stakes,
+            'total_stake': total_stake,
+            'guaranteed_profit': round(expected_return, 2),
+            'total_odds': round(1 / total_implied, 3) if total_implied > 0 else 0,
+            'is_profitable': total_implied < 1.0
+        }
+    
+    def calculate_kelly_dutching(self, odds_dict: Dict[str, float],
+                                  probabilities: Dict[str, float],
+                                  kelly_fraction: float = 0.5) -> Dict:
+        """
+        Kelly Dutching - 結合 Kelly 準則的 Dutching
+        
+        Args:
+            odds_dict: {outcome: odds}
+            probabilities: {outcome: model_probability}
+            kelly_fraction: Kelly 分數 (0.5 = 半 Kelly)
+            
+        Returns:
+            Dict with Kelly-optimized stakes
+        """
+        # 過濾有效選項
+        valid_outcomes = [k for k in odds_dict.keys() if k in probabilities]
+        
+        if not valid_outcomes:
+            return {}
+        
+        # 計算 Kelly 優勢
+        kelly_edges = {}
+        for outcome in valid_outcomes:
+            odds = odds_dict[outcome]
+            prob = probabilities[outcome]
+            implied_prob = 1 / odds
+            
+            # Kelly 優勢
+            edge = prob - implied_prob
+            kelly_edges[outcome] = max(0, edge)
+        
+        # 正規化 Kelly 優勢
+        total_edge = sum(kelly_edges.values())
+        
+        if total_edge <= 0:
+            return {'status': 'no_edge', 'bets': {}}
+        
+        # 計算 Kelly 投注額
+        stakes = {}
+        for outcome in valid_outcomes:
+            # 使用 Kelly 權重
+            weight = kelly_edges[outcome] / total_edge
+            
+            # Kelly 公式
+            odds = odds_dict[outcome]
+            prob = probabilities[outcome]
+            b = odds - 1
+            q = 1 - prob
+            
+            kelly_pct = max(0, (b * prob - q) / b) if b > 0 else 0
+            kelly_pct *= kelly_fraction
+            
+            stakes[outcome] = {
+                'kelly_pct': round(kelly_pct, 4),
+                'weight': round(weight, 4),
+                'edge': round(kelly_edges[outcome], 4),
+                'odds': odds
+            }
+        
+        return {
+            'status': 'success',
+            'bets': stakes,
+            'total_kelly': round(sum(s['kelly_pct'] for s in stakes.values()), 4),
+            'kelly_fraction': kelly_fraction
+        }
 
 
 # ============================================
@@ -1062,6 +1439,11 @@ class StackingEnsemble:
     2. 貝葉斯權重優化
     3. Out-of-Fold 預防過擬合
     4. 動態權重更新
+    
+    v3.1 更新：
+    - 添加與真實數據整合的方法
+    - 添加特徵工程支持
+    - 添加交叉驗證框架
     """
     
     def __init__(self, 
@@ -1089,6 +1471,10 @@ class StackingEnsemble:
         self.validation_scores = {}
         self.oof_predictions = {}
         
+        # 訓練數據
+        self.training_data = None
+        self.feature_names = []
+    
     def _initialize_weights(self):
         """初始化均勻權重"""
         for model in self.base_models:
@@ -1326,6 +1712,152 @@ class StackingEnsemble:
             'model_confidence': self.model_confidence,
             'n_base_models': len(self.base_models)
         }
+    
+    def prepare_features_from_dataframe(self, df: pd.DataFrame, target_col: str = 'result') -> Tuple[pd.DataFrame, np.ndarray]:
+        """
+        從 DataFrame 準備特徵矩陣
+        
+        自動處理：
+        - 數值特徵標準化
+        - 類別特徵編碼
+        - 缺失值處理
+        
+        Args:
+            df: 輸入數據
+            target_col: 目標列名稱
+            
+        Returns:
+            Tuple of (features, target)
+        """
+        from sklearn.preprocessing import StandardScaler, LabelEncoder
+        
+        # 複製避免修改原始數據
+        data = df.copy()
+        
+        # 識別特徵列
+        exclude_cols = [target_col, 'date', 'match_date', 'event_id', 'home_team', 'away_team', 'league']
+        feature_cols = [c for c in data.columns if c not in exclude_cols]
+        
+        # 處理目標變量
+        if target_col in data.columns:
+            le = LabelEncoder()
+            y = le.fit_transform(data[target_col])
+        else:
+            y = None
+        
+        # 處理數值特徵
+        numeric_cols = data[feature_cols].select_dtypes(include=[np.number]).columns.tolist()
+        
+        # 標準化
+        scaler = StandardScaler()
+        data[numeric_cols] = scaler.fit_transform(data[numeric_cols].fillna(0))
+        
+        # 選擇特徵
+        X = data[numeric_cols]
+        self.feature_names = numeric_cols
+        
+        return X, y
+    
+    def train_with_cross_validation(self, X: pd.DataFrame, y: np.ndarray, 
+                                   optimize_weights: bool = True) -> Dict:
+        """
+        使用交叉驗證訓練集成模型
+        
+        Args:
+            X: 特徵矩陣
+            y: 目標變量
+            optimize_weights: 是否優化權重
+            
+        Returns:
+            Dict: 訓練結果統計
+        """
+        from sklearn.model_selection import cross_val_score, StratifiedKFold
+        
+        # 存儲結果
+        cv_scores = {}
+        fold_predictions = {}
+        
+        # 交叉驗證
+        skf = StratifiedKFold(n_splits=self.cv_folds, shuffle=True)
+        
+        for fold, (train_idx, val_idx) in enumerate(skf.split(X, y)):
+            X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
+            y_train, y_val = y[train_idx], y[val_idx]
+            
+            # 訓練每個基礎模型
+            for model in self.base_models:
+                name = model.__class__.__name__
+                model.fit(X_train, y_train)
+                
+                # 驗證
+                score = model.model.score(X_val, y_val) if hasattr(model.model, 'score') else 0.5
+                
+                if name not in cv_scores:
+                    cv_scores[name] = []
+                cv_scores[name].append(score)
+            
+            # 訓練元模型
+            base_preds_train = np.column_stack([
+                m.predict_proba(X_train)[:, 1] for m in self.base_models
+            ])
+            base_preds_val = np.column_stack([
+                m.predict_proba(X_val)[:, 1] for m in self.base_models
+            ])
+            
+            self.meta_model.fit(base_preds_train, y_train)
+            meta_score = self.meta_model.model.score(base_preds_val, y_val) if hasattr(self.meta_model.model, 'score') else 0.5
+            
+            if 'Meta' not in cv_scores:
+                cv_scores['Meta'] = []
+            cv_scores['Meta'].append(meta_score)
+        
+        # 計算平均分數
+        self.validation_scores = {k: np.mean(v) for k, v in cv_scores.items()}
+        
+        # 優化權重
+        if optimize_weights:
+            for name in self.model_weights:
+                self.model_weights[name] = self.validation_scores.get(name, 0.33)
+            
+            # 正規化
+            total = sum(self.model_weights.values())
+            self.model_weights = {k: v/total for k, v in self.model_weights.items()}
+        
+        # 最終在全量數據上訓練
+        X_array = X.values
+        for model in self.base_models:
+            model.fit(X_array, y)
+        
+        # 訓練元模型
+        base_preds_full = np.column_stack([
+            m.predict_proba(X_array)[:, 1] for m in self.base_models
+        ])
+        self.meta_model.fit(base_preds_full, y)
+        
+        return {
+            'cv_scores': self.validation_scores,
+            'model_weights': self.model_weights,
+            'n_folds': self.cv_folds,
+            'n_features': len(self.feature_names)
+        }
+    
+    def get_feature_importance(self) -> pd.DataFrame:
+        """
+        獲取特徵重要性（如果有模型支持）
+        
+        Returns:
+            DataFrame: 特徵重要性
+        """
+        importance_dict = {}
+        
+        for model in self.base_models:
+            name = model.__class__.__name__
+            if hasattr(model, 'feature_importance'):
+                importance_dict[name] = model.feature_importance()
+        
+        if importance_dict:
+            return pd.DataFrame(importance_dict)
+        return pd.DataFrame()
 
 
 # ============================================
