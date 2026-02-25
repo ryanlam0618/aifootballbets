@@ -1,0 +1,226 @@
+{
+    "event_id": 15452779,
+    "match_date": "2026-02-25",
+    "match_time": "01:45",
+    "tournament_name": "UEFA Champions League, Knockout stage",
+    "category_name": "Europe",
+    "home_team": "Atlético Madrid",
+    "away_team": "Club Brugge KV",
+    "home_formation": "4-4-2",
+    "away_formation": "4-2-3-1",
+    "home_coach": "",
+    "away_coach": "",
+    "home_starters": [
+        {
+            "id": 69768,
+            "name": "Jan Oblak",
+            "number": 13,
+            "position": "G",
+            "rating": 7.06
+        },
+        {
+            "id": 831799,
+            "name": "Nahuel Molina",
+            "number": 16,
+            "position": "D",
+            "rating": 6.41
+        },
+        {
+            "id": 1094106,
+            "name": "Marc Pubill",
+            "number": 18,
+            "position": "D",
+            "rating": 6.92
+        },
+        {
+            "id": 807771,
+            "name": "Dávid Hancko",
+            "number": 17,
+            "position": "D",
+            "rating": 6.7
+        },
+        {
+            "id": 965011,
+            "name": "Matteo Ruggeri",
+            "number": 3,
+            "position": "M",
+            "rating": 6.56
+        },
+        {
+            "id": 1099352,
+            "name": "Giuliano Simeone",
+            "number": 20,
+            "position": "M",
+            "rating": 6.71
+        },
+        {
+            "id": 353138,
+            "name": "Marcos Llorente",
+            "number": 14,
+            "position": "D",
+            "rating": 7.04
+        },
+        {
+            "id": 84539,
+            "name": "Koke",
+            "number": 6,
+            "position": "M",
+            "rating": 6.97
+        },
+        {
+            "id": 824200,
+            "name": "Ademola Lookman",
+            "number": 22,
+            "position": "F",
+            "rating": 6.78
+        },
+        {
+            "id": 309078,
+            "name": "Alexander Sørloth",
+            "number": 9,
+            "position": "F",
+            "rating": 6.93
+        },
+        {
+            "id": 944656,
+            "name": "Julián Alvarez",
+            "number": 19,
+            "position": "F",
+            "rating": 7.41
+        }
+    ],
+    "away_starters": [
+        {
+            "id": 10406,
+            "name": "Simon Mignolet",
+            "number": 22,
+            "position": "G",
+            "rating": 7.43
+        },
+        {
+            "id": 1101258,
+            "name": "Kyriani Sabbe",
+            "number": 64,
+            "position": "D",
+            "rating": 6.73
+        },
+        {
+            "id": 1187275,
+            "name": "Joel Ordóñez",
+            "number": 4,
+            "position": "D",
+            "rating": 6.47
+        },
+        {
+            "id": 248331,
+            "name": "Brandon Mechele",
+            "number": 44,
+            "position": "D",
+            "rating": 6.67
+        },
+        {
+            "id": 1395881,
+            "name": "Joaquin Seys",
+            "number": 65,
+            "position": "D",
+            "rating": 6.58
+        },
+        {
+            "id": 1153957,
+            "name": "Aleksandar Stanković",
+            "number": 25,
+            "position": "M",
+            "rating": 7.16
+        },
+        {
+            "id": 1130942,
+            "name": "Félix Lemaréchal",
+            "number": 80,
+            "position": "M",
+            "rating": 6.7
+        },
+        {
+            "id": 1069486,
+            "name": "Carlos Forbs",
+            "number": 9,
+            "position": "F",
+            "rating": 7.43
+        },
+        {
+            "id": 118085,
+            "name": "Hans Vanaken",
+            "number": 20,
+            "position": "M",
+            "rating": 7.63
+        },
+        {
+            "id": 1495876,
+            "name": "Mamadou Diakhon",
+            "number": 67,
+            "position": "F",
+            "rating": 6.98
+        },
+        {
+            "id": 1177167,
+            "name": "Nicolò Tresoldi",
+            "number": 7,
+            "position": "F",
+            "rating": 6.76
+        }
+    ],
+    "home_substitutes": [],
+    "away_substitutes": [],
+    "home_missing_players": [
+        {
+            "name": "Pablo Barrios",
+            "position": "M",
+            "type": "missing",
+            "description": "Thigh Injury",
+            "expected_end_date": "2026-03-01T00:00:00+00:00"
+        },
+        {
+            "name": "Nicolás González",
+            "position": "M",
+            "type": "missing",
+            "description": "Thigh Injury",
+            "expected_end_date": "2026-03-01T00:00:00+00:00"
+        }
+    ],
+    "away_missing_players": [
+        {
+            "name": "Cisse Sandra",
+            "position": "M",
+            "type": "missing",
+            "description": "Illness",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Dani van den Heuvel",
+            "position": "G",
+            "type": "missing",
+            "description": "Leg Injury",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Raphael Onyedika",
+            "position": "M",
+            "type": "missing",
+            "description": "Yellow card accumulation suspension",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Ludovit Reis",
+            "position": "M",
+            "type": "doubtful",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Jorne Spileers",
+            "position": "D",
+            "type": "doubtful",
+            "description": "",
+            "expected_end_date": ""
+        }
+    ]
+}

@@ -12,7 +12,7 @@ sys.stdout.reconfigure(encoding='utf-8')
 try:
     from config import settings
     # 匯入 LEAGUE_OPTIONS
-    from src.data_modules import HistoryRepo, RealOddsFetcher, OddsPoint, LEAGUE_OPTIONS
+    from src.data_modules import HistoryRepo, RealOddsFetcher, OddsHarvesterFetcher, OddsPoint, LEAGUE_OPTIONS
     from src.llm_clients import llm
     from src.finance import calculate_kelly_stake, ExcelLogger
     from src.league_parameter_estimator import fit_league_parameters, get_league_parameters  # 新增：聯賽參數估計器
@@ -61,6 +61,14 @@ try:
         ModelMonitor,                 # 模型監控
         DataValidator                 # 數據驗證
     )
+    
+    # 導入 Sofascore 數據載入器
+    try:
+        from src.sofascore_loader import SofascoreDataLoader, get_sofascore_loader
+        HAS_SOFASCORE = True
+    except ImportError:
+        HAS_SOFASCORE = False
+        print("[WARN] Sofascore loader not available")
     
     # 導入特徵工程模組
     from src.feature_engineering import (
@@ -483,7 +491,7 @@ def find_lineup_file(home_team, away_team, data_folder="data"):
 
     def clean_team_name(name):
         import unicodedata
-        import re
+        # re 已在模組頂部導入，這裡直接使用
         name = unicodedata.normalize('NFKD', name)
         name = re.sub(r'[^a-zA-Z0-9\s]', '', name)
         return name.strip().replace(" ", "_")
@@ -742,7 +750,7 @@ def main():
     print(f"   聯賽上下文: {league_name}")
 
     # Step 1: 匹配到歷史數據庫 (CSV)
-    print(f"\n   [1/4] 匹配到歷史數據庫...")
+    '''print(f"\n   [1/4] 匹配到歷史數據庫...")
     hist_match = match_with_gemini(home, away, HISTORICAL_TEAMS.get('csv_names', []), league_name)
     db_home = hist_match['home']
     db_away = hist_match['away']
@@ -764,9 +772,20 @@ def main():
     json_away = json_match['away']
     print(f"      [JSON] {home} -> {json_home} (confidence: {json_match['confidence']})")
     print(f"      [JSON] {away} -> {json_away} (confidence: {json_match['confidence']})")
-
+    
+    #test code'''
+    db_home = home
+    db_away = away
+    odds_home = home
+    odds_away = away
+    json_home = home
+    json_away = away
+    
     # 初始化
     repo = HistoryRepo(settings.HISTORY_CSV_PATH)
+    
+    # 優先使用 The Odds API，失敗時自動使用 OddsPortal
+    print("✅ 初始化 The Odds API...")
     odds_fetcher = RealOddsFetcher()
     logger = ExcelLogger()
 
@@ -1270,126 +1289,271 @@ def main():
     # ============================================
     print(f"\n   🎯 [v7.1] xGOT 效率分析:")
     try:
-        xgot_model = XGOTEfficiencyModel(min_samples=3)
-        
-        if hasattr(repo, 'df') and not repo.df.empty:
-            valid_df = repo.df.dropna(subset=['home_goals', 'away_goals'])
+        # 首先嘗試使用 Sofascore 數據
+        if HAS_SOFASCORE:
+            try:
+                sofa = get_sofascore_loader()
+                # 獲取聯賽名稱映射
+                league_name_map = {
+                    'Premier League': 'Premier League',
+                    'LaLiga': 'LaLiga',
+                    'Bundesliga': 'Bundesliga',
+                    'Serie A': 'Serie A',
+                    'Ligue 1': 'Ligue 1'
+                }
+                sofa_league = league_name_map.get(league_name, None)
+                
+                # 計算 xG 統計
+                home_xg_stats = sofa.calculate_team_xg_stats(db_home, is_home=True, league=sofa_league, recent_n=30)
+                away_xg_stats = sofa.calculate_team_xg_stats(db_away, is_home=False, league=sofa_league, recent_n=30)
+                
+                print(f"      [Sofascore] {odds_home} xG: {home_xg_stats.get('xg_total', 0):.2f}, xGOT: {home_xg_stats.get('xgot_total', 0):.2f}, 進球: {home_xg_stats.get('goals', 0):.2f} (樣本: {home_xg_stats.get('n_samples', 0)})")
+                print(f"      [Sofascore] {odds_away} xG: {away_xg_stats.get('xg_total', 0):.2f}, xGOT: {away_xg_stats.get('xgot_total', 0):.2f}, 進球: {away_xg_stats.get('goals', 0):.2f} (樣本: {away_xg_stats.get('n_samples', 0)})")
+                
+                # 計算效率分數
+                home_eff_score = home_xg_stats.get('efficiency', 1.0) * 100
+                away_eff_score = away_xg_stats.get('efficiency', 1.0) * 100
+                
+                print(f"      {odds_home} xGOT 效率: {home_eff_score/100:.2f} (樣本: {home_xg_stats.get('n_samples', 0)})")
+                print(f"      {odds_away} xGOT 效率: {away_eff_score/100:.2f} (樣本: {away_xg_stats.get('n_samples', 0)})")
+                
+                xgot_analysis = {
+                    'home_efficiency': home_eff_score / 100,
+                    'away_efficiency': away_eff_score / 100,
+                    'home_expected_goals': home_xg_stats.get('xg_total', h_exp_adj),
+                    'away_expected_goals': away_xg_stats.get('xg_total', a_exp_adj)
+                }
+                
+            except Exception as sofa_err:
+                print(f"      [WARN] Sofascore 數據載入失敗: {str(sofa_err)[:30]}")
+                raise
+        else:
+            # Fallback 到舊的 XGOTEfficiencyModel
+            raise Exception("Sofascore not available")
             
-            # 載入球隊數據
-            for team in [db_home, db_away]:
-                team_data = valid_df[(valid_df['home_team'] == team) | (valid_df['away_team'] == team)].tail(30)
-                for _, row in team_data.iterrows():
-                    try:
-                        is_home = row['home_team'] == team
-                        xg = float(row.get('xg', 1.5)) if pd.notna(row.get('xg')) else float(row['home_goals'] if is_home else row['away_goals'])
-                        xgot = float(row.get('xgot', xg)) if pd.notna(row.get('xgot')) else xg
-                        xgot_model.add_match_data(team, xg, xgot)
-                    except: continue
-            
-            # 計算效率
-            home_eff = xgot_model.calculate_efficiency(db_home, is_home=True)
-            away_eff = xgot_model.calculate_efficiency(db_away, is_home=False)
-            
-            print(f"      {odds_home} xGOT 效率: {home_eff.get('efficiency', 1.0):.2f} (樣本: {home_eff.get('n_samples', 0)})")
-            print(f"      {odds_away} xGOT 效率: {away_eff.get('efficiency', 1.0):.2f} (樣本: {away_eff.get('n_samples', 0)})")
-            
-            xgot_analysis = {
-                'home_efficiency': home_eff.get('efficiency', 1.0),
-                'away_efficiency': away_eff.get('efficiency', 1.0),
-                'home_expected_goals': home_eff.get('expected_xg', h_exp_adj),
-                'away_expected_goals': away_eff.get('expected_xg', a_exp_adj)
-            }
     except Exception as e:
-        print(f"      ⚠️ xGOT 效率分析失敗: {str(e)[:50]}")
-        xgot_analysis = {'home_efficiency': 1.0, 'away_efficiency': 1.0}
+        # Fallback 到舊的模型
+        try:
+            xgot_model = XGOTEfficiencyModel(min_samples=3)
+            
+            if hasattr(repo, 'df') and not repo.df.empty:
+                # 檢查是否有 xGOT 數據的欄位
+                xgot_cols = ['home_xg_total', 'away_xg_total', 'home_xgot_total', 'away_xgot_total']
+                has_xgot_data = all(col in repo.df.columns for col in xgot_cols)
+                
+                if has_xgot_data:
+                    valid_df = repo.df.dropna(subset=['home_xg_total', 'away_xg_total', 'home_xgot_total', 'away_xgot_total'])
+                else:
+                    # 沒有 xGOT 数据，使用进球數據作為 fallback
+                    valid_df = repo.df.dropna(subset=['home_goals', 'away_goals'])
+                
+                # 載入球隊數據
+                for team in [db_home, db_away]:
+                    team_data = valid_df[(valid_df['home_team'] == team) | (valid_df['away_team'] == team)].tail(30)
+                    for _, row in team_data.iterrows():
+                        try:
+                            is_home = row['home_team'] == team
+                            if has_xgot_data:
+                                xg = float(row['home_xg_total'] if is_home else row['away_xg_total'])
+                                xgot = float(row['home_xgot_total'] if is_home else row['away_xgot_total'])
+                                goals = int(row['home_goals'] if is_home else row['away_goals'])
+                                shots = int(row['home_shots_total'] if is_home else row['away_shots_total']) if 'home_shots_total' in row.index else 5
+                            else:
+                                # fallback 到預期進球
+                                xg = float(row['home_goals'] if is_home else row['away_goals']) + 1.0
+                                xgot = xg
+                                goals = int(row['home_goals'] if is_home else row['away_goals'])
+                                shots = 5
+                            # 只添加有效的 xg > 0 數據
+                            if xg > 0 and xgot > 0:
+                                xgot_model.add_match_data(team, xg, xgot, goals, shots, is_home)
+                        except: continue
+                
+                # 計算效率
+                home_eff = xgot_model.calculate_efficiency(db_home, is_home=True)
+                away_eff = xgot_model.calculate_efficiency(db_away, is_home=False)
+                
+                print(f"      {odds_home} xGOT 效率: {home_eff.get('efficiency_score', 50)/100:.2f} (樣本: {home_eff.get('sample_size', 0)})")
+                print(f"      {odds_away} xGOT 效率: {away_eff.get('efficiency_score', 50)/100:.2f} (樣本: {away_eff.get('sample_size', 0)})")
+                
+                xgot_analysis = {
+                    'home_efficiency': home_eff.get('efficiency_score', 50) / 100,
+                    'away_efficiency': away_eff.get('efficiency_score', 50) / 100,
+                    'home_expected_goals': home_eff.get('xg_total', h_exp_adj),
+                    'away_expected_goals': away_eff.get('xg_total', a_exp_adj)
+                }
+            else:
+                raise Exception("No repo data")
+        except:
+            print(f"      ⚠️ xGOT 效率分析失敗: {str(e)[:50]}")
+            xgot_analysis = {'home_efficiency': 1.0, 'away_efficiency': 1.0}
 
     # ============================================
     # [v7.1] 防守質量分析
     # ============================================
     print(f"\n   🛡️ [v7.1] 防守質量分析:")
     try:
-        def_model = DefensiveQualityModel(min_samples=3)
-        
-        if hasattr(repo, 'df') and not repo.df.empty:
-            valid_df = repo.df.dropna(subset=['home_goals', 'away_goals'])
+        # 首先嘗試使用 Sofascore 數據
+        if HAS_SOFASCORE:
+            try:
+                sofa = get_sofascore_loader()
+                # 獲取聯賽名稱映射
+                league_name_map = {
+                    'Premier League': 'Premier League',
+                    'LaLiga': 'LaLiga',
+                    'Bundesliga': 'Bundesliga',
+                    'Serie A': 'Serie A',
+                    'Ligue 1': 'Ligue 1'
+                }
+                sofa_league = league_name_map.get(league_name, None)
+                
+                # 計算防守統計
+                home_def_stats = sofa.calculate_defensive_stats(db_home, is_home=True, league=sofa_league, recent_n=30)
+                away_def_stats = sofa.calculate_defensive_stats(db_away, is_home=False, league=sofa_league, recent_n=30)
+                
+                print(f"      [Sofascore] {odds_home} xGA: {home_def_stats.get('xga', 0):.2f}, 失球: {home_def_stats.get('goals_conceded', 0):.2f}, 撲救率: {home_def_stats.get('save_rate', 0):.2f} (樣本: {home_def_stats.get('n_samples', 0)})")
+                print(f"      [Sofascore] {odds_away} xGA: {away_def_stats.get('xga', 0):.2f}, 失球: {away_def_stats.get('goals_conceded', 0):.2f}, 撲救率: {away_def_stats.get('save_rate', 0):.2f} (樣本: {away_def_stats.get('n_samples', 0)})")
+                
+                print(f"      {odds_home} 防守評分: {home_def_stats.get('quality_score', 0.5):.2f} (失球預期: {home_def_stats.get('xga', 1.2):.2f}, 樣本: {home_def_stats.get('n_samples', 0)})")
+                print(f"      {odds_away} 防守評分: {away_def_stats.get('quality_score', 0.5):.2f} (失球預期: {away_def_stats.get('xga', 1.2):.2f}, 樣本: {away_def_stats.get('n_samples', 0)})")
+                
+                defense_analysis = {
+                    'home_quality': home_def_stats.get('quality_score', 0.5),
+                    'away_quality': away_def_stats.get('quality_score', 0.5),
+                    'home_expected_conceded': home_def_stats.get('xga', 1.2),
+                    'away_expected_conceded': away_def_stats.get('xga', 1.2)
+                }
+                
+            except Exception as sofa_err:
+                print(f"      [WARN] Sofascore 數據載入失敗: {str(sofa_err)[:30]}")
+                raise
+        else:
+            raise Exception("Sofascore not available")
             
-            for team in [db_home, db_away]:
-                team_data = valid_df[(valid_df['home_team'] == team) | (valid_df['away_team'] == team)].tail(30)
-                for _, row in team_data.iterrows():
-                    try:
-                        is_home = row['home_team'] == team
-                        xg_against = float(row['away_goals']) if is_home else float(row['home_goals'])
-                        shots = int(row.get('away_shots', 5)) if is_home else int(row.get('home_shots', 5))
-                        def_model.add_match_data(team, xg_against, shots)
-                    except: continue
-            
-            home_def = def_model.calculate_defensive_quality(db_home, is_home=True)
-            away_def = def_model.calculate_defensive_quality(db_away, is_home=False)
-            
-            print(f"      {odds_home} 防守評分: {home_def.get('quality_score', 0.5):.2f} (失球預期: {home_def.get('expected_conceded', 1.2):.2f})")
-            print(f"      {odds_away} 防守評分: {away_def.get('quality_score', 0.5):.2f} (失球預期: {away_def.get('expected_conceded', 1.2):.2f})")
-            
-            defense_analysis = {
-                'home_quality': home_def.get('quality_score', 0.5),
-                'away_quality': away_def.get('quality_score', 0.5),
-                'home_expected_conceded': home_def.get('expected_conceded', 1.2),
-                'away_expected_conceded': away_def.get('expected_conceded', 1.2)
-            }
     except Exception as e:
-        print(f"      ⚠️ 防守質量分析失敗: {str(e)[:50]}")
-        defense_analysis = {'home_quality': 0.5, 'away_quality': 0.5}
+        # Fallback 到舊的模型
+        try:
+            def_model = DefensiveQualityModel(min_samples=3)
+            
+            if hasattr(repo, 'df') and not repo.df.empty:
+                # 檢查欄位名稱
+                shot_col = 'home_shots_total' if 'home_shots_total' in repo.df.columns else 'home_shots'
+                away_shot_col = 'away_shots_total' if 'away_shots_total' in repo.df.columns else 'away_shots'
+                
+                valid_df = repo.df.dropna(subset=['home_goals', 'away_goals'])
+                
+                for team in [db_home, db_away]:
+                    team_data = valid_df[(valid_df['home_team'] == team) | (valid_df['away_team'] == team)].tail(30)
+                    for _, row in team_data.iterrows():
+                        try:
+                            is_home = row['home_team'] == team
+                            # 對手射門次數 = 主隊時用 away_shots_total，客隊時用 home_shots_total
+                            xg_against = float(row['away_goals']) if is_home else float(row['home_goals'])
+                            shots_against = int(row[away_shot_col]) if is_home else int(row[shot_col])
+                            goals_against = int(row['away_goals']) if is_home else int(row['home_goals'])
+                            def_model.add_match_data(team, xg_against, shots_against, goals_against, is_home)
+                        except: continue
+                
+                home_def = def_model.calculate_defensive_quality(db_home, is_home=True)
+                away_def = def_model.calculate_defensive_quality(db_away, is_home=False)
+                
+                print(f"      {odds_home} 防守評分: {home_def.get('defensive_score', 50)/100:.2f} (失球預期: {home_def.get('xga', 1.2):.2f}, 樣本: {home_def.get('sample_size', 0)})")
+                print(f"      {odds_away} 防守評分: {away_def.get('defensive_score', 50)/100:.2f} (失球預期: {away_def.get('xga', 1.2):.2f}, 樣本: {away_def.get('sample_size', 0)})")
+                
+                defense_analysis = {
+                    'home_quality': home_def.get('defensive_score', 50) / 100,
+                    'away_quality': away_def.get('defensive_score', 50) / 100,
+                    'home_expected_conceded': home_def.get('xga', 1.2),
+                    'away_expected_conceded': away_def.get('xga', 1.2)
+                }
+            else:
+                raise Exception("No repo data")
+        except:
+            print(f"      ⚠️ 防守質量分析失敗: {str(e)[:50]}")
+            defense_analysis = {'home_quality': 0.5, 'away_quality': 0.5}
 
     # ============================================
     # [v7.1] 角球預測
     # ============================================
     print(f"\n   📐 [v7.1] 角球預測:")
     try:
-        corner_model = CornerPredictionModel(decay_rate=0.15)
-        
-        if hasattr(repo, 'df') and not repo.df.empty:
-            valid_df = repo.df.dropna(subset=['home_corners', 'away_corners'])
+        # 首先嘗試使用 Sofascore 數據
+        if HAS_SOFASCORE:
+            try:
+                sofa = get_sofascore_loader()
+                league_name_map = {
+                    'Premier League': 'Premier League',
+                    'LaLiga': 'LaLiga',
+                    'Bundesliga': 'Bundesliga',
+                    'Serie A': 'Serie A',
+                    'Ligue 1': 'Ligue 1'
+                }
+                sofa_league = league_name_map.get(league_name, None)
+                
+                # 計算角球統計
+                home_corner_stats = sofa.calculate_corner_stats(db_home, is_home=True, league=sofa_league, recent_n=20)
+                away_corner_stats = sofa.calculate_corner_stats(db_away, is_home=False, league=sofa_league, recent_n=20)
+                
+                home_corners = home_corner_stats.get('avg_corners', 5.5)
+                away_corners = away_corner_stats.get('avg_corners', 4.5)
+                
+                print(f"      [Sofascore] {odds_home} 平均角球: {home_corners:.1f} (樣本: {home_corner_stats.get('n_samples', 0)})")
+                print(f"      [Sofascore] {odds_away} 平均角球: {away_corners:.1f} (樣本: {away_corner_stats.get('n_samples', 0)})")
+                
+                corner_pred = {
+                    'home_corners': home_corners,
+                    'away_corners': away_corners,
+                    'total_corners': home_corners + away_corners
+                }
+                
+            except Exception as sofa_err:
+                print(f"      [WARN] Sofascore 角球數據失敗: {str(sofa_err)[:30]}")
+                raise
+        else:
+            raise Exception("Sofascore not available")
             
-            for team in [db_home, db_away]:
-                team_data = valid_df[(valid_df['home_team'] == team) | (valid_df['away_team'] == team)].tail(20)
-                for _, row in team_data.iterrows():
-                    try:
-                        is_home = row['home_team'] == team
-                        corners = row['home_corners'] if is_home else row['away_corners']
-                        if pd.notna(corners):
-                            corner_model.add_match(team, int(corners), is_home)
-                    except: continue
-        
-        # 預測角球
-        corner_pred = corner_model.predict(db_home, db_away)
+    except Exception as e:
+        # Fallback 到舊的 CornerPredictionModel
+        try:
+            corner_model = CornerPredictionModel(decay_rate=0.15)
+            
+            if hasattr(repo, 'df') and not repo.df.empty:
+                valid_df = repo.df.dropna(subset=['home_corners', 'away_corners'])
+                
+                # 遍歷球隊數據
+                for team in [db_home, db_away]:
+                    team_data = valid_df[(valid_df['home_team'] == team) | (valid_df['away_team'] == team)].tail(20)
+                    for _, row in team_data.iterrows():
+                        try:
+                            is_home = row['home_team'] == team
+                            corners = row['home_corners'] if is_home else row['away_corners']
+                            if pd.notna(corners):
+                                # 使用正確的方法 add_match_data
+                                corner_model.add_match_data(
+                                    league=league_name,
+                                    home_team=db_home,
+                                    away_team=db_away,
+                                    home_corners=int(row['home_corners']) if is_home else 0,
+                                    away_corners=int(row['away_corners']) if not is_home else 0
+                                )
+                        except Exception as e:
+                            continue
+            
+            # 使用正確的方法 predict_corners
+            corner_pred = corner_model.predict_corners(
+                league=league_name,
+                home_team=db_home,
+                away_team=db_away
+            )
+        except:
+            corner_pred = {'home_corners': 5.5, 'away_corners': 4.5, 'total_corners': 10.0}
         
         print(f"      {odds_home} 預測角球: {corner_pred.get('home_corners', 5.5):.1f}")
         print(f"      {odds_away} 預測角球: {corner_pred.get('away_corners', 4.5):.1f}")
         print(f"      預測總角球: {corner_pred.get('total_corners', 10.0):.1f}")
         
-        # 角球價值投注
-        corner_value = CornerValueBetModel(corner_model)
-        if all_markets:
-            # 嘗試找到角球市場
-            corner_odds_over = None
-            corner_odds_under = None
-            for market, selections in all_markets.items():
-                if 'corner' in market.lower():
-                    for sel, stats in selections.items():
-                        if stats.get('avg'):
-                            odds = stats['avg'][-1].decimal_odds
-                            if 'over' in sel.lower():
-                                corner_odds_over = odds
-                            elif 'under' in sel.lower():
-                                corner_odds_under = odds
-            
-            if corner_odds_over and corner_odds_under:
-                value_bets = corner_value.find_value_bets(
-                    corner_pred.get('total_corners', 10.0),
-                    corner_odds_over,
-                    corner_odds_under
-                )
-                if value_bets:
-                    print(f"      💡 角球價值投注: {value_bets.get('recommendation', 'N/A')}")
+        # 角球價值投注 (延遲到 all_markets 取得後)
+        corner_value = None  # 先設為 None，稍後在有 all_markets 時再初始化
         
         corner_analysis = {
             'home_corners': corner_pred.get('home_corners', 5.5),
@@ -1403,6 +1567,7 @@ def main():
     # 計算綜合勝率
     avg_v3_prob = (nb_probs['home_win'] + mc_v3_probs['mc_home_win'] + elo_win_prob) / 3
     print(f"\n   📊 [v3] 綜合勝率: {avg_v3_prob:.1%}")
+
 
     # ============================================
     # 計算動態信心度（基於模型分歧）
@@ -1478,6 +1643,14 @@ def main():
     print(f"\n📈 [2/4] 連線 API 讀取即時賠率...", flush=True)
     all_markets = odds_fetcher.get_real_odds(league_key, odds_home, odds_away)
     
+    # 如果 The Odds API 沒有數據，自動使用 OddsPortal
+    if not all_markets:
+        print("   ⚠️ The Odds API 無效數據，正在切換到 OddsPortal...")
+        odds_fetcher = OddsHarvesterFetcher()
+        all_markets = odds_fetcher.get_real_odds(league_key, odds_home, odds_away)
+        if all_markets:
+            print("   ✅ OddsPortal 數據獲取成功")
+    
     odds_summary_text = ""
     if all_markets:
         print(f"   ✅ 成功解析 {len(all_markets)} 個投注市場")
@@ -1514,10 +1687,48 @@ def main():
                     odds_summary_text += f"{market} {sel} -> Odds:{avg_o} (Implied:{implied:.1f}%) | "
             print(line_str)
     else:
-        print("   ⚠️ 無有效賠率數據")
+        print("⚠️ 無有效賠率數據")
         odds_summary_text = "No Odds Data Available"
         structured_odds = {}
 
+    # ============================================
+    # [v7.1] 角球價值投注 (延遲到取得 all_markets 後)
+    # ============================================
+    try:
+        if corner_value is not None and all_markets:
+            # 嘗試找到角球市場
+            corner_odds_over = None
+            corner_odds_under = None
+            bookie_line = 10.5
+            for market, selections in all_markets.items():
+                if 'corner' in market.lower():
+                    for sel, stats in selections.items():
+                        if stats.get('avg'):
+                            odds = stats['avg'][-1].decimal_odds
+                            if 'over' in sel.lower():
+                                corner_odds_over = odds
+                            elif 'under' in sel.lower():
+                                corner_odds_under = odds
+                    # 嘗試從市場名稱解析盤口
+                    match = re.search(r'(\d+\.?\d*)', market)
+                    if match:
+                        bookie_line = float(match.group(1))
+            
+            if corner_odds_over and corner_odds_under:
+                value_bets = corner_value.find_value_bets(
+                    league=league_name,
+                    home_team=db_home,
+                    away_team=db_away,
+                    bookie_line=bookie_line,
+                    bookie_odds_over=corner_odds_over,
+                    bookie_odds_under=corner_odds_under
+                )
+                if value_bets and value_bets.get('has_value'):
+                    print(f"   💡 角球價值投注: {value_bets.get('recommended', 'N/A')}")
+    except Exception as e:
+        print(f"   ⚠️ 角球價值投注失敗: {str(e)[:50]}")
+    
+    input("test stop")
     # 7. Grok 搜尋 (傳入陣容和傷停數據)
     print(f"\n🤖 [3/4] 請求 Grok 聯網搜尋市場情報...", flush=True)
     grok_input = odds_summary_text[:1500]
@@ -1706,33 +1917,33 @@ def main():
                     'away': structured_odds.get('1x2_away', 3.0)
                 }
                 
-                # 使用模型概率
-                prob_dict = {
+                # 使用模型概率 (key name must match: probabilities)
+                probabilities = {
                     'home': nb_probs.get('home_win', 0.33),
                     'draw': nb_probs.get('draw', 0.33),
                     'away': nb_probs.get('away_win', 0.33)
                 }
                 
-                # Kelly + Dutching 結合
+                # Kelly + Dutching 結合 (修正參數名稱)
                 dutch_kelly = dutching.calculate_kelly_dutching(
-                    prob_dict=prob_dict,
                     odds_dict=odds_dict,
-                    total_stake=settings.INITIAL_BANKROLL * 0.1,  # 10% 資金
-                    min_edge=0.08
+                    probabilities=probabilities,
+                    kelly_fraction=0.5
                 )
                 
-                if dutch_kelly.get('bets'):
+                if dutch_kelly and dutch_kelly.get('bets'):
                     print(f"      [Dutching 投注]")
-                    for bet in dutch_kelly['bets']:
-                        print(f"         {bet['selection']}: ${bet['stake']:.2f} @ {bet['odds']:.2f}")
-                    print(f"      總投注: ${dutch_kelly.get('total_stake', 0):.2f}")
-                    print(f"      預期回報: ${dutch_kelly.get('expected_return', 0):.2f}")
+                    for selection, bet_data in dutch_kelly['bets'].items():
+                        stake = bet_data.get('kelly_pct', 0) * 100  # 假設 bankroll = 100
+                        print(f"         {selection}: ${stake:.2f} @ {bet_data.get('odds', 0):.2f}")
+                    print(f"      總 Kelly%: ${dutch_kelly.get('total_kelly', 0)*100:.2f}")
+                    print(f"      狀態: {dutch_kelly.get('status', 'N/A')}")
                 else:
                     print(f"      [Dutching] 無足夠優勢，跳過")
             else:
                 print(f"      [Dutching] 1x2 市場數據不足")
         except Exception as e:
-            print(f"      [Dutching] 計算失敗: {str(e)[:50]}")
+            print(f"      [Dutching] 計算失敗: {str(e)[:80]}")
         
         print(f"\n   [{target_label}] 賠率 {target_odds}:")
         # 使用 ConfidenceKelly 的結果

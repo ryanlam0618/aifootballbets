@@ -647,5 +647,1015 @@ class RealOddsFetcher:
 
         return all_markets
 
+
+class OddsHarvesterFetcher:
+    """
+    使用 OddsHarvester 從 oddsportal.com 獲取平均賠率
+    """
+    
+    def __init__(self):
+        self.oh_base_path = "OddsHarvester"
+    
+    def get_real_odds(self, league_key: str, home: str, away: str) -> OddsDataStructure:
+        """
+        從 oddsportal.com 獲取平均賠率
+        
+        league_key: The Odds API key (如 'soccer_epl')
+        home: 主隊名稱
+        away: 客隊名稱
+        """
+        import asyncio
+        import sys
+        import os
+        
+        # 確保 OddsHarvester 路徑在 sys.path 中
+        oh_base = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', self.oh_base_path)
+        oh_base = os.path.normpath(oh_base)
+        oh_src_path = os.path.join(oh_base, 'src')
+        
+        # === DEBUG LOGGING ===
+        import json
+        log_path = r"c:\Users\Ryan\python\.vscode\fb_ai_bets\.cursor\debug.log"
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps({
+                "id": "log_path_setup",
+                "timestamp": 1733456789005,
+                "location": "data_modules.py:get_real_odds",
+                "message": "OddsHarvester 路徑設置",
+                "data": {"oh_base": oh_base, "oh_src_path": oh_src_path, "old_sys_path": sys.path[:3]},
+                "runId": "debug-path",
+                "hypothesisId": "A"
+            }) + "\n")
+        # === END DEBUG ===
+        
+        # 修復: 完全移除 src 目錄的影響
+        # 移除 '' 和當前工作目錄
+        cwd = os.getcwd()
+        new_sys_path = []
+        for p in sys.path:
+            # 排除當前目錄和任何 src 目錄
+            if p and p != cwd and not p.endswith('\\src') and not p.endswith('/src'):
+                new_sys_path.append(p)
+        sys.path[:] = new_sys_path
+        # 添加 OddsHarvester 到開頭
+        sys.path.insert(0, oh_base)
+        
+        # === DEBUG LOGGING ===
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps({
+                "id": "log_syspath_after",
+                "timestamp": 1733456789100,
+                "location": "data_modules.py:get_real_odds",
+                "message": "sys.path after fix",
+                "data": {"new_sys_path": sys.path[:5]},
+                "runId": "debug-path",
+                "hypothesisId": "B"
+            }) + "\n")
+        # === END DEBUG ===
+        
+        print(f"🌐 連線 OddsPortal 獲取平均賠率...")
+        
+        # 使用 subprocess 在獨立 Python 進程中運行 OddsHarvester
+        # 這樣可以繞過模組導入的問題
+        print("   ⚠️ 使用 OddsHarvester subprocess...")
+        
+        try:
+            import subprocess
+            import datetime
+            
+            oh_base = r"c:\Users\Ryan\python\.vscode\fb_ai_bets\OddsHarvester"
+            oh_script = os.path.join(oh_base, "src", "main.py")
+            
+            # 獲取今天的日期
+            today = datetime.datetime.now().strftime('%Y%m%d')
+            
+            # 轉換 league_key 為 OddsHarvester 格式
+            league_slug = self._get_oh_league(league_key)
+            
+            # ===== 使用默認熱門盤口 =====
+            # 默認使用常見盤口：AH=0 (平手), OU=2.5 (2.5球)
+            ah_line = "0"
+            ou_line = "2.5"
+            print(f"   📊 使用默認盤口: AH={ah_line}, OU={ou_line}")
+            
+            # 爬取所有可用的市場
+            print(f"   📊 爬取所有可用市場")
+            
+            # 獲取 OddsHarvester 的 venv Python 路徑
+            venv_python = os.path.join(oh_base, ".venv", "Scripts", "python.exe")
+            print(f"   🐍 使用 venv Python: {venv_python}")
+            
+            # ===== 使用 OddsURL.py 獲取正確的比賽 URL =====
+            print(f"   🔍 正在搜尋正確的比賽 URL...")
+            
+            odds_url_script = r"c:\Users\Ryan\python\.vscode\fb_ai_bets\TakeData\OddsURL.py"
+            
+            # 構建 league URL
+            league_url_map = {
+                'england-premier-league': 'https://www.oddsportal.com/football/england/premier-league/',
+                'spain-primera-division': 'https://www.oddsportal.com/football/spain/laliga/',
+                'germany-bundesliga': 'https://www.oddsportal.com/football/germany/bundesliga/',
+                'italy-serie-a': 'https://www.oddsportal.com/football/italy/serie-a/',
+                'france-ligue-1': 'https://www.oddsportal.com/football/france/ligue-1/',
+            }
+            league_url = league_url_map.get(league_slug, f'https://www.oddsportal.com/football/{league_slug}/')
+            
+            print(f"   🌐 搜尋聯賽: {league_url}")
+            
+            # 運行 OddsURL.py 獲取所有比賽 URL
+            # 使用預設 Python（系統默認 Python，有安裝所需依賴）
+            
+            # 獲取系統默認 Python
+            default_python = sys.executable
+            
+            print(f"   🔄 正在執行 OddsURL.py...")
+            
+            # 從 league_url 提取國家和聯賽
+            # 例如: https://www.oddsportal.com/football/spain/laliga/ -> country=spain, league=laliga
+            from urllib.parse import urlparse
+            parsed = urlparse(league_url)
+            path_parts = [p for p in parsed.path.strip('/').split('/') if p]
+            # path_parts[0] 是 "football"（運動類型），需要跳過
+            country = path_parts[1] if len(path_parts) > 1 else "england"
+            league = path_parts[2] if len(path_parts) > 2 else "premier-league"
+            
+            print(f"   🔍 爬取聯賽: {country}/{league}")
+            
+            env = os.environ.copy()
+            env['PYTHONPATH'] = oh_base
+            
+            # 使用列表形式調用，避免 shell=True 的問題
+            process_url = subprocess.Popen(
+                [default_python, odds_url_script, country, league],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                env=env,
+                cwd=os.path.dirname(odds_url_script)
+            )
+            
+            all_urls = []
+            stdout, stderr = process_url.communicate(timeout=300)  # 增加超時到 5 分鐘
+            
+            print(f"   📝 OddsURL.py 輸出長度: {len(stdout)}")
+            if stdout:
+                print(f"   📝 OddsURL.py 原始輸出（前200字）: {stdout[:200]}")
+            
+            # 解析輸出中的 URL - 使用更嚴格的過濾
+            import re
+            # 匹配完整的 oddsportal URL 格式
+            url_pattern = re.compile(r'https://www\.oddsportal\.com/football/[^/]+/[^/]+/[^/]+/')
+            
+            for line in stdout.split('\n'):
+                line_clean = line.strip()
+                # 使用正則表達式匹配完整 URL
+                match = url_pattern.search(line_clean)
+                if match:
+                    url = match.group(0)
+                    if url and url not in all_urls:
+                        all_urls.append(url)
+            
+            if stderr:
+                print(f"   ⚠️ 錯誤: {stderr[:500]}")
+            
+            print(f"   ✅ 共獲取 {len(all_urls)} 個比賽 URL")
+            if all_urls:
+                print(f"   📋 前3個URL: {all_urls[:3]}")
+            
+            # 找尋匹配的比賽 URL
+            match_url = None
+            home_lower = home.lower()
+            away_lower = away.lower()
+            
+            for url in all_urls:
+                url_lower = url.lower()
+                # 檢查 URL 中是否包含雙方球隊名（只匹配球隊名，不含ID）
+                if home_lower.replace(' ', '') in url_lower.replace('-', '').replace(' ', '') and \
+                   away_lower.replace(' ', '') in url_lower.replace('-', '').replace(' ', ''):
+                    match_url = url
+                    print(f"   ✅ 找到匹配 URL: {url}")
+                    break
+            
+            if not match_url and all_urls:
+                # 使用第一個 URL
+                match_url = all_urls[0]
+                print(f"   ⚠️ 使用第一個可用 URL: {match_url}")
+            
+            if not match_url:
+                print("   ❌ 無法獲取比賽 URL")
+                return {}
+            
+            # 使用 subprocess 運行（不使用 shell=True 以避免路徑問題）
+            # 指定輸出文件路徑 - 使用正斜杠
+            output_file = os.path.join(oh_base, "scraped_data.json").replace("\\", "/")
+            
+            # 使用列表形式，避免 shell=True 的路徑問題
+            # 添加 --preview_submarkets_only 來爬取所有可用市場（包含可見的 submarkets 和平均賠率）
+            cmd_list = [
+                venv_python,
+                oh_script,
+                "scrape_upcoming",
+                "--sport", "football",
+                "--match_links", match_url,
+                "--headless",
+                "--preview_submarkets_only",
+                "--file_path", output_file
+            ]
+            
+            # === DEBUG LOGGING - Hypothesis: Missing --markets parameter ===
+            import json
+            log_path = r"c:\Users\Ryan\python\.vscode\fb_ai_bets\.cursor\debug.log"
+            with open(log_path, "a", encoding="utf-8") as f:
+                f.write(json.dumps({
+                    "id": "log_cmd_before",
+                    "timestamp": 1733456789000,
+                    "location": "data_modules.py:843",
+                    "message": "Command list BEFORE adding markets",
+                    "data": {"cmd_list": cmd_list, "has_markets_param": "--markets" in cmd_list},
+                    "runId": "debug-run",
+                    "hypothesisId": "A"
+                }) + "\n")
+            # === END DEBUG ===
+            
+            # 添加市場參數 - 爬取所有主要市場 (使用正確的市場名稱)
+            # 參考 OddsHarvester 支援的市場: over_under_X, asian_handicap_X
+            markets_to_scrape = [
+                "1x2", "btts", "double_chance", "dnb",
+                "over_under_2_5", "over_under_3", "over_under_3_5",
+                "asian_handicap_0", "asian_handicap_-0_5", "asian_handicap_-1",
+                "asian_handicap_+0_5", "asian_handicap_+1"
+            ]
+            cmd_list.extend(["--markets", ",".join(markets_to_scrape)])
+            
+            # === DEBUG LOGGING ===
+            with open(log_path, "a", encoding="utf-8") as f:
+                f.write(json.dumps({
+                    "id": "log_cmd_after",
+                    "timestamp": 1733456789000,
+                    "location": "data_modules.py:843",
+                    "message": "Command list AFTER adding markets",
+                    "data": {"cmd_list": cmd_list, "markets_added": markets_to_scrape},
+                    "runId": "debug-run",
+                    "hypothesisId": "A"
+                }) + "\n")
+            # === END DEBUG ===
+            
+            cmd_str = " ".join(cmd_list)  # 用於調試輸出
+            
+            print(f"   🧪 執行命令: {cmd_str}")
+            print(f"   🎯 目標比賽: {home} vs {away}")
+            print(f"   🔗 比賽URL: {match_url}")
+            print(f"   ⏳ 正在爬取數據...")
+            
+            # 設置環境變量
+            import os
+            env = os.environ.copy()
+            env['PYTHONPATH'] = oh_base
+            
+            # 使用列表形式調用 subprocess
+            import subprocess
+            process = subprocess.Popen(
+                cmd_list,
+                cwd=oh_base,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,  # 合併 stderr 到 stdout
+                text=True,
+                env=env
+            )
+            
+            # 即時讀取輸出（減少輸出以提高性能）
+            output_lines = []
+            line_count = 0
+            try:
+                for line in iter(process.stdout.readline, ''):
+                    if line:
+                        # 只顯示前20行和重要的行
+                        if line_count < 5 or 'INFO - Successfully' in line or 'ERROR' in line or 'Scraping match:' in line:
+                            print(f"   📝 {line.rstrip()}")
+                        output_lines.append(line)
+                        line_count += 1
+                process.wait(timeout=300)
+            except subprocess.TimeoutExpired:
+                print("   ❌ 執行超時，正在終止進程...")
+                process.kill()
+                process.wait()
+                return {}
+            
+            result_stdout = ''.join(output_lines)
+            result = type('obj', (object,), {
+                'returncode': process.returncode,
+                'stdout': result_stdout,
+                'stderr': ''
+            })()
+            
+            end_time = datetime.datetime.now().isoformat()
+            debug_log_path = r"c:\Users\Ryan\python\.vscode\fb_ai_bets\.cursor\debug.log"
+            with open(debug_log_path, "a") as f:
+                f.write(json.dumps({
+                    "timestamp": end_time,
+                    "event": "subprocess_end",
+                    "returncode": result.returncode,
+                    "stdout_len": len(result.stdout) if result.stdout else 0,
+                    "stderr_len": len(result.stderr) if result.stderr else 0,
+                    "hypothesis": "testing_subprocess_timing"
+                }) + "\n")
+            
+            print(f"   📊 返回碼: {result.returncode}")
+            
+            # 讀取並解析輸出文件
+            if os.path.exists(output_file):
+                try:
+                    import json
+                    with open(output_file, 'r', encoding='utf-8') as f:
+                        scraped_data = json.load(f)
+                    print(f"   ✅ 成功讀取 {len(scraped_data)} 條比賽數據")
+                    
+                    # 查找匹配的對戰組合
+                    matched_match = None
+                    
+                    # 確保數據是列表格式
+                    if isinstance(scraped_data, dict):
+                        scraped_data = scraped_data.get('matches', scraped_data.get('data', [scraped_data]))
+                    
+                    for match in scraped_data:
+                        # 使用 home_team 和 away_team 匹配
+                        match_home = match.get('home_team', '').lower()
+                        match_away = match.get('away_team', '').lower()
+                        home_lower = home.lower()
+                        away_lower = away.lower()
+                        
+                        # 嘗試多種匹配方式（精確匹配或包含匹配）
+                        if (home_lower in match_home or match_home in home_lower) and \
+                           (away_lower in match_away or match_away in away_lower):
+                            # 選擇包含最多市場數據的比賽（通常是最新的一個）
+                            if matched_match is None:
+                                matched_match = match
+                            else:
+                                # 比較兩個比賽的市場數據數量
+                                current_market_keys = [k for k in match.keys() if k.endswith('_market')]
+                                matched_market_keys = [k for k in matched_match.keys() if k.endswith('_market')]
+                                if len(current_market_keys) > len(matched_market_keys):
+                                    matched_match = match
+                    
+                    if matched_match:
+                        print(f"   ✅ 找到匹配: {matched_match.get('home_team')} vs {matched_match.get('away_team')}")
+                        # 解析真實赔率數據
+                        odds_data = self._parse_oh_odds(matched_match, ou_line, ah_line)
+                        return odds_data
+                    else:
+                        print(f"   ⚠️ 未找到匹配: {home} vs {away}")
+                        # 打印第一個匹配看看格式
+                        if scraped_data:
+                            print(f"   📝 第一條數據: {scraped_data[0]}")
+                        return {}
+                except Exception as e:
+                    print(f"   ❌ 解析數據失敗: {e}")
+            else:
+                print(f"   ⚠️ 輸出文件不存在: {output_file}")
+            
+            return {}
+            
+        except subprocess.TimeoutExpired:
+            # 超时时添加调试日志
+            timeout_time = datetime.datetime.now().isoformat()
+            debug_log_path = r"c:\Users\Ryan\python\.vscode\fb_ai_bets\.cursor\debug.log"
+            with open(debug_log_path, "a") as f:
+                f.write(json.dumps({
+                    "timestamp": timeout_time,
+                    "event": "subprocess_timeout",
+                    "timeout_seconds": 300,
+                    "hypothesis": "testing_subprocess_timing"
+                }) + "\n")
+            print("   ❌ OdtsHarvester 執行超時")
+            return {}
+        except Exception as e:
+            # 異常時添加調試日誌
+            error_time = datetime.datetime.now().isoformat()
+            debug_log_path = r"c:\Users\Ryan\python\.vscode\fb_ai_bets\.cursor\debug.log"
+            with open(debug_log_path, "a") as f:
+                f.write(json.dumps({
+                    "timestamp": error_time,
+                    "event": "subprocess_exception",
+                    "error": str(e),
+                    "hypothesis": "testing_subprocess_timing"
+                }) + "\n")
+            print(f"   ❌ OdtsHarvester 執行失敗: {e}")
+            import traceback
+            traceback.print_exc()
+            return {}
+    
+    def get_real_odds_3(self, league_key: str, home: str, away: str, odds_source: int) -> dict:
+        """使用 3rd party API 獲取即時赔率"""
+        pass
+    
+    def _get_oh_league(self, league_key: str) -> str:
+        """
+        將 The Odds API league key 轉換為 OddsHarvester league slug
+        """
+        league_mapping = {
+            'soccer_epl': 'england-premier-league',
+            'soccer_spain_la_liga': 'spain-primera-division',
+            'soccer_germany_bundesliga': 'germany-bundesliga',
+            'soccer_italy_serie_a': 'italy-serie-a',
+            'soccer_france_ligue_one': 'france-ligue-1',
+            'soccer_uefa_champs_league': 'europe-champions-league',
+            'soccer_uefa_europa_league': 'europe-europa-league',
+            'soccer_efl_champ': 'england-championship',
+            'soccer_england_league1': 'england-league-one',
+            'soccer_england_league2': 'england-league-two',
+            'soccer_england_efl_cup': 'england-league-cup',
+            'soccer_fa_cup': 'england-fa-cup',
+            'soccer_spain_segunda_division': 'spain-segunda-division',
+            'soccer_germany_bundesliga2': 'germany-bundesliga-2',
+            'soccer_italy_serie_b': 'italy-serie-b',
+            'soccer_france_ligue_two': 'france-ligue-2',
+            'soccer_netherlands_eredivisie': 'netherlands-eredivisie',
+            'soccer_portugal_primeira_liga': 'portugal-primeira-liga',
+            'soccer_spl': 'scotland-premier-league',
+            'soccer_usa_mls': 'usa-mls',
+            'soccer_brazil_campeonato': 'brazil-serie-a',
+            'soccer_argentina_primera_division': 'argentina-primera-division',
+        }
+        return league_mapping.get(league_key, 'england-premier-league')
+    
+    def _parse_oh_odds(self, match_data: dict, ou_line: str = "2.5", ah_line: str = "0") -> dict:
+        """
+        解析 OddsHarvester 返回的比賽數據，提取所有可用的市場赔率
+        
+        動態解析所有市場：
+        - 1x2_market -> 1x2
+        - over_under_X_market -> Over/Under X
+        - asian_handicap_X_market -> Asian Handicap X
+        """
+        try:
+            all_markets = {}
+            
+            # === DEBUG LOGGING - Log received match_data keys ===
+            import json
+            log_path = r"c:\Users\Ryan\python\.vscode\fb_ai_bets\.cursor\debug.log"
+            all_keys = list(match_data.keys())
+            market_keys = [k for k in all_keys if k.endswith('_market')]
+            with open(log_path, "a", encoding="utf-8") as f:
+                f.write(json.dumps({
+                    "id": "log_parse_start",
+                    "timestamp": 1733456789000,
+                    "location": "data_modules.py:_parse_oh_odds",
+                    "message": "Parsing received data - keys analysis",
+                    "data": {
+                        "total_keys": len(all_keys),
+                        "all_keys": all_keys[:20],  # First 20 keys
+                        "market_keys_found": market_keys,
+                        "has_market_data": len(market_keys) > 0
+                    },
+                    "runId": "debug-run",
+                    "hypothesisId": "A"
+                }) + "\n")
+            # === END DEBUG ===
+            
+            # 遍歷所有市場 key
+            for key in match_data.keys():
+                if not key.endswith('_market'):
+                    continue
+                
+                market_name = key.replace('_market', '')
+                market_data = match_data[key]
+                
+                if not market_data or not isinstance(market_data, list):
+                    continue
+                
+                # 解析 1x2 市場
+                if market_name == '1x2':
+                    home_prices = []
+                    draw_prices = []
+                    away_prices = []
+                    
+                    for bm in market_data:
+                        try:
+                            h = float(bm.get('1', 0) or bm.get('home', 0) or 0)
+                            d = float(bm.get('X', 0) or bm.get('x', 0) or bm.get('draw', 0) or 0)
+                            a = float(bm.get('2', 0) or bm.get('away', 0) or 0)
+                            if h > 0: home_prices.append(h)
+                            if d > 0: draw_prices.append(d)
+                            if a > 0: away_prices.append(a)
+                        except (ValueError, TypeError):
+                            pass
+                    
+                    if home_prices or draw_prices or away_prices:
+                        all_markets['1x2'] = {}
+                        if home_prices:
+                            all_markets['1x2']['Home'] = {
+                                'max': [OddsPoint("Current", max(home_prices), "Max")],
+                                'min': [OddsPoint("Current", min(home_prices), "Min")],
+                                'avg': [OddsPoint("Current", round(sum(home_prices)/len(home_prices), 2), "Avg")]
+                            }
+                        if draw_prices:
+                            all_markets['1x2']['Draw'] = {
+                                'max': [OddsPoint("Current", max(draw_prices), "Max")],
+                                'min': [OddsPoint("Current", min(draw_prices), "Min")],
+                                'avg': [OddsPoint("Current", round(sum(draw_prices)/len(draw_prices), 2), "Avg")]
+                            }
+                        if away_prices:
+                            all_markets['1x2']['Away'] = {
+                                'max': [OddsPoint("Current", max(away_prices), "Max")],
+                                'min': [OddsPoint("Current", min(away_prices), "Min")],
+                                'avg': [OddsPoint("Current", round(sum(away_prices)/len(away_prices), 2), "Avg")]
+                            }
+                    print(f"   📊 解析 1x2: Home={len(home_prices)}, Draw={len(draw_prices)}, Away={len(away_prices)} 莊家")
+                
+                # 解析 Over/Under 市場
+                elif market_name.startswith('over_under_'):
+                    # 提取 base line (如 2.5, 3, 3.5 from market name)
+                    base_line_str = market_name.replace('over_under_', '').replace('_', '.')
+                    try:
+                        base_line_val = float(base_line_str)
+                    except:
+                        base_line_val = 2.5  # default
+                    
+                    # 解析每個 submarket - 直接從名稱提取總分值
+                    over_prices = []
+                    under_prices = []
+                    
+                    for submarket in market_data:
+                        submarket_name = submarket.get('submarket_name', '')
+                        
+                        # 直接從 submarket_name 提取總分值 (如 "Over/Under +2.5" -> 2.5)
+                        import re
+                        # Match the full number with sign at the start
+                        match = re.search(r'Over/Under\s+([+-]?\d+\.?\d*)', submarket_name)
+                        if not match:
+                            continue
+                        
+                        total_str = match.group(1)
+                        try:
+                            total_val = float(total_str)
+                        except:
+                            continue
+                        
+                        # 收集與目標總分匹配的赔率
+                        try:
+                            o = float(submarket.get('odds_over', 0) or submarket.get('over', 0) or 0)
+                            u = float(submarket.get('odds_under', 0) or submarket.get('under', 0) or 0)
+                            
+                            # 只收集總分等於基準線的赔率
+                            if abs(total_val - base_line_val) < 0.01:
+                                if o > 0:
+                                    over_prices.append(o)
+                                if u > 0:
+                                    under_prices.append(u)
+                        except (ValueError, TypeError):
+                            pass
+                    
+                    if over_prices or under_prices:
+                        market_name_display = f"Over/Under {base_line_val}"
+                        all_markets[market_name_display] = {}
+                        if over_prices:
+                            all_markets[market_name_display]['Over'] = {
+                                'max': [OddsPoint("Current", max(over_prices), "Max")],
+                                'min': [OddsPoint("Current", min(over_prices), "Min")],
+                                'avg': [OddsPoint("Current", round(sum(over_prices)/len(over_prices), 2), "Avg")]
+                            }
+                        if under_prices:
+                            all_markets[market_name_display]['Under'] = {
+                                'max': [OddsPoint("Current", max(under_prices), "Max")],
+                                'min': [OddsPoint("Current", min(under_prices), "Min")],
+                                'avg': [OddsPoint("Current", round(sum(under_prices)/len(under_prices), 2), "Avg")]
+                            }
+                    print(f"   📊 解析 Over/Under {base_line_val}: Over={len(over_prices)}, Under={len(under_prices)} 莊家")
+                
+                # 解析 Asian Handicap 市場
+                elif market_name.startswith('asian_handicap_'):
+                    # 提取 base line (如 0, -0.5, -1, +0.5, +1)
+                    base_line_str = market_name.replace('asian_handicap_', '').replace('_', '.')
+                    
+                    # 解析每個 submarket - 直接從名稱提取讓分值
+                    home_prices = []
+                    away_prices = []
+                    
+                    for submarket in market_data:
+                        submarket_name = submarket.get('submarket_name', '')
+                        
+                        # 直接從 submarket_name 提取讓分值 (如 "Asian Handicap -0.5" -> -0.5)
+                        import re
+                        # Match the full number with sign at the start
+                        match = re.search(r'Asian Handicap\s+([+-]?\d+\.?\d*)', submarket_name)
+                        if not match:
+                            continue
+                        
+                        handicap_str = match.group(1)
+                        try:
+                            handicap_val = float(handicap_str)
+                        except:
+                            continue
+                        
+                        # team1_handicap 和 team2_handicap 是赔率
+                        try:
+                            h = float(submarket.get('team1_handicap', 0) or 0)
+                            a = float(submarket.get('team2_handicap', 0) or 0)
+                            
+                            # 解析 base_line_str，去掉 + 符號
+                            base_val = float(base_line_str.replace('+', ''))
+                            
+                            # 只收集讓分值等於基準線的赔率
+                            if abs(handicap_val - base_val) < 0.01:
+                                if h > 0:
+                                    home_prices.append(h)
+                                if a > 0:
+                                    away_prices.append(a)
+                        except (ValueError, TypeError):
+                            pass
+                    
+                    if home_prices or away_prices:
+                        market_name_display = f"Asian Handicap {base_line_str}"
+                        all_markets[market_name_display] = {}
+                        if home_prices:
+                            all_markets[market_name_display]['Home'] = {
+                                'max': [OddsPoint("Current", max(home_prices), "Max")],
+                                'min': [OddsPoint("Current", min(home_prices), "Min")],
+                                'avg': [OddsPoint("Current", round(sum(home_prices)/len(home_prices), 2), "Avg")]
+                            }
+                        if away_prices:
+                            all_markets[market_name_display]['Away'] = {
+                                'max': [OddsPoint("Current", max(away_prices), "Max")],
+                                'min': [OddsPoint("Current", min(away_prices), "Min")],
+                                'avg': [OddsPoint("Current", round(sum(away_prices)/len(away_prices), 2), "Avg")]
+                            }
+                    print(f"   📊 解析 Asian Handicap {base_line_str}: Home={len(home_prices)}, Away={len(away_prices)} 莊家")
+            
+            print(f"   ✅ 解析完成: 共 {len(all_markets)} 個市場")
+            return all_markets
+            
+        except Exception as e:
+            print(f"   ⚠️ 解析赔率失敗: {e}")
+            import traceback
+            traceback.print_exc()
+            return {}
+    
+    def _find_popular_ah_line_grok(self, league_key: str, home: str, away: str) -> str | None:
+        """
+        使用 Grok API 搜尋找出熱門的亞洲讓球盤口
+        
+        返回格式如: "0", "-0.5", "-1", "-1.5", "-2" 等
+        如果失敗返回 None
+        """
+        # === DEBUG LOGGING ===
+        import json
+        log_path = r"c:\Users\Ryan\python\.vscode\fb_ai_bets\.cursor\debug.log"
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps({
+                "id": "log_ah_start",
+                "timestamp": 1733456789000,
+                "location": "data_modules.py:_find_popular_ah_line_grok",
+                "message": "Grok AH 分析開始",
+                "data": {"league_key": league_key, "home": home, "away": away},
+                "runId": "test-grok",
+                "hypothesisId": "A"
+            }) + "\n")
+        # === END DEBUG ===
+        
+        try:
+            # 嘗試導入 Grok 相關模組
+            from src.llm_clients import llm
+            
+            # 構建搜尋問題
+            search_query = f"{home} vs {away} Asian Handicap line odds"
+            
+            # 使用 Grok 的 web search 功能 (如果有的話)
+            # 先嘗試直接問 LLM
+            prompt = f"""你是足球博彩專家。請根據以下比賽，預測莊家最可能開出的亞洲讓球盤口(Asian Handicap)。
+
+比賽: {home} vs {away}
+聯賽: {league_key}
+
+常見盤口:
+- 0 (平手)
+- -0.5 (半球)  
+- -0.75 (讓半一)
+- -1 (一球)
+- -1.5 (球半)
+- -2 (兩球)
+
+請根據兩隊實力差距，猜測莊家最可能開出的主隊讓球盤口。
+只回答盤口數字，例如: -1 或 0 或 -0.5
+不要回答其他文字。"""
+            
+            print(f"   🔍 使用 Grok 分析熱門盤口...")
+            
+            # 嘗試使用 LLM
+            try:
+                response = llm.chat.completions.create(
+                    model="grok-2-1212",
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=10,
+                )
+                answer = response.choices[0].message.content.strip()
+                
+                # 解析答案
+                import re
+                match = re.search(r'-?\d+\.?\d*', answer)
+                if match:
+                    line = match.group()
+                    # 標準化格式
+                    if line == '0':
+                        # === DEBUG LOGGING ===
+                        import json
+                        log_path = r"c:\Users\Ryan\python\.vscode\fb_ai_bets\.cursor\debug.log"
+                        with open(log_path, "a", encoding="utf-8") as f:
+                            f.write(json.dumps({
+                                "id": "log_ah_success",
+                                "timestamp": 1733456789001,
+                                "location": "data_modules.py:_find_popular_ah_line_grok",
+                                "message": "Grok AH 分析成功",
+                                "data": {"result": "0"},
+                                "runId": "test-grok",
+                                "hypothesisId": "A"
+                            }) + "\n")
+                        # === END DEBUG ===
+                        return '0'
+                    elif line == '-0':
+                        # === DEBUG LOGGING ===
+                        import json
+                        log_path = r"c:\Users\Ryan\python\.vscode\fb_ai_bets\.cursor\debug.log"
+                        with open(log_path, "a", encoding="utf-8") as f:
+                            f.write(json.dumps({
+                                "id": "log_ah_success",
+                                "timestamp": 1733456789001,
+                                "location": "data_modules.py:_find_popular_ah_line_grok",
+                                "message": "Grok AH 分析成功",
+                                "data": {"result": "0"},
+                                "runId": "test-grok",
+                                "hypothesisId": "A"
+                            }) + "\n")
+                        # === END DEBUG ===
+                        return '0'
+                    else:
+                        # === DEBUG LOGGING ===
+                        import json
+                        log_path = r"c:\Users\Ryan\python\.vscode\fb_ai_bets\.cursor\debug.log"
+                        with open(log_path, "a", encoding="utf-8") as f:
+                            f.write(json.dumps({
+                                "id": "log_ah_success",
+                                "timestamp": 1733456789001,
+                                "location": "data_modules.py:_find_popular_ah_line_grok",
+                                "message": "Grok AH 分析成功",
+                                "data": {"result": line},
+                                "runId": "test-grok",
+                                "hypothesisId": "A"
+                            }) + "\n")
+                        # === END DEBUG ===
+                        return line
+                        
+            except Exception as grok_err:
+                print(f"   ⚠️ Grok API 失敗: {str(grok_err)[:30]}")
+                raise grok_err
+                
+        except ImportError:
+            print("   ⚠️ 無法導入 LLM 模組")
+        except Exception as e:
+            print(f"   ⚠️ Grok 搜尋失敗: {str(e)[:30]}")
+        
+        # 如果失敗，返回 None，使用預設盤口
+        # === DEBUG LOGGING ===
+        import json
+        log_path = r"c:\Users\Ryan\python\.vscode\fb_ai_bets\.cursor\debug.log"
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps({
+                "id": "log_ah_fail",
+                "timestamp": 1733456789002,
+                "location": "data_modules.py:_find_popular_ah_line_grok",
+                "message": "Grok AH 分析失敗，返回 None",
+                "data": {},
+                "runId": "test-grok",
+                "hypothesisId": "A"
+            }) + "\n")
+        # === END DEBUG ===
+        return None
+    
+    def _find_popular_ou_line_grok(self, league_key: str, home: str, away: str) -> str | None:
+        """
+        使用 Grok API 搜尋找出熱門的大小球盤口 (Over/Under)
+        
+        返回格式如: "2.5", "3.5", "2", "3" 等
+        如果失敗返回 None
+        """
+        # === DEBUG LOGGING ===
+        import json
+        log_path = r"c:\Users\Ryan\python\.vscode\fb_ai_bets\.cursor\debug.log"
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps({
+                "id": "log_ou_start",
+                "timestamp": 1733456789010,
+                "location": "data_modules.py:_find_popular_ou_line_grok",
+                "message": "Grok OU 分析開始",
+                "data": {"league_key": league_key, "home": home, "away": away},
+                "runId": "test-grok",
+                "hypothesisId": "B"
+            }) + "\n")
+        # === END DEBUG ===
+        
+        try:
+            from src.llm_clients import llm
+            
+            prompt = f"""你是足球博彩專家。請根據以下比賽，預測莊家最可能開出的大小球盤口(Over/Under)。
+
+比賽: {home} vs {away}
+聯賽: {league_key}
+
+常見盤口:
+- 2.5 (最常見)
+- 3.5 
+- 2.0
+- 3.0
+
+請根據兩隊的進攻/防守能力，猜測莊家最可能開出的大小球盤口。
+只回答盤口數字，例如: 2.5 或 3.5
+不要回答其他文字。"""
+            
+            try:
+                response = llm.chat.completions.create(
+                    model="grok-2-1212",
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=10,
+                )
+                answer = response.choices[0].message.content.strip()
+                
+                # 解析答案
+                import re
+                match = re.search(r'\d+\.?\d*', answer)
+                if match:
+                    result = match.group()
+                    # === DEBUG LOGGING ===
+                    import json
+                    log_path = r"c:\Users\Ryan\python\.vscode\fb_ai_bets\.cursor\debug.log"
+                    with open(log_path, "a", encoding="utf-8") as f:
+                        f.write(json.dumps({
+                            "id": "log_ou_success",
+                            "timestamp": 1733456789011,
+                            "location": "data_modules.py:_find_popular_ou_line_grok",
+                            "message": "Grok OU 分析成功",
+                            "data": {"result": result},
+                            "runId": "test-grok",
+                            "hypothesisId": "B"
+                        }) + "\n")
+                    # === END DEBUG ===
+                    return result
+                        
+            except Exception as grok_err:
+                print(f"   ⚠️ Grok API 失敗: {str(grok_err)[:30]}")
+                raise grok_err
+                
+        except ImportError:
+            print("   ⚠️ 無法導入 LLM 模組")
+        except Exception as e:
+            print(f"   ⚠️ Grok 搜尋失敗: {str(e)[:30]}")
+        
+        # 如果失敗，返回 None，使用預設盤口
+        # === DEBUG LOGGING ===
+        import json
+        log_path = r"c:\Users\Ryan\python\.vscode\fb_ai_bets\.cursor\debug.log"
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps({
+                "id": "log_ou_fail",
+                "timestamp": 1733456789012,
+                "location": "data_modules.py:_find_popular_ou_line_grok",
+                "message": "Grok OU 分析失敗，返回 None",
+                "data": {},
+                "runId": "test-grok",
+                "hypothesisId": "B"
+            }) + "\n")
+        # === END DEBUG ===
+        return None
+    
+    def _process_oh_response(self, match_data: dict) -> OddsDataStructure:
+        """
+        將 OddsHarvester 輸出轉換為標準格式
+        """
+        all_markets = {}
+        
+        # 遍歷所有市場數據
+        # OddsHarvester 返回的格式可能是多層嵌套的
+        # 需要從 match_data 中提取市場赔率
+        
+        # 先嘗試直接提取市場數據
+        markets_data = match_data.get('markets', {})
+        
+        if not markets_data:
+            # 嘗試其他可能的鍵
+            for key in match_data.keys():
+                if isinstance(match_data[key], dict):
+                    markets_data = match_data[key]
+                    break
+        
+        home_team = match_data.get('home_team', '')
+        away_team = match_data.get('away_team', '')
+        
+        temp_data = {}
+        
+        # 處理市場數據
+        for market_key, market_value in markets_data.items():
+            if not isinstance(market_value, dict):
+                continue
+            
+            # 處理 1x2 市場
+            if '1x2' in market_key.lower() or market_key == '1x2':
+                # 嘗試提取主客和赔率
+                odds_values = market_value.get('odds', [])
+                if isinstance(odds_values, list) and len(odds_values) >= 3:
+                    # 假設順序是 主, 和, 客
+                    home_odds = self._extract_odds_value(odds_values[0])
+                    draw_odds = self._extract_odds_value(odds_values[1]) if len(odds_values) > 1 else None
+                    away_odds = self._extract_odds_value(odds_values[2]) if len(odds_values) > 2 else None
+                    
+                    if home_odds:
+                        temp_data.setdefault('1x2', {})['Home'] = [home_odds]
+                    if draw_odds:
+                        temp_data.setdefault('1x2', {})['Draw'] = [draw_odds]
+                    if away_odds:
+                        temp_data.setdefault('1x2', {})['Away'] = [away_odds]
+                else:
+                    # 嘗試從 avg_odds 提取
+                    avg_odds = market_value.get('avg_odds') or market_value.get('average')
+                    if avg_odds:
+                        if isinstance(avg_odds, list) and len(avg_odds) >= 3:
+                            temp_data.setdefault('1x2', {})['Home'] = [self._extract_odds_value(avg_odds[0])]
+                            temp_data.setdefault('1x2', {})['Draw'] = [self._extract_odds_value(avg_odds[1])]
+                            temp_data.setdefault('1x2', {})['Away'] = [self._extract_odds_value(avg_odds[2])]
+            
+            # 處理 Over/Under 市場
+            elif 'over' in market_key.lower() or 'under' in market_key.lower() or 'total' in market_key.lower():
+                # 提取盤口
+                line = self._extract_line(market_key)
+                odds_over = market_value.get('odds_over') or market_value.get('over')
+                odds_under = market_value.get('odds_under') or market_value.get('under')
+                
+                if odds_over or odds_under:
+                    market_name = f"Over/Under {line}"
+                    if odds_over:
+                        temp_data.setdefault(market_name, {})['Over'] = [self._extract_odds_value(odds_over)]
+                    if odds_under:
+                        temp_data.setdefault(market_name, {})['Under'] = [self._extract_odds_value(odds_under)]
+            
+            # 處理 Asian Handicap 市場
+            elif 'asian' in market_key.lower() or 'handicap' in market_key.lower():
+                line = self._extract_line(market_key)
+                odds_home = market_value.get('odds_home') or market_value.get('home')
+                odds_away = market_value.get('odds_away') or market_value.get('away')
+                
+                if odds_home or odds_away:
+                    market_name = f"Asian Handicap {line}"
+                    if odds_home:
+                        temp_data.setdefault(market_name, {})['Home'] = [self._extract_odds_value(odds_home)]
+                    if odds_away:
+                        temp_data.setdefault(market_name, {})['Away'] = [self._extract_odds_value(odds_away)]
+        
+        # 如果沒有找到市場數據，嘗試直接遍歷
+        if not temp_data:
+            # 遍歷所有鍵值對
+            for key, value in match_data.items():
+                if isinstance(value, (int, float)) and key != 'home_score' and key != 'away_score':
+                    # 可能是直接的赔率值
+                    pass
+        
+        # 轉換為標準格式
+        for m_name, selections in temp_data.items():
+            market_stats = {}
+            for s_name, prices in selections.items():
+                if prices and prices[0]:
+                    price_val = prices[0]
+                    market_stats[s_name] = {
+                        'max': [OddsPoint("Current", price_val, "Max")],
+                        'min': [OddsPoint("Current", price_val, "Min")],
+                        'avg': [OddsPoint("Current", price_val, "Avg")]
+                    }
+            if market_stats:
+                all_markets[m_name] = market_stats
+        
+        return all_markets
+    
+    def _extract_odds_value(self, odds) -> float:
+        """從各種格式中提取赔率值"""
+        if odds is None:
+            return 0.0
+        if isinstance(odds, (int, float)):
+            return float(odds)
+        if isinstance(odds, str):
+            try:
+                return float(odds)
+            except:
+                return 0.0
+        if isinstance(odds, dict):
+            # 嘗試從 dict 中提取
+            return odds.get('odds') or odds.get('avg') or odds.get('price') or 0.0
+        return 0.0
+    
+    def _extract_line(self, market_key: str) -> str:
+        """從市場名稱中提取盤口"""
+        import re
+        # 嘗試匹配數字
+        match = re.search(r'[\d.]+', market_key)
+        if match:
+            return match.group()
+        return "2.5"
+
+
 class OddsAnalyzer:
     def analyze_movement(self, h): return {}

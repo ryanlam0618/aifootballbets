@@ -1,0 +1,340 @@
+{
+    "event_id": 15238290,
+    "match_date": "2026-02-24",
+    "match_time": "04:00",
+    "tournament_name": "Premier League",
+    "category_name": "England",
+    "home_team": "Everton",
+    "away_team": "Manchester United",
+    "home_formation": "4-2-3-1",
+    "away_formation": "4-2-3-1",
+    "home_coach": "",
+    "away_coach": "",
+    "home_starters": [
+        {
+            "id": 138530,
+            "name": "Jordan Pickford",
+            "number": 1,
+            "position": "G",
+            "rating": 7.11
+        },
+        {
+            "id": 927361,
+            "name": "James Garner",
+            "number": 37,
+            "position": "D",
+            "rating": 7.33
+        },
+        {
+            "id": 145188,
+            "name": "James Tarkowski",
+            "number": 6,
+            "position": "D",
+            "rating": 7.15
+        },
+        {
+            "id": 110846,
+            "name": "Michael Keane",
+            "number": 5,
+            "position": "D",
+            "rating": 6.94
+        },
+        {
+            "id": 979563,
+            "name": "Jarrad Branthwaite",
+            "number": 32,
+            "position": "D",
+            "rating": 6.9
+        },
+        {
+            "id": 1085950,
+            "name": "Tim Iroegbunam",
+            "number": 42,
+            "position": "M",
+            "rating": 6.77
+        },
+        {
+            "id": 106337,
+            "name": "Idrissa Gueye",
+            "number": 27,
+            "position": "M",
+            "rating": 6.76
+        },
+        {
+            "id": 1627560,
+            "name": "Harrison Armstrong",
+            "number": 45,
+            "position": "M",
+            "rating": 6.73
+        },
+        {
+            "id": 861970,
+            "name": "Kiernan Dewsbury-Hall",
+            "number": 22,
+            "position": "M",
+            "rating": 7.22
+        },
+        {
+            "id": 914309,
+            "name": "Iliman Ndiaye",
+            "number": 10,
+            "position": "M",
+            "rating": 6.91
+        },
+        {
+            "id": 1395746,
+            "name": "Thierno Barry",
+            "number": 11,
+            "position": "F",
+            "rating": 6.48
+        }
+    ],
+    "away_starters": [
+        {
+            "id": 964753,
+            "name": "Senne Lammens",
+            "number": 31,
+            "position": "G",
+            "rating": 6.9
+        },
+        {
+            "id": 843200,
+            "name": "Diogo Dalot",
+            "number": 2,
+            "position": "D",
+            "rating": 6.89
+        },
+        {
+            "id": 1153315,
+            "name": "Leny Yoro",
+            "number": 15,
+            "position": "D",
+            "rating": 6.6
+        },
+        {
+            "id": 149380,
+            "name": "Harry Maguire",
+            "number": 5,
+            "position": "D",
+            "rating": 6.79
+        },
+        {
+            "id": 190839,
+            "name": "Luke Shaw",
+            "number": 23,
+            "position": "D",
+            "rating": 6.64
+        },
+        {
+            "id": 122951,
+            "name": "Casemiro",
+            "number": 18,
+            "position": "M",
+            "rating": 7.06
+        },
+        {
+            "id": 1142175,
+            "name": "Kobbie Mainoo",
+            "number": 37,
+            "position": "M",
+            "rating": 6.73
+        },
+        {
+            "id": 971037,
+            "name": "Amad Diallo",
+            "number": 16,
+            "position": "M",
+            "rating": 7.05
+        },
+        {
+            "id": 288205,
+            "name": "Bruno Fernandes",
+            "number": 8,
+            "position": "M",
+            "rating": 7.56
+        },
+        {
+            "id": 886363,
+            "name": "Matheus Cunha",
+            "number": 10,
+            "position": "M",
+            "rating": 7.07
+        },
+        {
+            "id": 927083,
+            "name": "Bryan Mbeumo",
+            "number": 19,
+            "position": "F",
+            "rating": 7
+        }
+    ],
+    "home_substitutes": [
+        {
+            "id": 603922,
+            "name": "Tom King",
+            "number": 31,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 1020141,
+            "name": "Nathan Patterson",
+            "number": 2,
+            "position": "D",
+            "rating": 6.88
+        },
+        {
+            "id": 876643,
+            "name": "Vitaliy Mykolenko",
+            "number": 16,
+            "position": "D",
+            "rating": 6.73
+        },
+        {
+            "id": 76632,
+            "name": "Séamus Coleman",
+            "number": 23,
+            "position": "D",
+            "rating": 6.7
+        },
+        {
+            "id": 935543,
+            "name": "Dwight McNeil",
+            "number": 7,
+            "position": "F",
+            "rating": 6.58
+        },
+        {
+            "id": 1174472,
+            "name": "Tyler Dibling",
+            "number": 20,
+            "position": "M",
+            "rating": 6.56
+        },
+        {
+            "id": 1064082,
+            "name": "Merlin Röhl",
+            "number": 34,
+            "position": "M",
+            "rating": 6.5
+        },
+        {
+            "id": 987489,
+            "name": "Beto",
+            "number": 9,
+            "position": "F",
+            "rating": 6.43
+        },
+        {
+            "id": 1403061,
+            "name": "Tyrique George",
+            "number": 19,
+            "position": "F",
+            "rating": 6.4
+        }
+    ],
+    "away_substitutes": [
+        {
+            "id": 815890,
+            "name": "Altay Bayındır",
+            "number": 1,
+            "position": "G",
+            "rating": 6.6
+        },
+        {
+            "id": 1445799,
+            "name": "Ayden Heaven",
+            "number": 26,
+            "position": "D",
+            "rating": 6.82
+        },
+        {
+            "id": 825839,
+            "name": "Tyrell Malacia",
+            "number": 12,
+            "position": "D",
+            "rating": 6.7
+        },
+        {
+            "id": 847030,
+            "name": "Noussair Mazraoui",
+            "number": 3,
+            "position": "D",
+            "rating": 6.93
+        },
+        {
+            "id": 846425,
+            "name": "Manuel Ugarte",
+            "number": 25,
+            "position": "M",
+            "rating": 6.69
+        },
+        {
+            "id": 1533758,
+            "name": "Jack Moorhouse",
+            "number": 48,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1402850,
+            "name": "Tyler Fletcher",
+            "number": 39,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 917007,
+            "name": "Joshua Zirkzee",
+            "number": 11,
+            "position": "F",
+            "rating": 6.53
+        },
+        {
+            "id": 986397,
+            "name": "Benjamin Šeško",
+            "number": 30,
+            "position": "F",
+            "rating": 6.65
+        }
+    ],
+    "home_missing_players": [
+        {
+            "name": "Jake O'Brien",
+            "position": "D",
+            "type": "missing",
+            "description": "Red card suspension",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Jack Grealish",
+            "position": "M",
+            "type": "missing",
+            "description": "Foot Injury",
+            "expected_end_date": "2026-05-25T00:00:00+00:00"
+        }
+    ],
+    "away_missing_players": [
+        {
+            "name": "Patrick Dorgu",
+            "position": "M",
+            "type": "missing",
+            "description": "Hamstring",
+            "expected_end_date": "2026-04-12T00:00:00+00:00"
+        },
+        {
+            "name": "Matthijs de Ligt",
+            "position": "D",
+            "type": "doubtful",
+            "description": "Back Injury",
+            "expected_end_date": "2026-02-24T00:00:00+00:00"
+        },
+        {
+            "name": "Mason Mount",
+            "position": "M",
+            "type": "doubtful",
+            "description": "Knock",
+            "expected_end_date": "2026-02-24T00:00:00+00:00"
+        }
+    ]
+}

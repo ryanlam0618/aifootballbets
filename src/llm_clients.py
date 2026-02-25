@@ -411,7 +411,7 @@ You have deep knowledge of:
 ### A. 異常檢測 (Sanity Check) - 最重要！
 1. 計算「市場隱含勝率」(1/Decimal Odds)
 2. 對比「數學模型勝率」與「市場隱含勝率」
-3. **警告**: 如果差距 > 15%，代表數據可能過時或有重大變化
+3. **警告**: 如果差距 > 25%，代表數據可能過時或有重大變化
 
 ### B. 陣容影響評估
 1. 識別雙方的關鍵球員（核心球員通常是：主力射手、組織核心、主力門將）
@@ -425,7 +425,25 @@ You have deep knowledge of:
 
 ### D. 投注決策
 請根據以上分析，輸出以下格式的 JSON：
-
+```json
+{{
+    "recommendation": {{
+        "market": "1x2 / Asian Handicap x.x / Over/Under x.x / No Bet",
+        "selection": "Home / Away / Over / Under / None",
+        "model_probability": 0.xx,
+        "implied_probability": 0.xx,
+        "edge": 0.xx,
+        "confidence": "High / Medium / Low",
+        "reasoning": "詳細解釋（必須包含：陣容影響、傷停影響、市場對比）..."
+    }},
+    "analysis": {{
+        "key_players_missing": ["球員A", "球員B"],
+        "lineup_advantage": "主隊/客隊/相等",
+        "injury_impact": "主隊/客隊/相等",
+        "model_market_discrepancy": "差距百分比"
+    }}
+}}
+```
 ```json
 {{
     "recommendation": {{

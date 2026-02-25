@@ -4,7 +4,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from urllib.parse import urlparse
-import os
+import subprocess
 
 # --- WinError 6 修補 ---
 def safe_del(self):
@@ -41,12 +41,42 @@ def handle_cookie_consent(driver):
     except:
         pass
 
+def get_chrome_version():
+    """自動取得系統安裝的 Chrome 版本"""
+    try:
+        # Windows: 從 registry 讀取 Chrome 版本
+        result = subprocess.run(
+            ['reg', 'query', 'HKLM\\SOFTWARE\\Google\\Chrome\\BLBeacon', '/v', 'version'],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            for line in result.stdout.split('\n'):
+                if 'version' in line.lower():
+                    version = line.split()[-1]
+                    return int(version.split('.')[0])
+    except:
+        pass
+    
+    # 備用方法: 從 Chrome exe 取得版本
+    try:
+        result = subprocess.run(
+            ['powershell', '-Command', '(Get-Item "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe").VersionInfo.FileVersion'],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            version = result.stdout.strip().split('.')[0]
+            return int(version)
+    except:
+        pass
+    
+    return None
+
 def get_upcoming_matches(league_url):
     options = uc.ChromeOptions()
     options.page_load_strategy = 'eager'
     options.add_argument('--start-maximized')
     options.add_argument('--disable-popup-blocking')
-    options.add_argument('--headless=new')  # 使用新的無頭模式
+    options.add_argument('--headless')  # 使用新的無頭模式
     options.add_argument('--disable-gpu')
     
     match_urls = []
@@ -58,10 +88,14 @@ def get_upcoming_matches(league_url):
 
     print(f"\n啟動: {league_url}")
 
+    # 自動檢測 Chrome 版本，若失敗則使用預設值 143
+    detected_version = get_chrome_version()
+    version_main = detected_version if detected_version else 143
+    print(f"  -> [Chrome] 使用版本: {version_main} (偵測到: {detected_version})")
+
     driver = None
     try:
-        # 請確保 version_main 與你電腦安裝的 Chrome 版本一致 (目前設定 143)
-        driver = uc.Chrome(options=options, version_main=143)
+        driver = uc.Chrome(options=options, version_main=version_main)
         driver.get(league_url)
         
         # 1. 處理 Cookie
@@ -125,15 +159,20 @@ def get_upcoming_matches(league_url):
     return match_urls
 
 if __name__ == "__main__":
-
-
-    coutry = ["england", "spain", "italy", "germany", "france"]
-    league = ["premier-league", "laliga", "serie-a", "bundesliga", "ligue-1"]
+    import sys
+    
+    # 從命令行參數獲取聯賽，若無則使用默認值
+    if len(sys.argv) >= 3:
+        countries = [sys.argv[1]]
+        leagues = [sys.argv[2]]
+    else:
+        countries = ["england"]
+        leagues = ["premier-league"]
     
     all_matches = []
 
-    for i in range(len(coutry)):
-        target_url = f"https://www.oddsportal.com/football/{coutry[i]}/{league[i]}/"
+    for i in range(len(countries)):
+        target_url = f"https://www.oddsportal.com/football/{countries[i]}/{leagues[i]}/"
         urls = get_upcoming_matches(target_url)
         all_matches.extend(urls)
         time.sleep(2) # 每個聯盟之間稍作休息

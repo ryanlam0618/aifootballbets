@@ -1,0 +1,396 @@
+{
+    "event_id": "14083577",
+    "match_date": "2026-02-23",
+    "match_time": "01:30",
+    "tournament_name": "LaLiga",
+    "category_name": "Spain",
+    "home_team": "Celta Vigo",
+    "away_team": "Mallorca",
+    "home_formation": "3-4-3",
+    "away_formation": "4-2-3-1",
+    "home_coach": "",
+    "away_coach": "",
+    "home_starters": [
+        {
+            "id": 815202,
+            "name": "Ionuț Radu",
+            "number": 13,
+            "position": "G",
+            "rating": 7.08
+        },
+        {
+            "id": 1526627,
+            "name": "Javi Rodríguez",
+            "number": 32,
+            "position": "D",
+            "rating": 6.76
+        },
+        {
+            "id": 796320,
+            "name": "Joseph Aidoo",
+            "number": 4,
+            "position": "D",
+            "rating": 6.27
+        },
+        {
+            "id": 69408,
+            "name": "Marcos Alonso",
+            "number": 20,
+            "position": "D",
+            "rating": 7.07
+        },
+        {
+            "id": 1008259,
+            "name": "Javier Rueda",
+            "number": 17,
+            "position": "M",
+            "rating": 6.93
+        },
+        {
+            "id": 158615,
+            "name": "Matías Vecino",
+            "number": 15,
+            "position": "M",
+            "rating": 6.8
+        },
+        {
+            "id": 1398526,
+            "name": "Miguel Román",
+            "number": 16,
+            "position": "M",
+            "rating": 6.98
+        },
+        {
+            "id": 1154935,
+            "name": "Hugo Álvarez",
+            "number": 23,
+            "position": "M",
+            "rating": 6.76
+        },
+        {
+            "id": 1526628,
+            "name": "Fer López",
+            "number": 8,
+            "position": "F",
+            "rating": 6.83
+        },
+        {
+            "id": 949962,
+            "name": "Ferran Jutglà",
+            "number": 9,
+            "position": "F",
+            "rating": 6.73
+        },
+        {
+            "id": 1398524,
+            "name": "Pablo Durán",
+            "number": 18,
+            "position": "F",
+            "rating": 6.6
+        }
+    ],
+    "away_starters": [
+        {
+            "id": 1131909,
+            "name": "Leo Román",
+            "number": 1,
+            "position": "G",
+            "rating": 7.03
+        },
+        {
+            "id": 788216,
+            "name": "Pablo Maffeo",
+            "number": 23,
+            "position": "D",
+            "rating": 6.87
+        },
+        {
+            "id": 300522,
+            "name": "Martin Valjent",
+            "number": 24,
+            "position": "D",
+            "rating": 6.65
+        },
+        {
+            "id": 807116,
+            "name": "Antonio Raíllo",
+            "number": 21,
+            "position": "D",
+            "rating": 6.85
+        },
+        {
+            "id": 828239,
+            "name": "Toni Lato",
+            "number": 3,
+            "position": "D",
+            "rating": 6.52
+        },
+        {
+            "id": 255999,
+            "name": "Omar Mascarell",
+            "number": 5,
+            "position": "M",
+            "rating": 6.8
+        },
+        {
+            "id": 988351,
+            "name": "Samú Costa",
+            "number": 12,
+            "position": "M",
+            "rating": 6.94
+        },
+        {
+            "id": 949722,
+            "name": "Antonio Sánchez",
+            "number": 6,
+            "position": "M",
+            "rating": 6.57
+        },
+        {
+            "id": 110783,
+            "name": "Sergi Darder",
+            "number": 10,
+            "position": "M",
+            "rating": 6.9
+        },
+        {
+            "id": 1939173,
+            "name": "Jan Virgili",
+            "number": 17,
+            "position": "M",
+            "rating": 6.62
+        },
+        {
+            "id": 310874,
+            "name": "Vedat Muriqi",
+            "number": 7,
+            "position": "F",
+            "rating": 7.17
+        }
+    ],
+    "home_substitutes": [
+        {
+            "id": 848980,
+            "name": "Iván Villar",
+            "number": 1,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 360718,
+            "name": "Carl Starfelt",
+            "number": 2,
+            "position": "D",
+            "rating": 6.82
+        },
+        {
+            "id": 1069703,
+            "name": "Carlos Domínguez",
+            "number": 24,
+            "position": "D",
+            "rating": 6.87
+        },
+        {
+            "id": 363774,
+            "name": "Mihailo Ristić",
+            "number": 21,
+            "position": "D",
+            "rating": 6.65
+        },
+        {
+            "id": 1630975,
+            "name": "Manu Fernández",
+            "number": 12,
+            "position": "D",
+            "rating": 6.7
+        },
+        {
+            "id": 859773,
+            "name": "Óscar Mingueza",
+            "number": 3,
+            "position": "D",
+            "rating": 6.97
+        },
+        {
+            "id": 962890,
+            "name": "Ilaix Moriba",
+            "number": 6,
+            "position": "M",
+            "rating": 6.66
+        },
+        {
+            "id": 1126779,
+            "name": "Williot Swedberg",
+            "number": 19,
+            "position": "M",
+            "rating": 6.68
+        },
+        {
+            "id": 1002764,
+            "name": "Sergio Carreira",
+            "number": 5,
+            "position": "D",
+            "rating": 6.9
+        },
+        {
+            "id": 1173575,
+            "name": "Jones El-Abdellaoui",
+            "number": 39,
+            "position": "F",
+            "rating": 6.69
+        },
+        {
+            "id": 19356,
+            "name": "Iago Aspas",
+            "number": 10,
+            "position": "F",
+            "rating": 6.78
+        },
+        {
+            "id": 785989,
+            "name": "Borja Iglesias",
+            "number": 7,
+            "position": "F",
+            "rating": 6.77
+        }
+    ],
+    "away_substitutes": [
+        {
+            "id": 996903,
+            "name": "Lucas Bergström",
+            "number": 13,
+            "position": "G",
+            "rating": 7.06
+        },
+        {
+            "id": 19013,
+            "name": "Iván Cuéllar",
+            "number": 25,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 344847,
+            "name": "Johan Mojica",
+            "number": 22,
+            "position": "D",
+            "rating": 6.72
+        },
+        {
+            "id": 879543,
+            "name": "Mateu Morey",
+            "number": 2,
+            "position": "D",
+            "rating": 6.5
+        },
+        {
+            "id": 1513896,
+            "name": "David López",
+            "number": 27,
+            "position": "D",
+            "rating": 6.7
+        },
+        {
+            "id": 826004,
+            "name": "Manu Morlanes",
+            "number": 8,
+            "position": "M",
+            "rating": 6.78
+        },
+        {
+            "id": 1082981,
+            "name": "Pablo Torre",
+            "number": 20,
+            "position": "M",
+            "rating": 6.65
+        },
+        {
+            "id": 1162309,
+            "name": "Javi Llabrés",
+            "number": 19,
+            "position": "F",
+            "rating": 6.48
+        },
+        {
+            "id": 1484974,
+            "name": "Justin-Noel Kalumba",
+            "number": 30,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 1170693,
+            "name": "Mateo Joseph",
+            "number": 18,
+            "position": "F",
+            "rating": 6.62
+        },
+        {
+            "id": 146852,
+            "name": "Abdón Prats",
+            "number": 9,
+            "position": "F",
+            "rating": 6.5
+        },
+        {
+            "id": 1000150,
+            "name": "Zito Luvumbo",
+            "number": 15,
+            "position": "F",
+            "rating": 6.5
+        }
+    ],
+    "home_missing_players": [
+        {
+            "name": "Alvaro Núñez",
+            "position": "D",
+            "type": "missing",
+            "description": "Groin Injury",
+            "expected_end_date": "2026-03-02T00:00:00+00:00"
+        },
+        {
+            "name": "Hugo Sotelo",
+            "position": "M",
+            "type": "doubtful",
+            "description": "",
+            "expected_end_date": ""
+        }
+    ],
+    "away_missing_players": [
+        {
+            "name": "Jan Salas",
+            "position": "M",
+            "type": "missing",
+            "description": "ACL Knee Injury",
+            "expected_end_date": "2026-10-15T00:00:00+00:00"
+        },
+        {
+            "name": "Takuma Asano",
+            "position": "M",
+            "type": "missing",
+            "description": "Hamstring",
+            "expected_end_date": "2026-03-09T00:00:00+00:00"
+        },
+        {
+            "name": "Justin-Noel Kalumba",
+            "position": "M",
+            "type": "doubtful",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Johan Mojica",
+            "position": "D",
+            "type": "doubtful",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Marash Kumbulla",
+            "position": "D",
+            "type": "missing",
+            "description": "Thigh Injury",
+            "expected_end_date": "2026-03-01T00:00:00+00:00"
+        }
+    ]
+}

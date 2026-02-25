@@ -1,0 +1,354 @@
+{
+    "event_id": 14064501,
+    "match_date": "2026-02-23",
+    "match_time": "03:45",
+    "tournament_name": "Ligue 1",
+    "category_name": "France",
+    "home_team": "RC Strasbourg",
+    "away_team": "Olympique Lyonnais",
+    "home_formation": "4-2-3-1",
+    "away_formation": "4-3-3",
+    "home_coach": "",
+    "away_coach": "",
+    "home_starters": [
+        {
+            "id": 1149148,
+            "name": "Mike Penders",
+            "number": 39,
+            "position": "G",
+            "rating": 6.95
+        },
+        {
+            "id": 1002033,
+            "name": "Guéla Doué",
+            "number": 22,
+            "position": "D",
+            "rating": 6.85
+        },
+        {
+            "id": 1049517,
+            "name": "Ismael Doukouré",
+            "number": 6,
+            "position": "D",
+            "rating": 6.51
+        },
+        {
+            "id": 983066,
+            "name": "Andrew Omobamidele",
+            "number": 2,
+            "position": "D",
+            "rating": 6.68
+        },
+        {
+            "id": 802695,
+            "name": "Ben Chilwell",
+            "number": 3,
+            "position": "D",
+            "rating": 6.56
+        },
+        {
+            "id": 1605921,
+            "name": "Samir El Mourabet",
+            "number": 29,
+            "position": "M",
+            "rating": 6.86
+        },
+        {
+            "id": 1127057,
+            "name": "Valentín Barco",
+            "number": 32,
+            "position": "M",
+            "rating": 7.22
+        },
+        {
+            "id": 1142233,
+            "name": "Diego Moreira",
+            "number": 7,
+            "position": "M",
+            "rating": 6.93
+        },
+        {
+            "id": 973556,
+            "name": "Julio Enciso",
+            "number": 19,
+            "position": "M",
+            "rating": 7.01
+        },
+        {
+            "id": 1190938,
+            "name": "Martial Godo",
+            "number": 20,
+            "position": "M",
+            "rating": 6.76
+        },
+        {
+            "id": 1410925,
+            "name": "Joaquin Panichelli",
+            "number": 9,
+            "position": "F",
+            "rating": 6.87
+        }
+    ],
+    "away_starters": [
+        {
+            "id": 791046,
+            "name": "Dominik Greif",
+            "number": 1,
+            "position": "G",
+            "rating": 7.02
+        },
+        {
+            "id": 352768,
+            "name": "Ainsley Maitland-Niles",
+            "number": 98,
+            "position": "D",
+            "rating": 6.78
+        },
+        {
+            "id": 152813,
+            "name": "Clinton Mata",
+            "number": 22,
+            "position": "D",
+            "rating": 7.08
+        },
+        {
+            "id": 758168,
+            "name": "Moussa Niakhaté",
+            "number": 19,
+            "position": "D",
+            "rating": 7.21
+        },
+        {
+            "id": 1014540,
+            "name": "Ruben Kluivert",
+            "number": 21,
+            "position": "D",
+            "rating": 6.64
+        },
+        {
+            "id": 1022084,
+            "name": "Tanner Tessmann",
+            "number": 6,
+            "position": "M",
+            "rating": 6.89
+        },
+        {
+            "id": 979118,
+            "name": "Tyler Morton",
+            "number": 23,
+            "position": "M",
+            "rating": 7.23
+        },
+        {
+            "id": 343067,
+            "name": "Corentin Tolisso",
+            "number": 8,
+            "position": "M",
+            "rating": 6.97
+        },
+        {
+            "id": 1174937,
+            "name": "Endrick",
+            "number": 9,
+            "position": "F",
+            "rating": 7.45
+        },
+        {
+            "id": 957604,
+            "name": "Pavel Šulc",
+            "number": 10,
+            "position": "F",
+            "rating": 7.04
+        },
+        {
+            "id": 973838,
+            "name": "Abner Vinícius",
+            "number": 16,
+            "position": "F",
+            "rating": 6.75
+        }
+    ],
+    "home_substitutes": [
+        {
+            "id": 40973,
+            "name": "Karl-Johan Johnsson",
+            "number": 1,
+            "position": "G",
+            "rating": 7.3
+        },
+        {
+            "id": 1500263,
+            "name": "Aarón Anselmino",
+            "number": 5,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1426597,
+            "name": "Lucas Høgsberg",
+            "number": 24,
+            "position": "D",
+            "rating": 6.69
+        },
+        {
+            "id": 1930811,
+            "name": "Abdoul Ouattara",
+            "number": 42,
+            "position": "M",
+            "rating": 6.65
+        },
+        {
+            "id": 1638338,
+            "name": "Gessime Yassine",
+            "number": 80,
+            "position": "F",
+            "rating": 6.8
+        },
+        {
+            "id": 1407484,
+            "name": "Samuel Amo-Ameyaw",
+            "number": 27,
+            "position": "F",
+            "rating": 6.77
+        },
+        {
+            "id": 962068,
+            "name": "Sebastian Nanasi",
+            "number": 11,
+            "position": "M",
+            "rating": 6.86
+        },
+        {
+            "id": 1426224,
+            "name": "Mathis Amougou",
+            "number": 17,
+            "position": "M",
+            "rating": 6.66
+        },
+        {
+            "id": 1090458,
+            "name": "David Datro Fofana",
+            "number": 15,
+            "position": "F",
+            "rating": 6.6
+        }
+    ],
+    "away_substitutes": [
+        {
+            "id": 788180,
+            "name": "Rémy Descamps",
+            "number": 40,
+            "position": "G",
+            "rating": 7.4
+        },
+        {
+            "id": 1937750,
+            "name": "Noham Kamara",
+            "number": 85,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 158243,
+            "name": "Nicolás Tagliafico",
+            "number": 3,
+            "position": "D",
+            "rating": 6.72
+        },
+        {
+            "id": 123228,
+            "name": "Rachid Ghezzal",
+            "number": 18,
+            "position": "F",
+            "rating": 6.46
+        },
+        {
+            "id": 2127096,
+            "name": "Khalis Merah",
+            "number": 44,
+            "position": "M",
+            "rating": 6.6
+        },
+        {
+            "id": 1000175,
+            "name": "Adam Karabec",
+            "number": 7,
+            "position": "M",
+            "rating": 6.73
+        },
+        {
+            "id": 1195782,
+            "name": "Noah Nartey",
+            "number": 99,
+            "position": "M",
+            "rating": 7.57
+        },
+        {
+            "id": 829296,
+            "name": "Roman Yaremchuk",
+            "number": 77,
+            "position": "F",
+            "rating": 6.5
+        },
+        {
+            "id": 1961628,
+            "name": "Rémi Himbert",
+            "number": 45,
+            "position": "F",
+            "rating": 6.4
+        }
+    ],
+    "home_missing_players": [
+        {
+            "name": "Emmanuel Emegha",
+            "position": "F",
+            "type": "missing",
+            "description": "Muscle Injury",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Maxi Oyedele",
+            "position": "M",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        }
+    ],
+    "away_missing_players": [
+        {
+            "name": "Ernest Nuamah",
+            "position": "F",
+            "type": "missing",
+            "description": "MCL Knee Injury",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Malick Fofana",
+            "position": "F",
+            "type": "missing",
+            "description": "Ankle Injury",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Orel Mangala",
+            "position": "M",
+            "type": "missing",
+            "description": "Unknown",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Afonso Moreira",
+            "position": "F",
+            "type": "missing",
+            "description": "Hamstring",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Hans Hateboer",
+            "position": "D",
+            "type": "missing",
+            "description": "Knee Injury",
+            "expected_end_date": ""
+        }
+    ]
+}

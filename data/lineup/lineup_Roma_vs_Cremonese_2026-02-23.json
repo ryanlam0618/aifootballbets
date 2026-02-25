@@ -1,0 +1,410 @@
+{
+    "event_id": 13981682,
+    "match_date": "2026-02-23",
+    "match_time": "03:45",
+    "tournament_name": "Serie A",
+    "category_name": "Italy",
+    "home_team": "Roma",
+    "away_team": "Cremonese",
+    "home_formation": "3-4-2-1",
+    "away_formation": "3-5-2",
+    "home_coach": "",
+    "away_coach": "",
+    "home_starters": [
+        {
+            "id": 793986,
+            "name": "Mile Svilar",
+            "number": 99,
+            "position": "G",
+            "rating": 7.16
+        },
+        {
+            "id": 611210,
+            "name": "Gianluca Mancini",
+            "number": 23,
+            "position": "D",
+            "rating": 7
+        },
+        {
+            "id": 848287,
+            "name": "Evan Ndicka",
+            "number": 5,
+            "position": "D",
+            "rating": 6.9
+        },
+        {
+            "id": 353130,
+            "name": "Mario Hermoso",
+            "number": 22,
+            "position": "D",
+            "rating": 6.85
+        },
+        {
+            "id": 893008,
+            "name": "Zeki Çelik",
+            "number": 19,
+            "position": "M",
+            "rating": 6.92
+        },
+        {
+            "id": 186855,
+            "name": "Bryan Cristante",
+            "number": 4,
+            "position": "M",
+            "rating": 6.99
+        },
+        {
+            "id": 974087,
+            "name": "Manu Koné",
+            "number": 17,
+            "position": "M",
+            "rating": 7.06
+        },
+        {
+            "id": 1134200,
+            "name": "Wesley",
+            "number": 43,
+            "position": "M",
+            "rating": 7.1
+        },
+        {
+            "id": 1084730,
+            "name": "Bryan Zaragoza",
+            "number": 97,
+            "position": "F",
+            "rating": 6.8
+        },
+        {
+            "id": 555540,
+            "name": "Lorenzo Pellegrini",
+            "number": 7,
+            "position": "F",
+            "rating": 6.82
+        },
+        {
+            "id": 803039,
+            "name": "Donyell Malen",
+            "number": 14,
+            "position": "F",
+            "rating": 7.2
+        }
+    ],
+    "away_starters": [
+        {
+            "id": 318603,
+            "name": "Emil Audero",
+            "number": 1,
+            "position": "G",
+            "rating": 7.24
+        },
+        {
+            "id": 1034303,
+            "name": "Filippo Terracciano",
+            "number": 24,
+            "position": "D",
+            "rating": 6.82
+        },
+        {
+            "id": 1424353,
+            "name": "Francesco Folino",
+            "number": 55,
+            "position": "D",
+            "rating": 6.75
+        },
+        {
+            "id": 352736,
+            "name": "Sebastiano Luperto",
+            "number": 5,
+            "position": "D",
+            "rating": 6.78
+        },
+        {
+            "id": 869888,
+            "name": "Alessio Zerbin",
+            "number": 7,
+            "position": "M",
+            "rating": 6.59
+        },
+        {
+            "id": 280991,
+            "name": "Morten Thorsby",
+            "number": 2,
+            "position": "M",
+            "rating": 6.81
+        },
+        {
+            "id": 849274,
+            "name": "Youssef Maleh",
+            "number": 29,
+            "position": "M",
+            "rating": 6.68
+        },
+        {
+            "id": 895592,
+            "name": "Martín Payero",
+            "number": 32,
+            "position": "M",
+            "rating": 6.55
+        },
+        {
+            "id": 814589,
+            "name": "Giuseppe Pezzella",
+            "number": 3,
+            "position": "M",
+            "rating": 6.68
+        },
+        {
+            "id": 284363,
+            "name": "Federico Bonazzoli",
+            "number": 90,
+            "position": "F",
+            "rating": 6.84
+        },
+        {
+            "id": 333261,
+            "name": "Antonio Sanabria",
+            "number": 99,
+            "position": "F",
+            "rating": 6.56
+        }
+    ],
+    "home_substitutes": [
+        {
+            "id": 1652568,
+            "name": "Giorgio De Marzi",
+            "number": 70,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 329175,
+            "name": "Pierluigi Gollini",
+            "number": 95,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 1384847,
+            "name": "Daniele Ghilardi",
+            "number": 87,
+            "position": "D",
+            "rating": 6.87
+        },
+        {
+            "id": 786259,
+            "name": "Konstantinos Tsimikas",
+            "number": 12,
+            "position": "D",
+            "rating": 6.62
+        },
+        {
+            "id": 1499991,
+            "name": "Jan Ziółkowski",
+            "number": 24,
+            "position": "D",
+            "rating": 6.91
+        },
+        {
+            "id": 982778,
+            "name": "Devyne Rensch",
+            "number": 2,
+            "position": "D",
+            "rating": 6.68
+        },
+        {
+            "id": 1128530,
+            "name": "Neil El Aynaoui",
+            "number": 8,
+            "position": "M",
+            "rating": 6.57
+        },
+        {
+            "id": 1175821,
+            "name": "Niccolò Pisilli",
+            "number": 61,
+            "position": "M",
+            "rating": 6.73
+        },
+        {
+            "id": 848355,
+            "name": "Angeliño",
+            "number": 3,
+            "position": "D",
+            "rating": 6.86
+        },
+        {
+            "id": 1618563,
+            "name": "Lorenzo Venturino",
+            "number": 20,
+            "position": "F",
+            "rating": 6.7
+        },
+        {
+            "id": 1923599,
+            "name": "Antonio Arena",
+            "number": 68,
+            "position": "F",
+            "rating": 6.5
+        },
+        {
+            "id": 1514800,
+            "name": "Robinio Vaz",
+            "number": 78,
+            "position": "F",
+            "rating": 6.48
+        }
+    ],
+    "away_substitutes": [
+        {
+            "id": 1141168,
+            "name": "Lapo Nava",
+            "number": 69,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 43970,
+            "name": "Marco Silvestri",
+            "number": 16,
+            "position": "G",
+            "rating": 6.8
+        },
+        {
+            "id": 1913489,
+            "name": "Davide Pavesi",
+            "number": 25,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1002564,
+            "name": "Mikayil Faye",
+            "number": 30,
+            "position": "D",
+            "rating": 6.89
+        },
+        {
+            "id": 158037,
+            "name": "Matteo Bianchetti",
+            "number": 15,
+            "position": "D",
+            "rating": 6.78
+        },
+        {
+            "id": 139410,
+            "name": "Federico Ceccherini",
+            "number": 23,
+            "position": "D",
+            "rating": 6.58
+        },
+        {
+            "id": 993389,
+            "name": "Tommaso Barbieri",
+            "number": 4,
+            "position": "D",
+            "rating": 6.78
+        },
+        {
+            "id": 318645,
+            "name": "Jari Vandeputte",
+            "number": 27,
+            "position": "M",
+            "rating": 6.89
+        },
+        {
+            "id": 186845,
+            "name": "Alberto Grassi",
+            "number": 33,
+            "position": "M",
+            "rating": 6.66
+        },
+        {
+            "id": 1000366,
+            "name": "Warren Bondo",
+            "number": 38,
+            "position": "M",
+            "rating": 6.61
+        },
+        {
+            "id": 173827,
+            "name": "Jamie Vardy",
+            "number": 10,
+            "position": "F",
+            "rating": 6.68
+        },
+        {
+            "id": 76132,
+            "name": "Milan Đurić",
+            "number": 9,
+            "position": "F",
+            "rating": 6.72
+        }
+    ],
+    "home_missing_players": [
+        {
+            "name": "Artem Dovbyk",
+            "position": "F",
+            "type": "missing",
+            "description": "Thigh Injury",
+            "expected_end_date": "2026-04-27T00:00:00+00:00"
+        },
+        {
+            "name": "Evan Ferguson",
+            "position": "F",
+            "type": "missing",
+            "description": "Ankle Injury",
+            "expected_end_date": "2026-02-23T00:00:00+00:00"
+        },
+        {
+            "name": "Stephan El Shaarawy",
+            "position": "F",
+            "type": "missing",
+            "description": "Achilles Strain",
+            "expected_end_date": "2026-02-23T00:00:00+00:00"
+        },
+        {
+            "name": "Paulo Dybala",
+            "position": "F",
+            "type": "doubtful",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Matías Soulé",
+            "position": "F",
+            "type": "missing",
+            "description": "Groin Injury",
+            "expected_end_date": ""
+        }
+    ],
+    "away_missing_players": [
+        {
+            "name": "Michele Collocolo",
+            "position": "M",
+            "type": "missing",
+            "description": "Muscle Injury",
+            "expected_end_date": "2026-02-23T00:00:00+00:00"
+        },
+        {
+            "name": "Faris Moumbagna",
+            "position": "F",
+            "type": "missing",
+            "description": "Unknown",
+            "expected_end_date": "2026-03-02T00:00:00+00:00"
+        },
+        {
+            "name": "Federico Baschirotto",
+            "position": "D",
+            "type": "missing",
+            "description": "Muscle Injury",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Romano Floriani Mussolini",
+            "position": "M",
+            "type": "missing",
+            "description": "Unknown",
+            "expected_end_date": "2026-03-02T00:00:00+00:00"
+        }
+    ]
+}

@@ -1,0 +1,340 @@
+{
+    "event_id": 14062222,
+    "match_date": "2026-02-23",
+    "match_time": "02:30",
+    "tournament_name": "Bundesliga",
+    "category_name": "Germany",
+    "home_team": "1. FC Heidenheim",
+    "away_team": "VfB Stuttgart",
+    "home_formation": "3-4-2-1",
+    "away_formation": "4-2-3-1",
+    "home_coach": "",
+    "away_coach": "",
+    "home_starters": [
+        {
+            "id": 981562,
+            "name": "Diant Ramaj",
+            "number": 41,
+            "position": "G",
+            "rating": 6.98
+        },
+        {
+            "id": 988252,
+            "name": "Tim Siersleben",
+            "number": 4,
+            "position": "D",
+            "rating": 6.62
+        },
+        {
+            "id": 254429,
+            "name": "Patrick Mainka",
+            "number": 6,
+            "position": "D",
+            "rating": 6.88
+        },
+        {
+            "id": 798936,
+            "name": "Benedikt Gimber",
+            "number": 5,
+            "position": "D",
+            "rating": 6.39
+        },
+        {
+            "id": 1142248,
+            "name": "Arijon Ibrahimović",
+            "number": 22,
+            "position": "M",
+            "rating": 6.74
+        },
+        {
+            "id": 1066042,
+            "name": "Julian Niehues",
+            "number": 16,
+            "position": "M",
+            "rating": 6.78
+        },
+        {
+            "id": 933707,
+            "name": "Jan Schöppner",
+            "number": 3,
+            "position": "M",
+            "rating": 6.49
+        },
+        {
+            "id": 1864760,
+            "name": "Hennes Behrens",
+            "number": 26,
+            "position": "M",
+            "rating": 7.1
+        },
+        {
+            "id": 1067120,
+            "name": "Eren Dinkçi",
+            "number": 8,
+            "position": "F",
+            "rating": 6.53
+        },
+        {
+            "id": 933833,
+            "name": "Christian Joe Conteh",
+            "number": 10,
+            "position": "F",
+            "rating": 6.6
+        },
+        {
+            "id": 909485,
+            "name": "Marvin Pieringer",
+            "number": 18,
+            "position": "F",
+            "rating": 6.63
+        }
+    ],
+    "away_starters": [
+        {
+            "id": 584722,
+            "name": "Alexander Nübel",
+            "number": 33,
+            "position": "G",
+            "rating": 7.2
+        },
+        {
+            "id": 1009334,
+            "name": "Lorenz Assignon",
+            "number": 22,
+            "position": "D",
+            "rating": 6.41
+        },
+        {
+            "id": 916943,
+            "name": "Ramon Hendriks",
+            "number": 3,
+            "position": "D",
+            "rating": 6.84
+        },
+        {
+            "id": 863271,
+            "name": "Jeff Chabot",
+            "number": 24,
+            "position": "D",
+            "rating": 7.21
+        },
+        {
+            "id": 788949,
+            "name": "Maximilian Mittelstädt",
+            "number": 7,
+            "position": "D",
+            "rating": 7.13
+        },
+        {
+            "id": 901882,
+            "name": "Angelo Stiller",
+            "number": 6,
+            "position": "M",
+            "rating": 7.16
+        },
+        {
+            "id": 1464641,
+            "name": "Chema Andrés",
+            "number": 30,
+            "position": "M",
+            "rating": 6.92
+        },
+        {
+            "id": 983540,
+            "name": "Tiago Tomás",
+            "number": 8,
+            "position": "M",
+            "rating": 6.74
+        },
+        {
+            "id": 1126569,
+            "name": "Bilal El Khannouss",
+            "number": 11,
+            "position": "M",
+            "rating": 6.98
+        },
+        {
+            "id": 891510,
+            "name": "Chris Führich",
+            "number": 10,
+            "position": "M",
+            "rating": 7
+        },
+        {
+            "id": 878081,
+            "name": "Ermedin Demirović",
+            "number": 9,
+            "position": "F",
+            "rating": 6.98
+        }
+    ],
+    "home_substitutes": [
+        {
+            "id": 1083359,
+            "name": "Frank Feller",
+            "number": 40,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 2192753,
+            "name": "Adam Kölle",
+            "number": 28,
+            "position": "D",
+            "rating": 6.57
+        },
+        {
+            "id": 920022,
+            "name": "Haktab Omar Traore",
+            "number": 23,
+            "position": "D",
+            "rating": 6.37
+        },
+        {
+            "id": 794995,
+            "name": "Niklas Dorsch",
+            "number": 30,
+            "position": "M",
+            "rating": 6.91
+        },
+        {
+            "id": 575952,
+            "name": "Mathias Honsak",
+            "number": 17,
+            "position": "F",
+            "rating": 6.51
+        },
+        {
+            "id": 845742,
+            "name": "Adrian Beck",
+            "number": 21,
+            "position": "M",
+            "rating": 6.73
+        },
+        {
+            "id": 842922,
+            "name": "Stefan Schimmer",
+            "number": 9,
+            "position": "F",
+            "rating": 6.65
+        },
+        {
+            "id": 800400,
+            "name": "Sirlord Conteh",
+            "number": 31,
+            "position": "F",
+            "rating": 6.58
+        },
+        {
+            "id": 918437,
+            "name": "Mikkel Kaufmann",
+            "number": 29,
+            "position": "F",
+            "rating": 6.56
+        }
+    ],
+    "away_substitutes": [
+        {
+            "id": 152463,
+            "name": "Fabian Bredlow",
+            "number": 1,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 906278,
+            "name": "Josha Vagnoman",
+            "number": 4,
+            "position": "D",
+            "rating": 6.54
+        },
+        {
+            "id": 1127823,
+            "name": "Luca Jaquez",
+            "number": 14,
+            "position": "D",
+            "rating": 6.94
+        },
+        {
+            "id": 1418649,
+            "name": "Finn Jeltsch",
+            "number": 29,
+            "position": "D",
+            "rating": 6.81
+        },
+        {
+            "id": 861981,
+            "name": "Nikolas Nartey",
+            "number": 28,
+            "position": "M",
+            "rating": 6.79
+        },
+        {
+            "id": 1153265,
+            "name": "Badredine Bouanani",
+            "number": 27,
+            "position": "F",
+            "rating": 6.56
+        },
+        {
+            "id": 801030,
+            "name": "Atakan Karazor",
+            "number": 16,
+            "position": "M",
+            "rating": 6.76
+        },
+        {
+            "id": 990201,
+            "name": "Jamie Leweling",
+            "number": 18,
+            "position": "F",
+            "rating": 7
+        },
+        {
+            "id": 794298,
+            "name": "Deniz Undav",
+            "number": 26,
+            "position": "F",
+            "rating": 7.13
+        }
+    ],
+    "home_missing_players": [
+        {
+            "name": "Leart Paqarada",
+            "position": "D",
+            "type": "missing",
+            "description": "ACL Knee Injury",
+            "expected_end_date": "2026-05-17T00:00:00+00:00"
+        },
+        {
+            "name": "Niklas Dorsch",
+            "position": "M",
+            "type": "doubtful",
+            "description": "Illness",
+            "expected_end_date": "2026-02-23T00:00:00+00:00"
+        }
+    ],
+    "away_missing_players": [
+        {
+            "name": "Dan-Axel Zagadou",
+            "position": "D",
+            "type": "missing",
+            "description": "Hamstring",
+            "expected_end_date": "2026-02-23T00:00:00+00:00"
+        },
+        {
+            "name": "Lazar Jovanović",
+            "position": "M",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Justin Diehl",
+            "position": "F",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        }
+    ]
+}
