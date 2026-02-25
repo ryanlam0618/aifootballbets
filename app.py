@@ -569,7 +569,7 @@ def run_test_mode():
     try:
         kelly_v3 = ConfidenceKelly(
             base_fraction=0.75,
-            min_edge=0.08,
+            min_edge=0.02,  # 調降至 2% 門檻，符合一般投注優勢標準
             initial_bankroll=settings.INITIAL_BANKROLL
         )
         
@@ -750,7 +750,7 @@ def main():
     print(f"   聯賽上下文: {league_name}")
 
     # Step 1: 匹配到歷史數據庫 (CSV)
-    '''print(f"\n   [1/4] 匹配到歷史數據庫...")
+    print(f"\n   [1/4] 匹配到歷史數據庫...")
     hist_match = match_with_gemini(home, away, HISTORICAL_TEAMS.get('csv_names', []), league_name)
     db_home = hist_match['home']
     db_away = hist_match['away']
@@ -773,13 +773,13 @@ def main():
     print(f"      [JSON] {home} -> {json_home} (confidence: {json_match['confidence']})")
     print(f"      [JSON] {away} -> {json_away} (confidence: {json_match['confidence']})")
     
-    #test code'''
-    db_home = home
+    #test code
+    '''db_home = home
     db_away = away
     odds_home = home
     odds_away = away
     json_home = home
-    json_away = away
+    json_away = away'''
     
     # 初始化
     repo = HistoryRepo(settings.HISTORY_CSV_PATH)
@@ -1728,7 +1728,7 @@ def main():
     except Exception as e:
         print(f"   ⚠️ 角球價值投注失敗: {str(e)[:50]}")
     
-    input("test stop")
+    #input("test stop")
     # 7. Grok 搜尋 (傳入陣容和傷停數據)
     print(f"\n🤖 [3/4] 請求 Grok 聯網搜尋市場情報...", flush=True)
     grok_input = odds_summary_text[:1500]

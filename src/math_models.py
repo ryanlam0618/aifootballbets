@@ -777,7 +777,7 @@ class ConfidenceKelly:
     def __init__(self, 
                  base_fraction: float = 0.5,
                  max_fraction: float = 1.0,
-                 min_edge: float = 0.05,
+                 min_edge: float = 0.02,
                  initial_bankroll: float = 1000):
         self.base_fraction = base_fraction
         self.max_fraction = max_fraction

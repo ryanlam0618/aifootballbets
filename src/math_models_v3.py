@@ -883,7 +883,7 @@ class ConfidenceKelly:
         
         # 3. 計算優勢
         edge = prob - market_prob
-        
+
         # 4. 計算信心度調整因子
         confidence_adj = self._calculate_confidence(
             prob, market_prob, model_uncertainty
@@ -931,7 +931,7 @@ class ConfidenceKelly:
         if edge < self.min_edge:
             stake = 0
             risk = 'low'
-        
+
         return KellyResult(
             stake=stake,
             kelly_pct=final_kelly,

@@ -60,7 +60,7 @@ class Settings:
     # --- 資金管理設定 ---
     INITIAL_BANKROLL = 2000
     KELLY_FRACTION = 0.75
-    MIN_EDGE = 0.09
+    MIN_EDGE = 0.02
 
     # --- 模型名稱設定 ---
     MODEL_GEMINI = os.getenv("MODEL_GEMINI", "gemini-3-flash-preview-thinking-*")
