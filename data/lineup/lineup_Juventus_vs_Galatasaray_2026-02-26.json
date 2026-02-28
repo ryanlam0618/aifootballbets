@@ -1,0 +1,389 @@
+{
+    "event_id": 15452770,
+    "match_date": "2026-02-26",
+    "match_time": "04:00",
+    "tournament_name": "UEFA Champions League, Knockout stage",
+    "category_name": "Europe",
+    "home_team": "Juventus",
+    "away_team": "Galatasaray",
+    "home_formation": "4-3-3",
+    "away_formation": "4-2-3-1",
+    "home_coach": "",
+    "away_coach": "",
+    "home_starters": [
+        {
+            "id": 79645,
+            "name": "Mattia Perin",
+            "number": 1,
+            "position": "G",
+            "rating": 7.43
+        },
+        {
+            "id": 965330,
+            "name": "Pierre Kalulu",
+            "number": 15,
+            "position": "D",
+            "rating": 6.63
+        },
+        {
+            "id": 1128063,
+            "name": "Federico Gatti",
+            "number": 4,
+            "position": "D",
+            "rating": 7.05
+        },
+        {
+            "id": 865167,
+            "name": "Lloyd Kelly",
+            "number": 6,
+            "position": "D",
+            "rating": 6.73
+        },
+        {
+            "id": 881931,
+            "name": "Weston McKennie",
+            "number": 22,
+            "position": "D",
+            "rating": 7.29
+        },
+        {
+            "id": 803033,
+            "name": "Teun Koopmeiners",
+            "number": 8,
+            "position": "M",
+            "rating": 6.84
+        },
+        {
+            "id": 363860,
+            "name": "Manuel Locatelli",
+            "number": 5,
+            "position": "M",
+            "rating": 7.21
+        },
+        {
+            "id": 904832,
+            "name": "Khéphren Thuram",
+            "number": 19,
+            "position": "M",
+            "rating": 6.86
+        },
+        {
+            "id": 979222,
+            "name": "Francisco Conceição",
+            "number": 7,
+            "position": "F",
+            "rating": 7
+        },
+        {
+            "id": 935564,
+            "name": "Jonathan David",
+            "number": 30,
+            "position": "F",
+            "rating": 6.38
+        },
+        {
+            "id": 1149011,
+            "name": "Kenan Yıldız",
+            "number": 10,
+            "position": "F",
+            "rating": 7.02
+        }
+    ],
+    "away_starters": [
+        {
+            "id": 754330,
+            "name": "Uğurcan Çakır",
+            "number": 1,
+            "position": "G",
+            "rating": 7.12
+        },
+        {
+            "id": 355088,
+            "name": "Roland Sallai",
+            "number": 7,
+            "position": "D",
+            "rating": 6.58
+        },
+        {
+            "id": 566102,
+            "name": "Davinson Sánchez",
+            "number": 6,
+            "position": "D",
+            "rating": 6.91
+        },
+        {
+            "id": 178963,
+            "name": "Abdülkerim Bardakcı",
+            "number": 42,
+            "position": "D",
+            "rating": 6.9
+        },
+        {
+            "id": 897291,
+            "name": "Ismail Jakobs",
+            "number": 4,
+            "position": "D",
+            "rating": 6.68
+        },
+        {
+            "id": 754794,
+            "name": "Lucas Torreira",
+            "number": 34,
+            "position": "M",
+            "rating": 6.99
+        },
+        {
+            "id": 307284,
+            "name": "Mario Lemina",
+            "number": 99,
+            "position": "M",
+            "rating": 6.78
+        },
+        {
+            "id": 904096,
+            "name": "Barış Alper Yılmaz",
+            "number": 53,
+            "position": "M",
+            "rating": 6.8
+        },
+        {
+            "id": 913593,
+            "name": "Gabriel Sara",
+            "number": 8,
+            "position": "M",
+            "rating": 7.06
+        },
+        {
+            "id": 875136,
+            "name": "Noa Lang",
+            "number": 77,
+            "position": "M",
+            "rating": 7.16
+        },
+        {
+            "id": 822471,
+            "name": "Victor Osimhen",
+            "number": 45,
+            "position": "F",
+            "rating": 7.67
+        }
+    ],
+    "home_substitutes": [
+        {
+            "id": 46420,
+            "name": "Carlo Pinsoglio",
+            "number": 23,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 844609,
+            "name": "Michele Di Gregorio",
+            "number": 16,
+            "position": "G",
+            "rating": 6.77
+        },
+        {
+            "id": 1910423,
+            "name": "Niccolò Rizzo",
+            "number": 50,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 885197,
+            "name": "Bremer",
+            "number": 3,
+            "position": "D",
+            "rating": 6.48
+        },
+        {
+            "id": 1526397,
+            "name": "Javier Gil",
+            "number": 41,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 887766,
+            "name": "Edon Zhegrova",
+            "number": 11,
+            "position": "F",
+            "rating": 6.7
+        },
+        {
+            "id": 1149288,
+            "name": "Vasilije Adžić",
+            "number": 17,
+            "position": "M",
+            "rating": 6.43
+        },
+        {
+            "id": 126588,
+            "name": "Filip Kostić",
+            "number": 18,
+            "position": "M",
+            "rating": 6.55
+        },
+        {
+            "id": 1010223,
+            "name": "Fabio Miretti",
+            "number": 21,
+            "position": "M",
+            "rating": 6.53
+        },
+        {
+            "id": 835480,
+            "name": "Loïs Openda",
+            "number": 20,
+            "position": "F",
+            "rating": 6.59
+        },
+        {
+            "id": 367056,
+            "name": "Jérémie Boga",
+            "number": 13,
+            "position": "F",
+            "rating": ""
+        }
+    ],
+    "away_substitutes": [
+        {
+            "id": 867595,
+            "name": "Batuhan Şen",
+            "number": 12,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 103457,
+            "name": "Günay Güvenç",
+            "number": 19,
+            "position": "G",
+            "rating": 6.6
+        },
+        {
+            "id": 981483,
+            "name": "Eren Elmalı",
+            "number": 17,
+            "position": "D",
+            "rating": 6.53
+        },
+        {
+            "id": 138152,
+            "name": "Kaan Ayhan",
+            "number": 23,
+            "position": "D",
+            "rating": 6.58
+        },
+        {
+            "id": 978285,
+            "name": "Wilfried Singo",
+            "number": 90,
+            "position": "D",
+            "rating": 6.9
+        },
+        {
+            "id": 980418,
+            "name": "Sacha Boey",
+            "number": 93,
+            "position": "D",
+            "rating": 7.08
+        },
+        {
+            "id": 293519,
+            "name": "Leroy Sané",
+            "number": 10,
+            "position": "F",
+            "rating": 6.94
+        },
+        {
+            "id": 857738,
+            "name": "Yunus Akgün",
+            "number": 11,
+            "position": "F",
+            "rating": 6.74
+        },
+        {
+            "id": 45853,
+            "name": "İlkay Gündoğan",
+            "number": 20,
+            "position": "M",
+            "rating": 6.55
+        },
+        {
+            "id": 1092769,
+            "name": "Yáser Asprilla",
+            "number": 22,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 906049,
+            "name": "Ahmed Kutucu",
+            "number": 21,
+            "position": "F",
+            "rating": 6.2
+        },
+        {
+            "id": 233114,
+            "name": "Mauro Icardi",
+            "number": 9,
+            "position": "F",
+            "rating": 6.38
+        }
+    ],
+    "home_missing_players": [
+        {
+            "name": "Emil Holm",
+            "position": "D",
+            "type": "missing",
+            "description": "Calf Injury",
+            "expected_end_date": "2026-03-02T00:00:00+00:00"
+        },
+        {
+            "name": "Andrea Cambiaso",
+            "position": "D",
+            "type": "missing",
+            "description": "Yellow card accumulation suspension",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Dušan Vlahović",
+            "position": "F",
+            "type": "missing",
+            "description": "Groin Injury",
+            "expected_end_date": "2026-03-16T00:00:00+00:00"
+        },
+        {
+            "name": "Juan Cabal",
+            "position": "D",
+            "type": "missing",
+            "description": "Red card suspension",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Arkadiusz Milik",
+            "position": "F",
+            "type": "missing",
+            "description": "Calf Injury",
+            "expected_end_date": "2026-02-26T00:00:00+00:00"
+        },
+        {
+            "name": "Kenan Yıldız",
+            "position": "M",
+            "type": "missing",
+            "description": "Calf Injury",
+            "expected_end_date": "2026-03-02T00:00:00+00:00"
+        }
+    ],
+    "away_missing_players": [
+        {
+            "name": "Enes Emre Büyük",
+            "position": "G",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        }
+    ]
+}

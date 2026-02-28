@@ -1,0 +1,375 @@
+{
+    "event_id": "14081793",
+    "match_date": "2026-02-28",
+    "match_time": "04:00",
+    "tournament_name": "LaLiga",
+    "category_name": "Spain",
+    "home_team": "Levante UD",
+    "away_team": "Deportivo Alavés",
+    "home_formation": "5-3-2",
+    "away_formation": "4-4-2",
+    "home_coach": "",
+    "away_coach": "",
+    "home_starters": [
+        {
+            "id": 134029,
+            "name": "Mathew Ryan",
+            "number": 13,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 149606,
+            "name": "Jeremy Toljan",
+            "number": 22,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 997244,
+            "name": "Adrián de la Fuente",
+            "number": 4,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1170694,
+            "name": "Ugo Raghouber",
+            "number": 14,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1496360,
+            "name": "Matias Moreno",
+            "number": 2,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 984789,
+            "name": "Manuel Sánchez",
+            "number": 23,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1649919,
+            "name": "Kareem Tunde",
+            "number": 26,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1010383,
+            "name": "Jon Ander Olasagasti",
+            "number": 8,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1869106,
+            "name": "Paco Cortés",
+            "number": 27,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1010656,
+            "name": "Carlos Álvarez",
+            "number": 24,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 1014042,
+            "name": "Iván Romero",
+            "number": 9,
+            "position": "F",
+            "rating": ""
+        }
+    ],
+    "away_starters": [
+        {
+            "id": 369004,
+            "name": "Antonio Sivera",
+            "number": 1,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 235648,
+            "name": "Jonny Otto",
+            "number": 17,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 896073,
+            "name": "Nahuel Tenaglia",
+            "number": 14,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 934383,
+            "name": "Jon Pacheco",
+            "number": 5,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 985726,
+            "name": "Victor Parada",
+            "number": 24,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1513222,
+            "name": "Ángel Pérez",
+            "number": 7,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1084381,
+            "name": "Pablo Ibáñez",
+            "number": 19,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 855832,
+            "name": "Antonio Blanco",
+            "number": 8,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 794937,
+            "name": "Carles Aleñá",
+            "number": 10,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 831253,
+            "name": "Toni Martínez",
+            "number": 11,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 814385,
+            "name": "Lucas Boyé",
+            "number": 15,
+            "position": "F",
+            "rating": ""
+        }
+    ],
+    "home_substitutes": [
+        {
+            "id": 1085579,
+            "name": "Pablo Cuñat",
+            "number": 1,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 1177401,
+            "name": "Alan Matturro",
+            "number": 3,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 2049311,
+            "name": "Nacho Pérez",
+            "number": 29,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 855837,
+            "name": "Diego Pampín",
+            "number": 6,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 859769,
+            "name": "Oriol Rey",
+            "number": 20,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 952222,
+            "name": "Víctor García",
+            "number": 17,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 992331,
+            "name": "Iker Losada",
+            "number": 18,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 966802,
+            "name": "Unai Vencedor",
+            "number": 12,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1160250,
+            "name": "Tai Abed",
+            "number": 55,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 1393673,
+            "name": "Etta Eyong",
+            "number": 21,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 1649918,
+            "name": "Carlos Espí",
+            "number": 19,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 344129,
+            "name": "José Luis Morales",
+            "number": 11,
+            "position": "F",
+            "rating": ""
+        }
+    ],
+    "away_substitutes": [
+        {
+            "id": 31828,
+            "name": "Raúl Fernández",
+            "number": 13,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 879875,
+            "name": "Facundo Garcés",
+            "number": 2,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1046796,
+            "name": "Calebe Gonçalves",
+            "number": 20,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 891931,
+            "name": "Ander Guevara",
+            "number": 6,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 873717,
+            "name": "Carlos Benavídez",
+            "number": 23,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1403364,
+            "name": "Youssef Enriquez Lekhedim",
+            "number": 3,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 788141,
+            "name": "Jon Guridi",
+            "number": 18,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1082968,
+            "name": "Abderrahman Rebbach",
+            "number": 21,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 138383,
+            "name": "Denis Suárez",
+            "number": 4,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1639543,
+            "name": "Aitor Mañas",
+            "number": 34,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 1084043,
+            "name": "Ibrahim Diabaté",
+            "number": 22,
+            "position": "F",
+            "rating": ""
+        }
+    ],
+    "home_missing_players": [
+        {
+            "name": "Pablo Martínez",
+            "position": "M",
+            "type": "missing",
+            "description": "MCL Knee Injury",
+            "expected_end_date": "2026-03-23T00:00:00+00:00"
+        },
+        {
+            "name": "Kervin Arriaga",
+            "position": "M",
+            "type": "missing",
+            "description": "Red card suspension",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Unai Elgezabal",
+            "position": "D",
+            "type": "missing",
+            "description": "Knee Injury",
+            "expected_end_date": "2026-02-28T00:00:00+00:00"
+        },
+        {
+            "name": "Roger Brugué",
+            "position": "M",
+            "type": "missing",
+            "description": "LCL Knee Injury",
+            "expected_end_date": "2026-03-23T00:00:00+00:00"
+        }
+    ],
+    "away_missing_players": [
+        {
+            "name": "Ville Koski",
+            "position": "D",
+            "type": "doubtful",
+            "description": "Knee Injury",
+            "expected_end_date": "2026-02-28T00:00:00+00:00"
+        }
+    ]
+}

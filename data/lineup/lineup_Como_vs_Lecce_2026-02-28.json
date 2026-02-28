@@ -1,0 +1,396 @@
+{
+    "event_id": 13981683,
+    "match_date": "2026-02-28",
+    "match_time": "22:00",
+    "tournament_name": "Serie A",
+    "category_name": "Italy",
+    "home_team": "Como",
+    "away_team": "Lecce",
+    "home_formation": "4-2-3-1",
+    "away_formation": "3-5-2",
+    "home_coach": "",
+    "away_coach": "",
+    "home_starters": [
+        {
+            "id": 599114,
+            "name": "Jean Butez",
+            "number": 1,
+            "position": "G",
+            "rating": 7.28
+        },
+        {
+            "id": 989186,
+            "name": "Ignace Van der Brempt",
+            "number": 77,
+            "position": "D",
+            "rating": 6.7
+        },
+        {
+            "id": 1403348,
+            "name": "Jacobo Ramón",
+            "number": 14,
+            "position": "D",
+            "rating": 7.26
+        },
+        {
+            "id": 226974,
+            "name": "Marc-Oliver Kempf",
+            "number": 2,
+            "position": "D",
+            "rating": 7
+        },
+        {
+            "id": 229740,
+            "name": "Alberto Moreno",
+            "number": 18,
+            "position": "D",
+            "rating": 6.8
+        },
+        {
+            "id": 1086286,
+            "name": "Máximo Perrone",
+            "number": 23,
+            "position": "M",
+            "rating": 6.99
+        },
+        {
+            "id": 911848,
+            "name": "Lucas Da Cunha",
+            "number": 33,
+            "position": "M",
+            "rating": 7
+        },
+        {
+            "id": 798147,
+            "name": "Mërgim Vojvoda",
+            "number": 31,
+            "position": "M",
+            "rating": 6.75
+        },
+        {
+            "id": 859027,
+            "name": "Maxence Caqueret",
+            "number": 6,
+            "position": "M",
+            "rating": 6.89
+        },
+        {
+            "id": 1800245,
+            "name": "Jesús Rodriguez",
+            "number": 17,
+            "position": "M",
+            "rating": 6.77
+        },
+        {
+            "id": 894863,
+            "name": "Anastasios Douvikas",
+            "number": 11,
+            "position": "F",
+            "rating": 6.85
+        }
+    ],
+    "away_starters": [
+        {
+            "id": 256667,
+            "name": "Wladimiro Falcone",
+            "number": 30,
+            "position": "G",
+            "rating": 7.02
+        },
+        {
+            "id": 1014287,
+            "name": "Jamil Siebert",
+            "number": 5,
+            "position": "D",
+            "rating": 6.7
+        },
+        {
+            "id": 1651825,
+            "name": "Tiago Gabriel",
+            "number": 44,
+            "position": "D",
+            "rating": 6.95
+        },
+        {
+            "id": 981470,
+            "name": "Corrie Ndaba",
+            "number": 3,
+            "position": "D",
+            "rating": 6.71
+        },
+        {
+            "id": 1002045,
+            "name": "Danilo Veiga",
+            "number": 17,
+            "position": "M",
+            "rating": 6.7
+        },
+        {
+            "id": 1019125,
+            "name": "Omri Gandelman",
+            "number": 16,
+            "position": "M",
+            "rating": 6.59
+        },
+        {
+            "id": 841977,
+            "name": "Ylber Ramadani",
+            "number": 20,
+            "position": "M",
+            "rating": 6.89
+        },
+        {
+            "id": 804621,
+            "name": "Lassana Coulibaly",
+            "number": 29,
+            "position": "M",
+            "rating": 6.78
+        },
+        {
+            "id": 945616,
+            "name": "Antonino Gallo",
+            "number": 25,
+            "position": "M",
+            "rating": 6.7
+        },
+        {
+            "id": 917485,
+            "name": "Walid Cheddira",
+            "number": 99,
+            "position": "F",
+            "rating": 6.54
+        },
+        {
+            "id": 911350,
+            "name": "Lameck Banda",
+            "number": 19,
+            "position": "F",
+            "rating": 6.71
+        }
+    ],
+    "home_substitutes": [
+        {
+            "id": 1063336,
+            "name": "Nikola Čavlina",
+            "number": 44,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 41444,
+            "name": "Mauro Vigorito",
+            "number": 22,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 1014583,
+            "name": "Noel Törnqvist",
+            "number": 21,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 295133,
+            "name": "Edoardo Goldaniga",
+            "number": 5,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 604232,
+            "name": "Diego Carlos",
+            "number": 34,
+            "position": "D",
+            "rating": 6.84
+        },
+        {
+            "id": 974581,
+            "name": "Ivan Smolčić",
+            "number": 28,
+            "position": "D",
+            "rating": 6.86
+        },
+        {
+            "id": 1142238,
+            "name": "Álex Valle",
+            "number": 3,
+            "position": "D",
+            "rating": 6.72
+        },
+        {
+            "id": 1802689,
+            "name": "Adrian Lahdo",
+            "number": 15,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 123976,
+            "name": "Sergi Roberto",
+            "number": 8,
+            "position": "M",
+            "rating": 6.65
+        },
+        {
+            "id": 1171451,
+            "name": "Nico Paz",
+            "number": 10,
+            "position": "M",
+            "rating": 7.32
+        },
+        {
+            "id": 125407,
+            "name": "Álvaro Morata",
+            "number": 7,
+            "position": "F",
+            "rating": 6.57
+        },
+        {
+            "id": 877835,
+            "name": "Nicolas-Gerrit Kühn",
+            "number": 19,
+            "position": "F",
+            "rating": 6.57
+        },
+        {
+            "id": 1493689,
+            "name": "Assane Diao",
+            "number": 38,
+            "position": "F",
+            "rating": 6.5
+        }
+    ],
+    "away_substitutes": [
+        {
+            "id": 999192,
+            "name": "Jasper Samooja",
+            "number": 32,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 845024,
+            "name": "Christian Früchtl",
+            "number": 1,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 1801193,
+            "name": "Matías Pérez",
+            "number": 13,
+            "position": "D",
+            "rating": 7
+        },
+        {
+            "id": 1392819,
+            "name": "Gaby Jean",
+            "number": 18,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 966929,
+            "name": "Filip Marchwiński",
+            "number": 36,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1130662,
+            "name": "Sadik Fofana",
+            "number": 8,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 886628,
+            "name": "Þórir Jóhann Helgason",
+            "number": 14,
+            "position": "M",
+            "rating": 6.55
+        },
+        {
+            "id": 1157382,
+            "name": "Alex Sala",
+            "number": 6,
+            "position": "M",
+            "rating": 6.54
+        },
+        {
+            "id": 1175854,
+            "name": "Oumar Ngom",
+            "number": 79,
+            "position": "M",
+            "rating": 6.6
+        },
+        {
+            "id": 893640,
+            "name": "Riccardo Sottil",
+            "number": 23,
+            "position": "F",
+            "rating": 6.77
+        },
+        {
+            "id": 1029748,
+            "name": "Nikola Štulić",
+            "number": 9,
+            "position": "F",
+            "rating": 6.49
+        },
+        {
+            "id": 978327,
+            "name": "Konan N'Dri",
+            "number": 11,
+            "position": "F",
+            "rating": 6.63
+        },
+        {
+            "id": 984998,
+            "name": "Santiago Pierotti",
+            "number": 50,
+            "position": "F",
+            "rating": 6.41
+        }
+    ],
+    "home_missing_players": [
+        {
+            "name": "Martin Baturina",
+            "position": "M",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Jayden Addai",
+            "position": "M",
+            "type": "missing",
+            "description": "Achilles Tendon Rupture",
+            "expected_end_date": "2026-05-25T00:00:00+00:00"
+        }
+    ],
+    "away_missing_players": [
+        {
+            "name": "Francesco Camarda",
+            "position": "F",
+            "type": "missing",
+            "description": "Shoulder Injury",
+            "expected_end_date": "2026-05-25T00:00:00+00:00"
+        },
+        {
+            "name": "Medon Berisha",
+            "position": "M",
+            "type": "missing",
+            "description": "Thigh Injury",
+            "expected_end_date": "2026-03-01T00:00:00+00:00"
+        },
+        {
+            "name": "Kialonda Gaspar",
+            "position": "D",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        }
+    ]
+}

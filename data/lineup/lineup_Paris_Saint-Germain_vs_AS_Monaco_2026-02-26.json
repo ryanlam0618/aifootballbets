@@ -1,0 +1,396 @@
+{
+    "event_id": 15452749,
+    "match_date": "2026-02-26",
+    "match_time": "04:00",
+    "tournament_name": "UEFA Champions League, Knockout stage",
+    "category_name": "Europe",
+    "home_team": "Paris Saint-Germain",
+    "away_team": "AS Monaco",
+    "home_formation": "4-3-3",
+    "away_formation": "3-4-2-1",
+    "home_coach": "",
+    "away_coach": "",
+    "home_starters": [
+        {
+            "id": 800749,
+            "name": "Matvey Safonov",
+            "number": 39,
+            "position": "G",
+            "rating": 6.77
+        },
+        {
+            "id": 814594,
+            "name": "Achraf Hakimi",
+            "number": 2,
+            "position": "D",
+            "rating": 6.77
+        },
+        {
+            "id": 155995,
+            "name": "Marquinhos",
+            "number": 5,
+            "position": "D",
+            "rating": 7.21
+        },
+        {
+            "id": 979480,
+            "name": "Willian Pacho",
+            "number": 51,
+            "position": "D",
+            "rating": 7
+        },
+        {
+            "id": 989768,
+            "name": "Nuno Mendes",
+            "number": 25,
+            "position": "D",
+            "rating": 7.19
+        },
+        {
+            "id": 1142672,
+            "name": "Warren Zaïre-Emery",
+            "number": 33,
+            "position": "M",
+            "rating": 6.47
+        },
+        {
+            "id": 902029,
+            "name": "Vitinha",
+            "number": 17,
+            "position": "M",
+            "rating": 7.88
+        },
+        {
+            "id": 1190933,
+            "name": "João Neves",
+            "number": 87,
+            "position": "M",
+            "rating": 7.17
+        },
+        {
+            "id": 1154605,
+            "name": "Désiré Doué",
+            "number": 14,
+            "position": "F",
+            "rating": 7.9
+        },
+        {
+            "id": 889259,
+            "name": "Khvicha Kvaratskhelia",
+            "number": 7,
+            "position": "F",
+            "rating": 7.38
+        },
+        {
+            "id": 996952,
+            "name": "Bradley Barcola",
+            "number": 29,
+            "position": "F",
+            "rating": 6.74
+        }
+    ],
+    "away_starters": [
+        {
+            "id": 868964,
+            "name": "Philipp Köhn",
+            "number": 16,
+            "position": "G",
+            "rating": 7.06
+        },
+        {
+            "id": 281277,
+            "name": "Thilo Kehrer",
+            "number": 5,
+            "position": "D",
+            "rating": 6.49
+        },
+        {
+            "id": 770677,
+            "name": "Denis Zakaria",
+            "number": 6,
+            "position": "D",
+            "rating": 6.74
+        },
+        {
+            "id": 361696,
+            "name": "Wout Faes",
+            "number": 25,
+            "position": "D",
+            "rating": 6.2
+        },
+        {
+            "id": 1090694,
+            "name": "Vanderson",
+            "number": 2,
+            "position": "M",
+            "rating": 6.64
+        },
+        {
+            "id": 1389846,
+            "name": "Lamine Camara",
+            "number": 15,
+            "position": "M",
+            "rating": 6.92
+        },
+        {
+            "id": 1868591,
+            "name": "Aladji Bamba",
+            "number": 23,
+            "position": "M",
+            "rating": 6.48
+        },
+        {
+            "id": 845170,
+            "name": "Caio Henrique",
+            "number": 12,
+            "position": "M",
+            "rating": 6.86
+        },
+        {
+            "id": 1130939,
+            "name": "Maghnes Akliouche",
+            "number": 11,
+            "position": "F",
+            "rating": 6.73
+        },
+        {
+            "id": 1410148,
+            "name": "Mamadou Coulibaly",
+            "number": 28,
+            "position": "F",
+            "rating": 6.85
+        },
+        {
+            "id": 934237,
+            "name": "Folarin Balogun",
+            "number": 9,
+            "position": "F",
+            "rating": 6.8
+        }
+    ],
+    "home_substitutes": [
+        {
+            "id": 996953,
+            "name": "Lucas Chevalier",
+            "number": 30,
+            "position": "G",
+            "rating": 6.67
+        },
+        {
+            "id": 1524396,
+            "name": "Renato Marin",
+            "number": 89,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 1108441,
+            "name": "Lucas Beraldo",
+            "number": 4,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1023567,
+            "name": "Ilya Zabarnyi",
+            "number": 6,
+            "position": "D",
+            "rating": 6.68
+        },
+        {
+            "id": 352370,
+            "name": "Lucas Hernández",
+            "number": 21,
+            "position": "D",
+            "rating": 6.4
+        },
+        {
+            "id": 917087,
+            "name": "Kang-in Lee",
+            "number": 19,
+            "position": "M",
+            "rating": 6.93
+        },
+        {
+            "id": 1926085,
+            "name": "Dro Fernández",
+            "number": 27,
+            "position": "M",
+            "rating": 6.8
+        },
+        {
+            "id": 934510,
+            "name": "Gonçalo Ramos",
+            "number": 9,
+            "position": "F",
+            "rating": 6.74
+        },
+        {
+            "id": 1590918,
+            "name": "Ibrahim Mbaye",
+            "number": 49,
+            "position": "F",
+            "rating": 6.73
+        }
+    ],
+    "away_substitutes": [
+        {
+            "id": 1606621,
+            "name": "Jules Stawiecki",
+            "number": 40,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 1136884,
+            "name": "Yann Lienard",
+            "number": 50,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 825846,
+            "name": "Jordan Teze",
+            "number": 4,
+            "position": "D",
+            "rating": 7.26
+        },
+        {
+            "id": 1407848,
+            "name": "Christian Mawissa",
+            "number": 13,
+            "position": "D",
+            "rating": 6.5
+        },
+        {
+            "id": 1925480,
+            "name": "Ilane Touré",
+            "number": 41,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1149152,
+            "name": "Stanis Idumbo Muzambo",
+            "number": 17,
+            "position": "M",
+            "rating": 6.7
+        },
+        {
+            "id": 1110842,
+            "name": "Simon Adingra",
+            "number": 24,
+            "position": "F",
+            "rating": 6.1
+        },
+        {
+            "id": 1566349,
+            "name": "Samuel Nibombe",
+            "number": 44,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1083007,
+            "name": "Mika Biereth",
+            "number": 14,
+            "position": "F",
+            "rating": 6.37
+        },
+        {
+            "id": 962883,
+            "name": "Ansu Fati",
+            "number": 31,
+            "position": "F",
+            "rating": 7.06
+        }
+    ],
+    "home_missing_players": [
+        {
+            "name": "Ousmane Dembélé",
+            "position": "F",
+            "type": "missing",
+            "description": "Calf Injury",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Fabián Ruiz",
+            "position": "M",
+            "type": "missing",
+            "description": "Knee Injury",
+            "expected_end_date": "2026-02-26T00:00:00+00:00"
+        },
+        {
+            "name": "Senny Mayulu",
+            "position": "M",
+            "type": "missing",
+            "description": "Calf Injury",
+            "expected_end_date": "2026-02-26T00:00:00+00:00"
+        },
+        {
+            "name": "Quentin Ndjantou",
+            "position": "F",
+            "type": "missing",
+            "description": "Hamstring",
+            "expected_end_date": "2026-05-17T00:00:00+00:00"
+        }
+    ],
+    "away_missing_players": [
+        {
+            "name": "Lukáš Hrádecký",
+            "position": "G",
+            "type": "missing",
+            "description": "Knee Injury",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Aleksandr Golovin",
+            "position": "M",
+            "type": "missing",
+            "description": "Red card suspension",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Mohammed Salisu",
+            "position": "D",
+            "type": "missing",
+            "description": "ACL Knee Injury",
+            "expected_end_date": "2026-07-01T00:00:00+00:00"
+        },
+        {
+            "name": "Paul Pogba",
+            "position": "M",
+            "type": "missing",
+            "description": "Calf Injury",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Takumi Minamino",
+            "position": "M",
+            "type": "missing",
+            "description": "ACL Knee Injury",
+            "expected_end_date": "2026-06-30T00:00:00+00:00"
+        },
+        {
+            "name": "Eric Dier",
+            "position": "D",
+            "type": "missing",
+            "description": "Hamstring",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Kassoum Ouattara",
+            "position": "D",
+            "type": "missing",
+            "description": "Calf Injury",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Krépin Diatta",
+            "position": "M",
+            "type": "missing",
+            "description": "Thigh Injury",
+            "expected_end_date": ""
+        }
+    ]
+}

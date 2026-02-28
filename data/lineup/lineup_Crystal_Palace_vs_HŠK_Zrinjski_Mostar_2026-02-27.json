@@ -1,0 +1,396 @@
+{
+    "event_id": "15380228",
+    "match_date": "2026-02-27",
+    "match_time": "04:00",
+    "tournament_name": "UEFA Conference League, Knockout Phase",
+    "category_name": "Europe",
+    "home_team": "Crystal Palace",
+    "away_team": "HŠK Zrinjski Mostar",
+    "home_formation": "3-4-3",
+    "away_formation": "4-2-3-1",
+    "home_coach": "",
+    "away_coach": "",
+    "home_starters": [
+        {
+            "id": 788134,
+            "name": "Dean Henderson",
+            "number": 1,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 931844,
+            "name": "Chris Richards",
+            "number": 26,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 879674,
+            "name": "Maxence Lacroix",
+            "number": 5,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1471671,
+            "name": "Jaydee Canvot",
+            "number": 23,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 870360,
+            "name": "Daniel Muñoz",
+            "number": 2,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1109771,
+            "name": "Adam Wharton",
+            "number": 20,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 794338,
+            "name": "Daichi Kamada",
+            "number": 18,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 988275,
+            "name": "Tyrick Mitchell",
+            "number": 3,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 845286,
+            "name": "Ismaïla Sarr",
+            "number": 7,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 876599,
+            "name": "Jørgen Strand Larsen",
+            "number": 22,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 930245,
+            "name": "Evann Guessand",
+            "number": 29,
+            "position": "F",
+            "rating": ""
+        }
+    ],
+    "away_starters": [
+        {
+            "id": 797966,
+            "name": "Goran Karačić",
+            "number": 18,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 970524,
+            "name": "Marko Vranjković",
+            "number": 19,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 194204,
+            "name": "Hrvoje Barišić",
+            "number": 4,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1122497,
+            "name": "Duje Dujmović",
+            "number": 55,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 283831,
+            "name": "Petar Mamić",
+            "number": 12,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 876867,
+            "name": "Neven Đurasek",
+            "number": 30,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 981031,
+            "name": "Igor Savić",
+            "number": 21,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 997886,
+            "name": "Karlo Abramović",
+            "number": 77,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 886854,
+            "name": "Antonio Ivančić",
+            "number": 20,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 987620,
+            "name": "Leo Mikić",
+            "number": 9,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 826033,
+            "name": "Mario Ćuže",
+            "number": 25,
+            "position": "F",
+            "rating": ""
+        }
+    ],
+    "home_substitutes": [
+        {
+            "id": 581610,
+            "name": "Remi Matthews",
+            "number": 31,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 249859,
+            "name": "Walter Benítez",
+            "number": 44,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 43215,
+            "name": "Nathaniel Clyne",
+            "number": 17,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1064218,
+            "name": "Chadi Riad",
+            "number": 34,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 984624,
+            "name": "Yéremy Pino",
+            "number": 10,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 193554,
+            "name": "Will Hughes",
+            "number": 19,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 357584,
+            "name": "Borna Sosa",
+            "number": 24,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1185603,
+            "name": "Kaden Rodney",
+            "number": 42,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1084311,
+            "name": "Justin Devenny",
+            "number": 55,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1085180,
+            "name": "Brennan Johnson",
+            "number": 11,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 1469007,
+            "name": "Rio Cardines",
+            "number": 59,
+            "position": "M",
+            "rating": ""
+        }
+    ],
+    "away_substitutes": [
+        {
+            "id": 1916311,
+            "name": "Matej Bogdan",
+            "number": 1,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 1126466,
+            "name": "Tin Sajko",
+            "number": 32,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 1496074,
+            "name": "David Karačić",
+            "number": 6,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 280471,
+            "name": "Kerim Memija",
+            "number": 50,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1050245,
+            "name": "Dan Lagumdzija",
+            "number": 5,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1139268,
+            "name": "Matej Šakota",
+            "number": 14,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 875437,
+            "name": "Adi Nalić",
+            "number": 22,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 886062,
+            "name": "Stefano Surdanović",
+            "number": 23,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 882730,
+            "name": "Marijan Ćavar",
+            "number": 42,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 127712,
+            "name": "Tomi Jurić",
+            "number": 11,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 1823907,
+            "name": "Antonio Arapovic",
+            "number": 15,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 1423502,
+            "name": "Toni Majić",
+            "number": 90,
+            "position": "F",
+            "rating": ""
+        }
+    ],
+    "home_missing_players": [
+        {
+            "name": "Jefferson Lerma",
+            "position": "M",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Cheick Doucouré",
+            "position": "M",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Jean-Philippe Mateta",
+            "position": "F",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Edward Nketiah",
+            "position": "F",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Maxence Lacroix",
+            "position": "D",
+            "type": "doubtful",
+            "description": "",
+            "expected_end_date": ""
+        }
+    ],
+    "away_missing_players": [
+        {
+            "name": "Nemanja Bilbija",
+            "position": "F",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Slobodan Jakovljević",
+            "position": "D",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Marin Ljubić",
+            "position": "G",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        }
+    ]
+}

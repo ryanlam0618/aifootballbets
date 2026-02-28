@@ -1,0 +1,382 @@
+{
+    "event_id": 14062230,
+    "match_date": "2026-02-28",
+    "match_time": "22:30",
+    "tournament_name": "Bundesliga",
+    "category_name": "Germany",
+    "home_team": "SV Werder Bremen",
+    "away_team": "1. FC Heidenheim",
+    "home_formation": "3-4-2-1",
+    "away_formation": "3-4-2-1",
+    "home_coach": "",
+    "away_coach": "",
+    "home_starters": [
+        {
+            "id": 1083390,
+            "name": "Mio Backhaus",
+            "number": 30,
+            "position": "G",
+            "rating": 7.06
+        },
+        {
+            "id": 826171,
+            "name": "Senne Lynen",
+            "number": 14,
+            "position": "D",
+            "rating": 6.76
+        },
+        {
+            "id": 229544,
+            "name": "Niklas Stark",
+            "number": 4,
+            "position": "D",
+            "rating": 6.34
+        },
+        {
+            "id": 825771,
+            "name": "Marco Friedl",
+            "number": 32,
+            "position": "D",
+            "rating": 6.98
+        },
+        {
+            "id": 905347,
+            "name": "Yukinari Sugawara",
+            "number": 3,
+            "position": "M",
+            "rating": 6.55
+        },
+        {
+            "id": 830142,
+            "name": "Jens Stage",
+            "number": 6,
+            "position": "M",
+            "rating": 6.93
+        },
+        {
+            "id": 916176,
+            "name": "Cameron Puertas",
+            "number": 18,
+            "position": "M",
+            "rating": 6.59
+        },
+        {
+            "id": 960114,
+            "name": "Olivier Deman",
+            "number": 2,
+            "position": "M",
+            "rating": 6.76
+        },
+        {
+            "id": 815612,
+            "name": "Marco Grüll",
+            "number": 17,
+            "position": "F",
+            "rating": 6.86
+        },
+        {
+            "id": 830127,
+            "name": "Romano Schmid",
+            "number": 20,
+            "position": "F",
+            "rating": 6.77
+        },
+        {
+            "id": 1154491,
+            "name": "Jovan Milošević",
+            "number": 19,
+            "position": "F",
+            "rating": 6.79
+        }
+    ],
+    "away_starters": [
+        {
+            "id": 1083359,
+            "name": "Frank Feller",
+            "number": 40,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 254429,
+            "name": "Patrick Mainka",
+            "number": 6,
+            "position": "D",
+            "rating": 6.83
+        },
+        {
+            "id": 798936,
+            "name": "Benedikt Gimber",
+            "number": 5,
+            "position": "D",
+            "rating": 6.41
+        },
+        {
+            "id": 933707,
+            "name": "Jan Schöppner",
+            "number": 3,
+            "position": "D",
+            "rating": 6.49
+        },
+        {
+            "id": 920022,
+            "name": "Haktab Omar Traore",
+            "number": 23,
+            "position": "M",
+            "rating": 6.36
+        },
+        {
+            "id": 794995,
+            "name": "Niklas Dorsch",
+            "number": 30,
+            "position": "M",
+            "rating": 6.89
+        },
+        {
+            "id": 1066042,
+            "name": "Julian Niehues",
+            "number": 16,
+            "position": "M",
+            "rating": 6.77
+        },
+        {
+            "id": 1864760,
+            "name": "Hennes Behrens",
+            "number": 26,
+            "position": "M",
+            "rating": 7.04
+        },
+        {
+            "id": 1067120,
+            "name": "Eren Dinkçi",
+            "number": 8,
+            "position": "F",
+            "rating": 6.69
+        },
+        {
+            "id": 1142248,
+            "name": "Arijon Ibrahimović",
+            "number": 22,
+            "position": "F",
+            "rating": 6.77
+        },
+        {
+            "id": 933833,
+            "name": "Christian Joe Conteh",
+            "number": 10,
+            "position": "F",
+            "rating": 6.45
+        }
+    ],
+    "home_substitutes": [
+        {
+            "id": 991591,
+            "name": "Karl Hein",
+            "number": 13,
+            "position": "G",
+            "rating": 7.6
+        },
+        {
+            "id": 1087043,
+            "name": "Julián Malatini",
+            "number": 22,
+            "position": "D",
+            "rating": 6.35
+        },
+        {
+            "id": 1568521,
+            "name": "Mick Schmetgens",
+            "number": 33,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1015164,
+            "name": "Isaac Schmidt",
+            "number": 23,
+            "position": "D",
+            "rating": 6.66
+        },
+        {
+            "id": 1596105,
+            "name": "Patrice Čović",
+            "number": 24,
+            "position": "M",
+            "rating": 6.5
+        },
+        {
+            "id": 111969,
+            "name": "Leonardo Bittencourt",
+            "number": 10,
+            "position": "M",
+            "rating": 6.52
+        },
+        {
+            "id": 1166832,
+            "name": "Keke Topp",
+            "number": 9,
+            "position": "F",
+            "rating": 6.41
+        },
+        {
+            "id": 1864786,
+            "name": "Salim Musah",
+            "number": 29,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 1005343,
+            "name": "Justin Njinmah",
+            "number": 11,
+            "position": "F",
+            "rating": 6.64
+        }
+    ],
+    "away_substitutes": [
+        {
+            "id": 1022845,
+            "name": "Paul Tschernuth",
+            "number": 34,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 962898,
+            "name": "Leonidas Stergiou",
+            "number": 25,
+            "position": "D",
+            "rating": 6.65
+        },
+        {
+            "id": 988252,
+            "name": "Tim Siersleben",
+            "number": 4,
+            "position": "D",
+            "rating": 6.58
+        },
+        {
+            "id": 1097453,
+            "name": "Luca Kerber",
+            "number": 20,
+            "position": "M",
+            "rating": 6.46
+        },
+        {
+            "id": 845742,
+            "name": "Adrian Beck",
+            "number": 21,
+            "position": "M",
+            "rating": 6.73
+        },
+        {
+            "id": 575952,
+            "name": "Mathias Honsak",
+            "number": 17,
+            "position": "F",
+            "rating": 6.51
+        },
+        {
+            "id": 800400,
+            "name": "Sirlord Conteh",
+            "number": 31,
+            "position": "F",
+            "rating": 6.59
+        },
+        {
+            "id": 842922,
+            "name": "Stefan Schimmer",
+            "number": 9,
+            "position": "F",
+            "rating": 6.64
+        },
+        {
+            "id": 909485,
+            "name": "Marvin Pieringer",
+            "number": 18,
+            "position": "F",
+            "rating": 6.61
+        }
+    ],
+    "home_missing_players": [
+        {
+            "name": "Mitchell Weiser",
+            "position": "M",
+            "type": "missing",
+            "description": "ACL Knee Injury",
+            "expected_end_date": "2026-06-15T00:00:00+00:00"
+        },
+        {
+            "name": "Maximilian Wöber",
+            "position": "D",
+            "type": "missing",
+            "description": "Calf Injury",
+            "expected_end_date": "2026-04-05T00:00:00+00:00"
+        },
+        {
+            "name": "Karim Coulibaly",
+            "position": "D",
+            "type": "doubtful",
+            "description": "Thigh Injury",
+            "expected_end_date": "2026-03-01T00:00:00+00:00"
+        },
+        {
+            "name": "Felix Agu",
+            "position": "M",
+            "type": "doubtful",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Victor Okoh Boniface",
+            "position": "F",
+            "type": "missing",
+            "description": "Knee Injury",
+            "expected_end_date": "2026-05-17T00:00:00+00:00"
+        },
+        {
+            "name": "Amos Pieper",
+            "position": "D",
+            "type": "missing",
+            "description": "Knee Injury",
+            "expected_end_date": "2026-03-09T00:00:00+00:00"
+        },
+        {
+            "name": "Wesley Adeh",
+            "position": "M",
+            "type": "missing",
+            "description": "Ankle Injury",
+            "expected_end_date": ""
+        }
+    ],
+    "away_missing_players": [
+        {
+            "name": "Leart Paqarada",
+            "position": "D",
+            "type": "missing",
+            "description": "ACL Knee Injury",
+            "expected_end_date": "2026-05-17T00:00:00+00:00"
+        },
+        {
+            "name": "Leonidas Stergiou",
+            "position": "D",
+            "type": "doubtful",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Jan Schöppner",
+            "position": "M",
+            "type": "doubtful",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Marnon Busch",
+            "position": "D",
+            "type": "doubtful",
+            "description": "",
+            "expected_end_date": ""
+        }
+    ]
+}

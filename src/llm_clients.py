@@ -257,49 +257,45 @@ class LLMOrchestrator:
         lineup_text = self._format_lineup_data(lineup_data) if lineup_data else "無陣容數據"
         injury_text = self._format_injury_data(injury_data) if injury_data else "無傷停數據"
         
-        # 增強版 Prompt - 充分利用數據
-        system_prompt = """You are an expert sports betting analyst with access to real-time search tools (web_search) in "X" and web.
-You have deep knowledge of:
-- Football tactics and formations (4-3-3, 4-2-3-1, 3-5-2, etc.)
-- Player analysis and impact assessment
-- Team news, injuries, suspensions
-- Market movements and bookmaker behavior
-- Value betting identification"""
+        # 新版 Prompt - 專注於「市場情報搜尋 (新聞、評論、偏向)」
+        system_prompt = """You are an expert Sports Market Intelligence Analyst with advanced web search capabilities (web_search) on X (Twitter) and the broader web.
+You excel at finding and synthesizing:
+- Breaking team news, press conference quotes, and locker room morale
+- Opinions from respected football pundits, beat reporters, and local journalists
+- Market sentiment (public bias vs. sharp money movements)
+- External factors (weather, pitch conditions, club politics)"""
         
         user_content = f"""
 # 比賽信息
 {match_info}
 
-# 已有數據 - 陣容
-{lineup_text}
-
-# 已有數據 - 傷停
-{injury_text}
+# 基礎數據 (陣容與傷停參考)
+陣容: {lineup_text}
+傷停: {injury_text}
 
 # 即時市場賠率
 {odds_text}
 
-## 你的任務
+## 你的核心任務：市場情報與情緒分析
 
-1. **首發陣容分析**：
-   - 檢查已有陣容數據，識別關鍵球員
-   - 評估陣型是否對陣容有利
-   - 注意後備深度（哪些位置缺乏替補）
+請利用搜尋工具 (X 與 Web) 查找最新的即時信息，並完成以下情報匯總：
 
-2. **傷停影響評估**：
-   - 已有傷停數據中，哪些球員是主力/核心球員？
-   - 評估傷停對球隊戰力的實際影響（不是人數，而是質量）
-   - 判斷是否有人員缺口無法彌補
+1. **突發新聞與內部動態 (Breaking News & Morale)**：
+   - 搜尋賽前發布會主教練的發言，是否有針對戰術或球員狀態的暗示？
+   - 兩支球隊近期的更衣室氛圍、俱樂部管理層動態（如換帥傳聞）如何？
 
-3. **市場合理性檢驗**：
-   - 結合陣容和傷停信息，判斷市場賠率是否合理
-   - 如果市場過度高估/低估某隊，解釋原因
+2. **專家與評論員視角 (Pundits & Local Beat Reporters)**：
+   - 針對這場比賽，當地隨隊記者或知名足球評論員有什麼普遍看法或特別的警告？
+   - 是否有專家指出某一方存在「戰術相剋」的隱患？
 
-4. **價值機會識別**：
-   - 市場是否忽視了傷停影響？
-   - 陣容實力 vs 市場定價 是否存在落差？
+3. **市場情緒與資金偏向 (Market Sentiment & Bias)**：
+   - 大眾彩民（Public Money）是否因為球隊名氣而過度追捧某一方？
+   - 結合目前的賠率變化，市場是否存在明顯的「誘盤」或「防範」行為？（例如：某隊主力受傷，但賠率卻異常堅挺）
 
-請利用搜尋工具查找最新信息，然後提供你的分析。
+4. **非量化干擾因素 (External Factors)**：
+   - 確認比賽場地天氣、草皮狀況，或是長途跋涉/密集賽程對體能的額外影響。
+
+請綜合以上搜尋結果，提供一份「市場情報摘要」，指出市場可能忽視的盲點。
 """
 
         # 第一次嘗試：使用 web_search
@@ -348,16 +344,14 @@ You have deep knowledge of:
         
         return result if result else "Grok 分析失敗。"
 
-    def analyze_with_super_prompt(self, match_context: dict, odds_data_package: dict, math_model_results: dict) -> dict:
+    def analyze_with_super_prompt(self, match_context: dict, odds_data_package: dict, math_model_results: dict, market_intelligence: str = "") -> dict:
         """
-        超級分析：結合數學模型、市場數據、陣容數據、傷停數據
+        超級分析：結合數學模型、市場數據、陣容數據、傷停數據 + Grok 市場情報
         
-        新增利用：
-        - 完整陣容數據（首發+後備+陣型）
-        - 傷停數據
-        - 各模型詳細結果
+        新增參數：
+        - market_intelligence: 由 Grok 提供的市場情報與情緒摘要
         """
-        print(f"🤖 [ChatGPT] 正在執行最終決策 (結合數學+市場+陣容+傷停) ({settings.MODEL_GPT})...")
+        print(f"🤖 [ChatGPT] 正在執行最終決策 (結合數學+市場+陣容+傷停+情報) ({settings.MODEL_GPT})...")
         client = self._get_client(settings.OPENAI_API_KEY)
         
         # 提取和格式化各種數據
@@ -382,49 +376,50 @@ You have deep knowledge of:
         home_impact = injury_data.get('home', {}).get('total_impact', 0)
         away_impact = injury_data.get('away', {}).get('total_impact', 0)
         
+        # 格式化情報文本
+        intelligence_text = market_intelligence if market_intelligence else "無市場情報"
+        
         prompt_content = f"""
-# 你是世界級的足球量化分析師與風險控管專家
+# 你是世界級的足球量化分析師與價值投資（Value Betting）專家
 
 ## 比賽
-主隊: {home_team}
-客隊: {away_team}
+主隊: {home_team} | 客隊: {away_team}
 
-## 【1. 數學模型預測】(基於歷史數據)
+## 【1. 數學模型預測】(基於歷史與進階數據)
 {math_text}
+預期進球 (xG): 主隊 {home_xg:.2f} | 客隊 {away_xg:.2f}
 
-預期進球: 主隊 {home_xg:.2f} | 客隊 {away_xg:.2f}
-
-## 【2. 市場面數據】
+## 【2. 市場面數據】(莊家定價)
 {odds_text}
 
-## 【3. 陣容數據】(首發、後備、陣型)
+## 【3. 陣容與傷停數據】(即時戰力)
 {lineup_text}
-
-## 【4. 傷停數據】(已確認缺陣球員)
 {injury_text}
-主隊傷停人數: {home_impact} | 客隊傷停人數: {away_impact}
+主隊傷停影響值: {home_impact} | 客隊傷停影響值: {away_impact}
+
+## 【4. 市場外部情報】(Grok 提供的情緒與突發新聞)
+{intelligence_text}
 
 ---
 
-## 【關鍵分析任務】
+## 【核心任務：尋找正期望值 (Positive EV)】
 
-### A. 異常檢測 (Sanity Check) - 最重要！
-1. 計算「市場隱含勝率」(1/Decimal Odds)
-2. 對比「數學模型勝率」與「市場隱含勝率」
-3. **警告**: 如果差距 > 20%，代表有重大變化
+### A. 隱含勝率 vs 模型勝率 (Value Identification)
+1. 計算各選項的「市場隱含勝率」(Implied Probability = 1 / Decimal Odds)。
+2. 計算「真實邊際」(Edge = 模型勝率 - 市場隱含勝率)。
+3. **過濾器**：只有當 Edge > 2% (0.02) 時，才具備初步投資價值。
 
-### B. 陣容影響評估
-1. 識別雙方的關鍵球員（核心球員通常是：主力射手、組織核心、主力門將）
-2. 評估傷停是否影響核心戰力
-3. 後備深度如何？替補能否填補缺口？
+### B. 模型失真檢驗 (Sanity & Bias Check)
+數學模型是「向後看」的（基於歷史），你需要用「當前陣容」與「情報」來修正它：
+1. **高估警告**：如果模型看好 A 隊，但 A 隊缺少核心球員（如主力射手/核心後衛），或情報顯示更衣室動蕩，你必須**主動降低**對 A 隊的模型信任度。
+2. **市場錯誤定價**：如果 B 隊陣容齊整且有戰術優勢，但市場（因為大眾偏見）給出高賠率，且模型也支持 B 隊 → 這是**頂級價值注**。
 
-### C. 綜合決策邏輯
-- 如果傷停導致核心球員缺陣 + 數學模型仍看好該隊 → **模型失真，應降低權重**
-- 如果陣容數據顯示實力差距 + 市場未反映 → **潛在價值**
-- 如果後備深度不足 + 進入下半場 → **體能劣勢**
+### C. 綜合決策與資金配置建議
+- 如果沒有任何選項的修正後 Edge > 0，則堅決選擇 "No Bet"。
+- 優先尋找亞洲盤 (Asian Handicap) 或 大小球 (Over/Under) 中的錯價機會，不僅限於勝平負 (1x2)。
 
-### D. 投注決策
-請根據以上分析，輸出以下格式的 JSON：
+### D. 結構化輸出 (Strict JSON format)
+請根據嚴謹的量化對比與定性修正，輸出以下 JSON：
 ```json
 {{
     "recommendation": {{
@@ -432,42 +427,23 @@ You have deep knowledge of:
         "selection": "Home / Away / Over / Under / None",
         "model_probability": 0.xx,
         "implied_probability": 0.xx,
-        "edge": 0.xx,
+        "calculated_edge": 0.xx,
+        "expected_value_assessment": "Positive / Negative / Neutral",
         "confidence": "High / Medium / Low",
-        "reasoning": "詳細解釋（必須包含：陣容影響、傷停影響、市場對比）..."
+        "reasoning": "請提供嚴密的邏輯推導（必須包含：1. 賠率落差計算結果 2. 傷停與情報如何修正模型誤差 3. 為何市場定價錯誤）"
     }},
     "analysis": {{
-        "key_players_missing": ["球員A", "球員B"],
-        "lineup_advantage": "主隊/客隊/相等",
-        "injury_impact": "主隊/客隊/相等",
-        "model_market_discrepancy": "差距百分比"
+        "model_vs_market_discrepancy": "簡述模型勝率與市場定價最大的分歧點",
+        "qualitative_adjustment": "根據陣容和情報，模型預測需要被調高還是調低？",
+        "market_trap_warning": "是否存在莊家誘盤的跡象？(有/無，說明原因)"
     }}
 }}
-```
-```json
-{{
-    "recommendation": {{
-        "market": "1x2 / Asian Handicap x.x / Over/Under x.x / No Bet",
-        "selection": "Home / Away / Over / Under / None",
-        "model_probability": 0.xx,
-        "implied_probability": 0.xx,
-        "edge": 0.xx,
-        "confidence": "High / Medium / Low",
-        "reasoning": "詳細解釋（必須包含：陣容影響、傷停影響、市場對比）..."
-    }},
-    "analysis": {{
-        "key_players_missing": ["球員A", "球員B"],
-        "lineup_advantage": "主隊/客隊/相等",
-        "injury_impact": "主隊/客隊/相等",
-        "model_market_discrepancy": "差距百分比"
-    }}
-}}
-```
 
 注意：
 - reasoning 必須具體說明你如何考量陣容和傷停因素
 - 如果模型看好但有核心球員傷停，請降低 confidence 等級
-- "edge" 計算方式: (model_probability - implied_probability)
+- "calculated_edge" 計算方式: (model_probability - implied_probability)
+- 只有當 calculated_edge > 0.02 時，才建議投注
 """
 
         result = self._call_model(client, settings.MODEL_GPT, "Output JSON only.", prompt_content, json_mode=True)

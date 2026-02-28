@@ -1,0 +1,396 @@
+{
+    "event_id": 15453081,
+    "match_date": "2026-02-27",
+    "match_time": "04:00",
+    "tournament_name": "UEFA Europa League, Knockout stage",
+    "category_name": "Europe",
+    "home_team": "Bologna",
+    "away_team": "SK Brann",
+    "home_formation": "4-3-3",
+    "away_formation": "4-3-3",
+    "home_coach": "",
+    "away_coach": "",
+    "home_starters": [
+        {
+            "id": 44906,
+            "name": "Łukasz Skorupski",
+            "number": 1,
+            "position": "G",
+            "rating": 7.21
+        },
+        {
+            "id": 928104,
+            "name": "Nadir Zortea",
+            "number": 20,
+            "position": "D",
+            "rating": 6.97
+        },
+        {
+            "id": 1085913,
+            "name": "Martin Vitík",
+            "number": 41,
+            "position": "D",
+            "rating": 6.85
+        },
+        {
+            "id": 818481,
+            "name": "Jhon Lucumí",
+            "number": 26,
+            "position": "D",
+            "rating": 7.37
+        },
+        {
+            "id": 902031,
+            "name": "João Mário",
+            "number": 17,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 907152,
+            "name": "Lewis Ferguson",
+            "number": 19,
+            "position": "M",
+            "rating": 6.84
+        },
+        {
+            "id": 115516,
+            "name": "Remo Freuler",
+            "number": 8,
+            "position": "M",
+            "rating": 7.02
+        },
+        {
+            "id": 814882,
+            "name": "Nikola Moro",
+            "number": 6,
+            "position": "M",
+            "rating": 7.26
+        },
+        {
+            "id": 294597,
+            "name": "Federico Bernardeschi",
+            "number": 10,
+            "position": "F",
+            "rating": 7.1
+        },
+        {
+            "id": 1116577,
+            "name": "Santiago Castro",
+            "number": 9,
+            "position": "F",
+            "rating": 6.71
+        },
+        {
+            "id": 1065261,
+            "name": "Jonathan Rowe",
+            "number": 11,
+            "position": "F",
+            "rating": 7.07
+        }
+    ],
+    "away_starters": [
+        {
+            "id": 242497,
+            "name": "Matias Dyngeland",
+            "number": 1,
+            "position": "G",
+            "rating": 7.56
+        },
+        {
+            "id": 1104255,
+            "name": "Denzel De Roeve",
+            "number": 21,
+            "position": "D",
+            "rating": 6.98
+        },
+        {
+            "id": 779064,
+            "name": "Fredrik Pallesen Knudsen",
+            "number": 3,
+            "position": "D",
+            "rating": 7.18
+        },
+        {
+            "id": 1890014,
+            "name": "Nana Kwame Boakye",
+            "number": 4,
+            "position": "D",
+            "rating": 6.6
+        },
+        {
+            "id": 563908,
+            "name": "Joachim Soltvedt",
+            "number": 17,
+            "position": "D",
+            "rating": 7.15
+        },
+        {
+            "id": 885172,
+            "name": "Kristall Máni Ingason",
+            "number": 10,
+            "position": "M",
+            "rating": 5.9
+        },
+        {
+            "id": 837846,
+            "name": "Jacob Lungi Sørensen",
+            "number": 18,
+            "position": "M",
+            "rating": 7.07
+        },
+        {
+            "id": 865636,
+            "name": "Felix Horn Myhre",
+            "number": 8,
+            "position": "M",
+            "rating": 6.92
+        },
+        {
+            "id": 936340,
+            "name": "Ulrik Mathisen",
+            "number": 14,
+            "position": "F",
+            "rating": 6.46
+        },
+        {
+            "id": 944208,
+            "name": "Noah Jean Holm",
+            "number": 29,
+            "position": "F",
+            "rating": 6.91
+        },
+        {
+            "id": 862449,
+            "name": "Jón Dagur Þórsteinsson",
+            "number": 16,
+            "position": "F",
+            "rating": 6.6
+        }
+    ],
+    "home_substitutes": [
+        {
+            "id": 850952,
+            "name": "Federico Ravaglia",
+            "number": 13,
+            "position": "G",
+            "rating": 7.35
+        },
+        {
+            "id": 1530540,
+            "name": "Massimo Pessina",
+            "number": 25,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 933264,
+            "name": "Torbjørn Heggem",
+            "number": 14,
+            "position": "D",
+            "rating": 6.96
+        },
+        {
+            "id": 862697,
+            "name": "Nicolò Casale",
+            "number": 16,
+            "position": "D",
+            "rating": 7
+        },
+        {
+            "id": 1469416,
+            "name": "Davide Baroncioni",
+            "number": 70,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 928796,
+            "name": "Tommaso Pobega",
+            "number": 4,
+            "position": "M",
+            "rating": 6.75
+        },
+        {
+            "id": 793645,
+            "name": "Riccardo Orsolini",
+            "number": 7,
+            "position": "F",
+            "rating": 6.89
+        },
+        {
+            "id": 826064,
+            "name": "Jens Odgaard",
+            "number": 21,
+            "position": "F",
+            "rating": 6.73
+        },
+        {
+            "id": 909991,
+            "name": "Simon Sohm",
+            "number": 23,
+            "position": "M",
+            "rating": 6.4
+        },
+        {
+            "id": 1162611,
+            "name": "Benjamín Domínguez",
+            "number": 30,
+            "position": "F",
+            "rating": 6.5
+        },
+        {
+            "id": 905381,
+            "name": "Thijs Dallinga",
+            "number": 24,
+            "position": "F",
+            "rating": 6.68
+        },
+        {
+            "id": 971005,
+            "name": "Nicolò Cambiaghi",
+            "number": 28,
+            "position": "F",
+            "rating": 6.81
+        }
+    ],
+    "away_substitutes": [
+        {
+            "id": 1015406,
+            "name": "Simen Vidtun Nilsen",
+            "number": 12,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 1461834,
+            "name": "Mathias Engevik Klausen",
+            "number": 24,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 548640,
+            "name": "Vetle Winger Dragsnes",
+            "number": 20,
+            "position": "D",
+            "rating": 6.52
+        },
+        {
+            "id": 325905,
+            "name": "Thore Baardsen Pedersen",
+            "number": 23,
+            "position": "D",
+            "rating": 6.79
+        },
+        {
+            "id": 1191898,
+            "name": "Rasmus Holten",
+            "number": 43,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1104167,
+            "name": "Niklas Jensen Wassberg",
+            "number": 25,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1481745,
+            "name": "Jesper Nerhus Eikrem",
+            "number": 40,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1605339,
+            "name": "Lars Remmem",
+            "number": 41,
+            "position": "M",
+            "rating": 6.6
+        },
+        {
+            "id": 181893,
+            "name": "Bård Finne",
+            "number": 11,
+            "position": "F",
+            "rating": 6.59
+        },
+        {
+            "id": 796821,
+            "name": "Mads Berg Sande",
+            "number": 27,
+            "position": "M",
+            "rating": 6.33
+        },
+        {
+            "id": 1931534,
+            "name": "Julian Lægreid",
+            "number": 39,
+            "position": "F",
+            "rating": 6.3
+        },
+        {
+            "id": 1126486,
+            "name": "Markus Haaland",
+            "number": 32,
+            "position": "M",
+            "rating": 6.61
+        }
+    ],
+    "home_missing_players": [
+        {
+            "name": "Charalampos Lykogiannis",
+            "position": "D",
+            "type": "missing",
+            "description": "Hamstring",
+            "expected_end_date": "2026-03-02T00:00:00+00:00"
+        },
+        {
+            "name": "Juan Miranda",
+            "position": "D",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        }
+    ],
+    "away_missing_players": [
+        {
+            "name": "Niklas Castro",
+            "position": "F",
+            "type": "missing",
+            "description": "Unknown",
+            "expected_end_date": "2026-02-27T00:00:00+00:00"
+        },
+        {
+            "name": "Sævar Atli Magnússon",
+            "position": "F",
+            "type": "missing",
+            "description": "Knee Injury",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Eggert Aron Guðmundsson",
+            "position": "M",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Jonas Torsvik",
+            "position": "D",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Sakarias Opsahl",
+            "position": "M",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        }
+    ]
+}

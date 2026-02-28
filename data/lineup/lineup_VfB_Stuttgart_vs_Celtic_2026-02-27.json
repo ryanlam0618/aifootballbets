@@ -1,0 +1,410 @@
+{
+    "event_id": 15453079,
+    "match_date": "2026-02-27",
+    "match_time": "01:45",
+    "tournament_name": "UEFA Europa League, Knockout stage",
+    "category_name": "Europe",
+    "home_team": "VfB Stuttgart",
+    "away_team": "Celtic",
+    "home_formation": "4-2-3-1",
+    "away_formation": "4-2-3-1",
+    "home_coach": "",
+    "away_coach": "",
+    "home_starters": [
+        {
+            "id": 584722,
+            "name": "Alexander Nübel",
+            "number": 33,
+            "position": "G",
+            "rating": 6.9
+        },
+        {
+            "id": 906278,
+            "name": "Josha Vagnoman",
+            "number": 4,
+            "position": "D",
+            "rating": 6.64
+        },
+        {
+            "id": 1418649,
+            "name": "Finn Jeltsch",
+            "number": 29,
+            "position": "D",
+            "rating": 6.79
+        },
+        {
+            "id": 1127823,
+            "name": "Luca Jaquez",
+            "number": 14,
+            "position": "D",
+            "rating": 6.82
+        },
+        {
+            "id": 788949,
+            "name": "Maximilian Mittelstädt",
+            "number": 7,
+            "position": "D",
+            "rating": 7.1
+        },
+        {
+            "id": 801030,
+            "name": "Atakan Karazor",
+            "number": 16,
+            "position": "M",
+            "rating": 6.59
+        },
+        {
+            "id": 1464641,
+            "name": "Chema Andrés",
+            "number": 30,
+            "position": "M",
+            "rating": 6.93
+        },
+        {
+            "id": 1153265,
+            "name": "Badredine Bouanani",
+            "number": 27,
+            "position": "M",
+            "rating": 6.9
+        },
+        {
+            "id": 983540,
+            "name": "Tiago Tomás",
+            "number": 8,
+            "position": "M",
+            "rating": 7.23
+        },
+        {
+            "id": 990201,
+            "name": "Jamie Leweling",
+            "number": 18,
+            "position": "M",
+            "rating": 7.07
+        },
+        {
+            "id": 794298,
+            "name": "Deniz Undav",
+            "number": 26,
+            "position": "F",
+            "rating": 6.96
+        }
+    ],
+    "away_starters": [
+        {
+            "id": 995654,
+            "name": "Viljami Sinisalo",
+            "number": 12,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 1614360,
+            "name": "Colby Donovan",
+            "number": 51,
+            "position": "D",
+            "rating": 6.89
+        },
+        {
+            "id": 822459,
+            "name": "Auston Trusty",
+            "number": 6,
+            "position": "D",
+            "rating": 7.02
+        },
+        {
+            "id": 1117475,
+            "name": "Dane Murray",
+            "number": 47,
+            "position": "D",
+            "rating": 6.5
+        },
+        {
+            "id": 796444,
+            "name": "Marcelo Saracchi",
+            "number": 36,
+            "position": "D",
+            "rating": 6.33
+        },
+        {
+            "id": 97046,
+            "name": "Callum McGregor",
+            "number": 42,
+            "position": "M",
+            "rating": 6.81
+        },
+        {
+            "id": 926363,
+            "name": "Luke McCowan",
+            "number": 14,
+            "position": "M",
+            "rating": 6.47
+        },
+        {
+            "id": 832420,
+            "name": "Daizen Maeda",
+            "number": 38,
+            "position": "M",
+            "rating": 6.35
+        },
+        {
+            "id": 891153,
+            "name": "Reo Hatate",
+            "number": 41,
+            "position": "M",
+            "rating": 6.93
+        },
+        {
+            "id": 1103531,
+            "name": "Yang Hyun-Jun",
+            "number": 13,
+            "position": "M",
+            "rating": 6.73
+        },
+        {
+            "id": 902381,
+            "name": "Junior Adamu",
+            "number": 9,
+            "position": "F",
+            "rating": 6.44
+        }
+    ],
+    "home_substitutes": [
+        {
+            "id": 152463,
+            "name": "Fabian Bredlow",
+            "number": 1,
+            "position": "G",
+            "rating": 6.4
+        },
+        {
+            "id": 1481222,
+            "name": "Florian Hellstern",
+            "number": 44,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 1979970,
+            "name": "Ameen Al-Dakhil",
+            "number": 2,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 916943,
+            "name": "Ramon Hendriks",
+            "number": 3,
+            "position": "D",
+            "rating": 6.73
+        },
+        {
+            "id": 901882,
+            "name": "Angelo Stiller",
+            "number": 6,
+            "position": "M",
+            "rating": 7.26
+        },
+        {
+            "id": 891510,
+            "name": "Chris Führich",
+            "number": 10,
+            "position": "M",
+            "rating": 7.01
+        },
+        {
+            "id": 1126569,
+            "name": "Bilal El Khannouss",
+            "number": 11,
+            "position": "M",
+            "rating": 7.4
+        },
+        {
+            "id": 1009334,
+            "name": "Lorenz Assignon",
+            "number": 22,
+            "position": "D",
+            "rating": 6.61
+        },
+        {
+            "id": 861981,
+            "name": "Nikolas Nartey",
+            "number": 28,
+            "position": "M",
+            "rating": 6.73
+        },
+        {
+            "id": 1937274,
+            "name": "Mirza Ćatović",
+            "number": 35,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 878081,
+            "name": "Ermedin Demirović",
+            "number": 9,
+            "position": "F",
+            "rating": 6.26
+        }
+    ],
+    "away_substitutes": [
+        {
+            "id": 1076,
+            "name": "Kasper Schmeichel",
+            "number": 1,
+            "position": "G",
+            "rating": 6.6
+        },
+        {
+            "id": 847990,
+            "name": "Liam Scales",
+            "number": 5,
+            "position": "D",
+            "rating": 6.9
+        },
+        {
+            "id": 840227,
+            "name": "Anthony Ralston",
+            "number": 56,
+            "position": "D",
+            "rating": 6.83
+        },
+        {
+            "id": 366592,
+            "name": "Kieran Tierney",
+            "number": 63,
+            "position": "D",
+            "rating": 6.64
+        },
+        {
+            "id": 957143,
+            "name": "Sebastian Tounekti",
+            "number": 23,
+            "position": "F",
+            "rating": 6.69
+        },
+        {
+            "id": 983554,
+            "name": "Paulo Bernardo",
+            "number": 28,
+            "position": "M",
+            "rating": 6.56
+        },
+        {
+            "id": 91744,
+            "name": "James Forrest",
+            "number": 49,
+            "position": "M",
+            "rating": 6.58
+        },
+        {
+            "id": 1563606,
+            "name": "Sean Mcardle",
+            "number": 50,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 918517,
+            "name": "Benjamin Nygren",
+            "number": 8,
+            "position": "F",
+            "rating": 7.09
+        },
+        {
+            "id": 929163,
+            "name": "Tomáš Čvančara",
+            "number": 11,
+            "position": "F",
+            "rating": 6.7
+        },
+        {
+            "id": 359642,
+            "name": "Kelechi Iheanacho",
+            "number": 17,
+            "position": "F",
+            "rating": 6.66
+        },
+        {
+            "id": 1622158,
+            "name": "Thomas Hatton",
+            "number": 52,
+            "position": "M",
+            "rating": ""
+        }
+    ],
+    "home_missing_players": [
+        {
+            "name": "Jeff Chabot",
+            "position": "D",
+            "type": "missing",
+            "description": "Yellow card accumulation suspension",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Lazar Jovanović",
+            "position": "M",
+            "type": "missing",
+            "description": "Back Injury",
+            "expected_end_date": "2026-03-16T00:00:00+00:00"
+        },
+        {
+            "name": "Dan-Axel Zagadou",
+            "position": "D",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Justin Diehl",
+            "position": "F",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        }
+    ],
+    "away_missing_players": [
+        {
+            "name": "Cameron Carter-Vickers",
+            "position": "D",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Callum Osmand",
+            "position": "F",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Jota",
+            "position": "F",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Alistair Johnston",
+            "position": "D",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Arne Engels",
+            "position": "M",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Odin Thiago Holm",
+            "position": "M",
+            "type": "missing",
+            "description": "Calf Injury",
+            "expected_end_date": ""
+        }
+    ]
+}

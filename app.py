@@ -772,9 +772,9 @@ def main():
     json_away = json_match['away']
     print(f"      [JSON] {home} -> {json_home} (confidence: {json_match['confidence']})")
     print(f"      [JSON] {away} -> {json_away} (confidence: {json_match['confidence']})")
-    
+    '''
     #test code
-    '''db_home = home
+    db_home = home
     db_away = away
     odds_home = home
     odds_away = away
@@ -1762,7 +1762,7 @@ def main():
         **structured_odds  # 展開結構化赔率數據 (包含 1x2 等)
     }
     
-    rec = llm.analyze_with_super_prompt(match_context, odds_data_package, math_results).get("recommendation", {})
+    rec = llm.analyze_with_super_prompt(match_context, odds_data_package, math_results, market_intelligence=grok_reaction).get("recommendation", {})
 
     print("\n--------- 💡 最終推薦結果 ---------", flush=True)
     rec_market = rec.get('market', 'N/A')
@@ -1838,15 +1838,23 @@ def main():
         try:
             kelly_v3 = ConfidenceKelly(
                 base_fraction=0.75,
-                min_edge=0.08,
+                min_edge=0.02,  # 調降至 2% 門檻，與測試模式一致
                 initial_bankroll=settings.INITIAL_BANKROLL
             )
             
             market_prob = 1 / target_odds
             
-            # 嘗試獲取 v3 概率 (從數學模型結果)
-            if 'avg_v3_prob' in locals():
+            # 修復: 優先使用 LLM 返回的 model_p，而非 avg_v3_prob
+            # 因為 avg_v3_prob 是主勝概率，不適用於其他投注類型 (如 Under/Over, AH 等)
+            if model_p > 0 and model_p < 1:
+                # 使用 LLM 返回的正確概率
+                v3_prob = model_p
+            elif 'avg_v3_prob' in locals() and avg_v3_prob > 0:
+                # 回退到 avg_v3_prob (僅當 LLM 沒有返回有效概率時)
                 v3_prob = avg_v3_prob
+            else:
+                # 最終回退
+                v3_prob = prob if prob > 0 else 0.5
             
             kelly_result = kelly_v3.calculate(
                 prob=v3_prob,
