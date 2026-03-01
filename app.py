@@ -569,7 +569,7 @@ def run_test_mode():
     try:
         kelly_v3 = ConfidenceKelly(
             base_fraction=0.75,
-            min_edge=0.02,  # 調降至 2% 門檻，符合一般投注優勢標準
+            min_edge=0.05,  # 調降至 2% 門檻，符合一般投注優勢標準
             initial_bankroll=settings.INITIAL_BANKROLL
         )
         

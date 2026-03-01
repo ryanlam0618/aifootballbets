@@ -1,0 +1,375 @@
+{
+    "event_id": 14023971,
+    "match_date": "2026-03-02",
+    "match_time": "00:30",
+    "tournament_name": "Premier League",
+    "category_name": "England",
+    "home_team": "Arsenal",
+    "away_team": "Chelsea",
+    "home_formation": "4-2-3-1",
+    "away_formation": "4-2-3-1",
+    "home_coach": "",
+    "away_coach": "",
+    "home_starters": [
+        {
+            "id": 581310,
+            "name": "David Raya",
+            "number": 1,
+            "position": "G",
+            "rating": 6.86
+        },
+        {
+            "id": 958959,
+            "name": "Jurriën Timber",
+            "number": 12,
+            "position": "D",
+            "rating": 6.89
+        },
+        {
+            "id": 941168,
+            "name": "William Saliba",
+            "number": 2,
+            "position": "D",
+            "rating": 6.93
+        },
+        {
+            "id": 869792,
+            "name": "Gabriel Magalhães",
+            "number": 6,
+            "position": "D",
+            "rating": 7.3
+        },
+        {
+            "id": 1002837,
+            "name": "Piero Hincapié",
+            "number": 5,
+            "position": "D",
+            "rating": 6.96
+        },
+        {
+            "id": 966837,
+            "name": "Martín Zubimendi",
+            "number": 36,
+            "position": "M",
+            "rating": 7.1
+        },
+        {
+            "id": 856714,
+            "name": "Declan Rice",
+            "number": 41,
+            "position": "M",
+            "rating": 7.48
+        },
+        {
+            "id": 934235,
+            "name": "Bukayo Saka",
+            "number": 7,
+            "position": "M",
+            "rating": 7.25
+        },
+        {
+            "id": 864921,
+            "name": "Eberechi Eze",
+            "number": 10,
+            "position": "M",
+            "rating": 7
+        },
+        {
+            "id": 135666,
+            "name": "Leandro Trossard",
+            "number": 19,
+            "position": "M",
+            "rating": 6.9
+        },
+        {
+            "id": 804508,
+            "name": "Viktor Gyökeres",
+            "number": 14,
+            "position": "F",
+            "rating": 6.58
+        }
+    ],
+    "away_starters": [
+        {
+            "id": 920546,
+            "name": "Robert Sánchez",
+            "number": 1,
+            "position": "G",
+            "rating": 6.94
+        },
+        {
+            "id": 885908,
+            "name": "Reece James",
+            "number": 24,
+            "position": "D",
+            "rating": 7.18
+        },
+        {
+            "id": 1154657,
+            "name": "Mamadou Sarr",
+            "number": 19,
+            "position": "D",
+            "rating": 6.3
+        },
+        {
+            "id": 826134,
+            "name": "Trevoh Chalobah",
+            "number": 23,
+            "position": "D",
+            "rating": 6.98
+        },
+        {
+            "id": 1153079,
+            "name": "Jorrel Hato",
+            "number": 21,
+            "position": "D",
+            "rating": 6.51
+        },
+        {
+            "id": 987650,
+            "name": "Moisés Caicedo",
+            "number": 25,
+            "position": "M",
+            "rating": 7.27
+        },
+        {
+            "id": 1105779,
+            "name": "Andrey Santos",
+            "number": 17,
+            "position": "M",
+            "rating": 6.84
+        },
+        {
+            "id": 982780,
+            "name": "Cole Palmer",
+            "number": 10,
+            "position": "M",
+            "rating": 7.08
+        },
+        {
+            "id": 974505,
+            "name": "Enzo Fernández",
+            "number": 8,
+            "position": "M",
+            "rating": 7.15
+        },
+        {
+            "id": 879349,
+            "name": "Pedro Neto",
+            "number": 7,
+            "position": "M",
+            "rating": 7.04
+        },
+        {
+            "id": 975079,
+            "name": "João Pedro",
+            "number": 20,
+            "position": "F",
+            "rating": 7.07
+        }
+    ],
+    "home_substitutes": [
+        {
+            "id": 232422,
+            "name": "Kepa Arrizabalaga",
+            "number": 13,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 1144630,
+            "name": "Cristhian Mosquera",
+            "number": 3,
+            "position": "D",
+            "rating": 6.89
+        },
+        {
+            "id": 957602,
+            "name": "Riccardo Calafiori",
+            "number": 33,
+            "position": "D",
+            "rating": 6.85
+        },
+        {
+            "id": 1423711,
+            "name": "Myles Lewis-Skelly",
+            "number": 49,
+            "position": "D",
+            "rating": 6.55
+        },
+        {
+            "id": 135256,
+            "name": "Christian Nørgaard",
+            "number": 16,
+            "position": "M",
+            "rating": 6.67
+        },
+        {
+            "id": 966547,
+            "name": "Noni Madueke",
+            "number": 20,
+            "position": "F",
+            "rating": 6.85
+        },
+        {
+            "id": 794839,
+            "name": "Gabriel Jesus",
+            "number": 9,
+            "position": "F",
+            "rating": 6.53
+        },
+        {
+            "id": 922573,
+            "name": "Gabriel Martinelli",
+            "number": 11,
+            "position": "F",
+            "rating": 6.63
+        },
+        {
+            "id": 836705,
+            "name": "Kai Havertz",
+            "number": 29,
+            "position": "F",
+            "rating": 6.73
+        }
+    ],
+    "away_substitutes": [
+        {
+            "id": 962053,
+            "name": "Filip Jørgensen",
+            "number": 12,
+            "position": "G",
+            "rating": 7.1
+        },
+        {
+            "id": 1403050,
+            "name": "Josh Acheampong",
+            "number": 34,
+            "position": "D",
+            "rating": 6.57
+        },
+        {
+            "id": 352668,
+            "name": "Tosin Adarabioyo",
+            "number": 4,
+            "position": "D",
+            "rating": 6.98
+        },
+        {
+            "id": 904827,
+            "name": "Benoît Badiashile",
+            "number": 5,
+            "position": "D",
+            "rating": 6.66
+        },
+        {
+            "id": 996958,
+            "name": "Malo Gusto",
+            "number": 27,
+            "position": "D",
+            "rating": 6.68
+        },
+        {
+            "id": 1069488,
+            "name": "Roméo Lavia",
+            "number": 45,
+            "position": "M",
+            "rating": 6.7
+        },
+        {
+            "id": 1135873,
+            "name": "Alejandro Garnacho",
+            "number": 49,
+            "position": "F",
+            "rating": 6.84
+        },
+        {
+            "id": 997087,
+            "name": "Liam Delap",
+            "number": 9,
+            "position": "F",
+            "rating": 6.54
+        },
+        {
+            "id": 1414933,
+            "name": "Marc Guiu",
+            "number": 38,
+            "position": "F",
+            "rating": 6.29
+        }
+    ],
+    "home_missing_players": [
+        {
+            "name": "Max Dowman",
+            "position": "M",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Mikel Merino",
+            "position": "M",
+            "type": "missing",
+            "description": "Foot Injury",
+            "expected_end_date": "2026-05-25T00:00:00+00:00"
+        },
+        {
+            "name": "Ben White",
+            "position": "D",
+            "type": "doubtful",
+            "description": "Muscle Injury",
+            "expected_end_date": "2026-03-02T00:00:00+00:00"
+        }
+    ],
+    "away_missing_players": [
+        {
+            "name": "Mykhaylo Mudryk",
+            "position": "M",
+            "type": "missing",
+            "description": "Doping violation",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Dário Essugo",
+            "position": "M",
+            "type": "missing",
+            "description": "Thigh Injury",
+            "expected_end_date": "2026-03-02T00:00:00+00:00"
+        },
+        {
+            "name": "Marc Cucurella",
+            "position": "D",
+            "type": "missing",
+            "description": "Hamstring",
+            "expected_end_date": "2026-03-02T00:00:00+00:00"
+        },
+        {
+            "name": "Levi Colwill",
+            "position": "D",
+            "type": "missing",
+            "description": "ACL Knee Injury",
+            "expected_end_date": "2026-05-25T00:00:00+00:00"
+        },
+        {
+            "name": "Jamie Gittens",
+            "position": "M",
+            "type": "missing",
+            "description": "Hamstring",
+            "expected_end_date": "2026-03-22T00:00:00+00:00"
+        },
+        {
+            "name": "Wesley Fofana",
+            "position": "D",
+            "type": "missing",
+            "description": "Red card suspension",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Estêvão",
+            "position": "M",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        }
+    ]
+}

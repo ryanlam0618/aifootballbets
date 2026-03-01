@@ -1,0 +1,368 @@
+{
+    "event_id": 14062229,
+    "match_date": "2026-03-02",
+    "match_time": "02:30",
+    "tournament_name": "Bundesliga",
+    "category_name": "Germany",
+    "home_team": "Hamburger SV",
+    "away_team": "RB Leipzig",
+    "home_formation": "3-4-3",
+    "away_formation": "4-3-3",
+    "home_coach": "",
+    "away_coach": "",
+    "home_starters": [
+        {
+            "id": 113442,
+            "name": "Daniel Heuer Fernandes",
+            "number": 1,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 973564,
+            "name": "Nicolás Capaldo",
+            "number": 24,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1405212,
+            "name": "Luka Vušković",
+            "number": 44,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 801003,
+            "name": "Jordan Torunarigha",
+            "number": 25,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1102528,
+            "name": "William Mikelbrencis",
+            "number": 2,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 904835,
+            "name": "Fábio Vieira",
+            "number": 20,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1064305,
+            "name": "Nicolai Remberg",
+            "number": 21,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 798303,
+            "name": "Miro Muheim",
+            "number": 28,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1012235,
+            "name": "Ransford Yeboah Königsdörffer",
+            "number": 11,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 1146091,
+            "name": "Damion Downs",
+            "number": 19,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 988476,
+            "name": "Philip Otele",
+            "number": 27,
+            "position": "F",
+            "rating": ""
+        }
+    ],
+    "away_starters": [
+        {
+            "id": 934385,
+            "name": "Maarten Vandevoordt",
+            "number": 26,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 856553,
+            "name": "Ridle Baku",
+            "number": 17,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 136924,
+            "name": "Willi Orbán",
+            "number": 4,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 976421,
+            "name": "Castello Lukeba",
+            "number": 23,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 856076,
+            "name": "David Raum",
+            "number": 22,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1198075,
+            "name": "Brajan Gruda",
+            "number": 10,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 976575,
+            "name": "Nicolas Seiwald",
+            "number": 13,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 825956,
+            "name": "Christoph Baumgartner",
+            "number": 14,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 2087085,
+            "name": "Yan Diomande",
+            "number": 49,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 1133743,
+            "name": "Rômulo",
+            "number": 40,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 1121923,
+            "name": "Antonio Nusa",
+            "number": 7,
+            "position": "F",
+            "rating": ""
+        }
+    ],
+    "home_substitutes": [
+        {
+            "id": 1030355,
+            "name": "Sander Tangvik",
+            "number": 12,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 945532,
+            "name": "Daniel Elfadli",
+            "number": 8,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 999030,
+            "name": "Warmed Omari",
+            "number": 17,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1035752,
+            "name": "Giorgi Gocholeishvili",
+            "number": 16,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 901892,
+            "name": "Albert Sambi Lokonga",
+            "number": 6,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 789192,
+            "name": "Jean-Luc Dompé",
+            "number": 7,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 135264,
+            "name": "Yussuf Poulsen",
+            "number": 15,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 168987,
+            "name": "Robert Glatzel",
+            "number": 9,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 991824,
+            "name": "Rayan Philippe",
+            "number": 14,
+            "position": "F",
+            "rating": ""
+        }
+    ],
+    "away_substitutes": [
+        {
+            "id": 148263,
+            "name": "Leopold Zingerle",
+            "number": 25,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 1146250,
+            "name": "Max Finkgräfe",
+            "number": 35,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 319853,
+            "name": "Lukas Klostermann",
+            "number": 16,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1048009,
+            "name": "El Chadaille Bitshiabu",
+            "number": 5,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 319857,
+            "name": "Benjamin Henrichs",
+            "number": 39,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1426577,
+            "name": "Tidiam Gomis",
+            "number": 27,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 1155383,
+            "name": "Ezechiel Banzuzi",
+            "number": 6,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1494826,
+            "name": "Conrad Harder",
+            "number": 11,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 1088896,
+            "name": "Johan Bakayoko",
+            "number": 9,
+            "position": "F",
+            "rating": ""
+        }
+    ],
+    "home_missing_players": [
+        {
+            "name": "Albert Sambi Lokonga",
+            "position": "M",
+            "type": "doubtful",
+            "description": "Ankle Injury",
+            "expected_end_date": "2026-03-02T00:00:00+00:00"
+        },
+        {
+            "name": "Albert Grønbæk",
+            "position": "M",
+            "type": "missing",
+            "description": "Facial Injury",
+            "expected_end_date": "2026-03-15T00:00:00+00:00"
+        },
+        {
+            "name": "Alexander Røssing-Lelesiit",
+            "position": "M",
+            "type": "missing",
+            "description": "Ankle Injury",
+            "expected_end_date": "2026-05-17T00:00:00+00:00"
+        },
+        {
+            "name": "Fernando Dickes",
+            "position": "G",
+            "type": "missing",
+            "description": "Illness",
+            "expected_end_date": "2026-03-02T00:00:00+00:00"
+        }
+    ],
+    "away_missing_players": [
+        {
+            "name": "Assan Ouédraogo",
+            "position": "M",
+            "type": "missing",
+            "description": "Knee Injury",
+            "expected_end_date": "2026-04-05T00:00:00+00:00"
+        },
+        {
+            "name": "Péter Gulácsi",
+            "position": "G",
+            "type": "missing",
+            "description": "MCL Knee Injury",
+            "expected_end_date": "2026-04-05T00:00:00+00:00"
+        },
+        {
+            "name": "Kosta Nedeljković",
+            "position": "D",
+            "type": "missing",
+            "description": "Back Injury",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Xaver Schlager",
+            "position": "M",
+            "type": "doubtful",
+            "description": "Groin Injury",
+            "expected_end_date": "2026-03-16T00:00:00+00:00"
+        },
+        {
+            "name": "Ayodele Thomas",
+            "position": "M",
+            "type": "missing",
+            "description": "Muscle Injury",
+            "expected_end_date": "2026-03-02T00:00:00+00:00"
+        }
+    ]
+}
