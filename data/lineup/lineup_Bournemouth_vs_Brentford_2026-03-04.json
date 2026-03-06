@@ -1,0 +1,382 @@
+{
+    "event_id": 14023980,
+    "match_date": "2026-03-04",
+    "match_time": "03:30",
+    "tournament_name": "Premier League",
+    "category_name": "England",
+    "home_team": "Bournemouth",
+    "away_team": "Brentford",
+    "home_formation": "4-2-3-1",
+    "away_formation": "4-2-3-1",
+    "home_coach": "",
+    "away_coach": "",
+    "home_starters": [
+        {
+            "id": 882604,
+            "name": "Đorđe Petrović",
+            "number": 1,
+            "position": "G",
+            "rating": 6.87
+        },
+        {
+            "id": 1184308,
+            "name": "Álex Jiménez",
+            "number": 20,
+            "position": "D",
+            "rating": 6.8
+        },
+        {
+            "id": 1156586,
+            "name": "James Hill",
+            "number": 23,
+            "position": "D",
+            "rating": 6.94
+        },
+        {
+            "id": 830659,
+            "name": "Marcos Senesi",
+            "number": 5,
+            "position": "D",
+            "rating": 7.17
+        },
+        {
+            "id": 999028,
+            "name": "Adrien Truffert",
+            "number": 3,
+            "position": "D",
+            "rating": 6.64
+        },
+        {
+            "id": 800419,
+            "name": "Tyler Adams",
+            "number": 12,
+            "position": "M",
+            "rating": 6.85
+        },
+        {
+            "id": 1104986,
+            "name": "Alex Scott",
+            "number": 8,
+            "position": "M",
+            "rating": 6.89
+        },
+        {
+            "id": 1464966,
+            "name": "Rayan",
+            "number": 37,
+            "position": "M",
+            "rating": 7.14
+        },
+        {
+            "id": 322391,
+            "name": "Ryan Christie",
+            "number": 10,
+            "position": "M",
+            "rating": 6.66
+        },
+        {
+            "id": 895576,
+            "name": "Marcus Tavernier",
+            "number": 16,
+            "position": "M",
+            "rating": 6.7
+        },
+        {
+            "id": 998490,
+            "name": "Evanilson",
+            "number": 9,
+            "position": "F",
+            "rating": 6.65
+        }
+    ],
+    "away_starters": [
+        {
+            "id": 827362,
+            "name": "Caoimhin Kelleher",
+            "number": 1,
+            "position": "G",
+            "rating": 7.01
+        },
+        {
+            "id": 1137431,
+            "name": "Michael Kayode",
+            "number": 33,
+            "position": "D",
+            "rating": 6.86
+        },
+        {
+            "id": 958916,
+            "name": "Nathan Collins",
+            "number": 22,
+            "position": "D",
+            "rating": 6.81
+        },
+        {
+            "id": 924378,
+            "name": "Sepp van den Berg",
+            "number": 4,
+            "position": "D",
+            "rating": 6.71
+        },
+        {
+            "id": 599128,
+            "name": "Rico Henry",
+            "number": 3,
+            "position": "D",
+            "rating": 6.42
+        },
+        {
+            "id": 42694,
+            "name": "Jordan Henderson",
+            "number": 6,
+            "position": "M",
+            "rating": 6.83
+        },
+        {
+            "id": 799251,
+            "name": "Mathias Jensen",
+            "number": 8,
+            "position": "M",
+            "rating": 6.85
+        },
+        {
+            "id": 1106451,
+            "name": "Dango Ouattara",
+            "number": 19,
+            "position": "M",
+            "rating": 6.79
+        },
+        {
+            "id": 907072,
+            "name": "Mikkel Damsgaard",
+            "number": 24,
+            "position": "M",
+            "rating": 6.98
+        },
+        {
+            "id": 1006387,
+            "name": "Kevin Schade",
+            "number": 7,
+            "position": "M",
+            "rating": 6.89
+        },
+        {
+            "id": 1016907,
+            "name": "Igor Thiago",
+            "number": 9,
+            "position": "F",
+            "rating": 7.01
+        }
+    ],
+    "home_substitutes": [
+        {
+            "id": 913762,
+            "name": "Christos Mandas",
+            "number": 29,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 962408,
+            "name": "Bafodé Diakité",
+            "number": 18,
+            "position": "D",
+            "rating": 6.63
+        },
+        {
+            "id": 1406130,
+            "name": "Veljko Milosavljević",
+            "number": 44,
+            "position": "D",
+            "rating": 6.8
+        },
+        {
+            "id": 44566,
+            "name": "Adam Smith",
+            "number": 15,
+            "position": "D",
+            "rating": 6.35
+        },
+        {
+            "id": 1476524,
+            "name": "Alex Tóth",
+            "number": 27,
+            "position": "M",
+            "rating": 6.45
+        },
+        {
+            "id": 855731,
+            "name": "David Brooks",
+            "number": 7,
+            "position": "M",
+            "rating": 6.67
+        },
+        {
+            "id": 991478,
+            "name": "Amine Adli",
+            "number": 21,
+            "position": "F",
+            "rating": 6.8
+        },
+        {
+            "id": 336655,
+            "name": "Enes Ünal",
+            "number": 26,
+            "position": "F",
+            "rating": 6.47
+        },
+        {
+            "id": 1426228,
+            "name": "Eli Junior Kroupi",
+            "number": 22,
+            "position": "F",
+            "rating": 6.79
+        }
+    ],
+    "away_substitutes": [
+        {
+            "id": 1005959,
+            "name": "Hákon Rafn Valdimarsson",
+            "number": 12,
+            "position": "G",
+            "rating": 6.2
+        },
+        {
+            "id": 855864,
+            "name": "Ethan Pinnock",
+            "number": 5,
+            "position": "D",
+            "rating": 6.47
+        },
+        {
+            "id": 576384,
+            "name": "Kristoffer Ajer",
+            "number": 20,
+            "position": "D",
+            "rating": 6.65
+        },
+        {
+            "id": 972421,
+            "name": "Keane Lewis-Potter",
+            "number": 23,
+            "position": "F",
+            "rating": 6.67
+        },
+        {
+            "id": 1031258,
+            "name": "Yehor Yarmolyuk",
+            "number": 18,
+            "position": "M",
+            "rating": 6.69
+        },
+        {
+            "id": 2248920,
+            "name": "Luka Bentt",
+            "number": 48,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 2469397,
+            "name": "Ollie Shield",
+            "number": 49,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1586020,
+            "name": "Romelle Donovan",
+            "number": 45,
+            "position": "M",
+            "rating": 6.6
+        },
+        {
+            "id": 1403098,
+            "name": "Kaye Furo",
+            "number": 47,
+            "position": "F",
+            "rating": ""
+        }
+    ],
+    "home_missing_players": [
+        {
+            "name": "Julio Soler",
+            "position": "D",
+            "type": "missing",
+            "description": "Hamstring",
+            "expected_end_date": "2026-05-25T00:00:00+00:00"
+        },
+        {
+            "name": "Matai Akinmboni",
+            "position": "D",
+            "type": "doubtful",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Justin Kluivert",
+            "position": "M",
+            "type": "missing",
+            "description": "Knee Injury",
+            "expected_end_date": "2026-05-10T00:00:00+00:00"
+        },
+        {
+            "name": "Ben Gannon-Doak",
+            "position": "M",
+            "type": "missing",
+            "description": "Hamstring",
+            "expected_end_date": "2026-03-21T00:00:00+00:00"
+        },
+        {
+            "name": "Lewis Cook",
+            "position": "M",
+            "type": "missing",
+            "description": "Hamstring",
+            "expected_end_date": "2026-04-19T00:00:00+00:00"
+        }
+    ],
+    "away_missing_players": [
+        {
+            "name": "Vitaly Janelt",
+            "position": "M",
+            "type": "doubtful",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Aaron Hickey",
+            "position": "D",
+            "type": "doubtful",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Joshua Dasilva",
+            "position": "M",
+            "type": "doubtful",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Antoni Milambo",
+            "position": "M",
+            "type": "missing",
+            "description": "ACL Knee Injury",
+            "expected_end_date": "2026-05-25T00:00:00+00:00"
+        },
+        {
+            "name": "Fabio Carvalho",
+            "position": "F",
+            "type": "missing",
+            "description": "ACL Knee Injury",
+            "expected_end_date": "2026-05-25T00:00:00+00:00"
+        },
+        {
+            "name": "Reiss Nelson",
+            "position": "M",
+            "type": "missing",
+            "description": "Calf Injury",
+            "expected_end_date": ""
+        }
+    ]
+}

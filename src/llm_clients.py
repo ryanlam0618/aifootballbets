@@ -387,7 +387,8 @@ You excel at finding and synthesizing:
 
 ## 【1. 數學模型預測】(基於歷史與進階數據)
 {math_text}
-預期進球 (xG): 主隊 {home_xg:.2f} | 客隊 {away_xg:.2f}
+預期進球 (xG): 
+主隊預期進球: {home_xg:.2f} | 客隊預期進球: {away_xg:.2f}
 
 ## 【2. 市場面數據】(莊家定價)
 {odds_text}
@@ -407,7 +408,8 @@ You excel at finding and synthesizing:
 ### A. 隱含勝率 vs 模型勝率 (Value Identification)
 1. 計算各選項的「市場隱含勝率」(Implied Probability = 1 / Decimal Odds)。
 2. 計算「真實邊際」(Edge = 模型勝率 - 市場隱含勝率)。
-3. **過濾器**：只有當 Edge > 2% (0.02) 時，才具備初步投資價值。
+3. 過濾器：只有當 Edge > 5% (0.05) 時，才具備初步投資價值。
+4. 
 
 ### B. 模型失真檢驗 (Sanity & Bias Check)
 數學模型是「向後看」的（基於歷史），你需要用「當前陣容」與「情報」來修正它：
@@ -443,7 +445,7 @@ You excel at finding and synthesizing:
 - reasoning 必須具體說明你如何考量陣容和傷停因素
 - 如果模型看好但有核心球員傷停，請降低 confidence 等級
 - "calculated_edge" 計算方式: (model_probability - implied_probability)
-- 只有當 calculated_edge > 0.02 時，才建議投注
+- 只有當 calculated_edge > 0.05 時，才建議投注
 """
 
         result = self._call_model(client, settings.MODEL_GPT, "Output JSON only.", prompt_content, json_mode=True)

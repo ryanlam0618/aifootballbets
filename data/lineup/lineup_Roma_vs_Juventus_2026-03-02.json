@@ -1,0 +1,410 @@
+{
+    "event_id": 13981688,
+    "match_date": "2026-03-02",
+    "match_time": "03:45",
+    "tournament_name": "Serie A",
+    "category_name": "Italy",
+    "home_team": "Roma",
+    "away_team": "Juventus",
+    "home_formation": "3-4-2-1",
+    "away_formation": "4-3-3",
+    "home_coach": "",
+    "away_coach": "",
+    "home_starters": [
+        {
+            "id": 793986,
+            "name": "Mile Svilar",
+            "number": 99,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 611210,
+            "name": "Gianluca Mancini",
+            "number": 23,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 848287,
+            "name": "Evan Ndicka",
+            "number": 5,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 982778,
+            "name": "Devyne Rensch",
+            "number": 2,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 893008,
+            "name": "Zeki Çelik",
+            "number": 19,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 186855,
+            "name": "Bryan Cristante",
+            "number": 4,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 974087,
+            "name": "Manu Koné",
+            "number": 17,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1134200,
+            "name": "Wesley",
+            "number": 43,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1175821,
+            "name": "Niccolò Pisilli",
+            "number": 61,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 555540,
+            "name": "Lorenzo Pellegrini",
+            "number": 7,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 803039,
+            "name": "Donyell Malen",
+            "number": 14,
+            "position": "F",
+            "rating": ""
+        }
+    ],
+    "away_starters": [
+        {
+            "id": 79645,
+            "name": "Mattia Perin",
+            "number": 1,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 965330,
+            "name": "Pierre Kalulu",
+            "number": 15,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 885197,
+            "name": "Bremer",
+            "number": 3,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 865167,
+            "name": "Lloyd Kelly",
+            "number": 6,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 917048,
+            "name": "Andrea Cambiaso",
+            "number": 27,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 881931,
+            "name": "Weston McKennie",
+            "number": 22,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 803033,
+            "name": "Teun Koopmeiners",
+            "number": 8,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 904832,
+            "name": "Khéphren Thuram",
+            "number": 19,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 979222,
+            "name": "Francisco Conceição",
+            "number": 7,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 935564,
+            "name": "Jonathan David",
+            "number": 30,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 1149011,
+            "name": "Kenan Yıldız",
+            "number": 10,
+            "position": "F",
+            "rating": ""
+        }
+    ],
+    "home_substitutes": [
+        {
+            "id": 1652568,
+            "name": "Giorgio De Marzi",
+            "number": 70,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 1461428,
+            "name": "Radosław Żelezny",
+            "number": 91,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 1384847,
+            "name": "Daniele Ghilardi",
+            "number": 87,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1499991,
+            "name": "Jan Ziółkowski",
+            "number": 24,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 786259,
+            "name": "Konstantinos Tsimikas",
+            "number": 12,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1618563,
+            "name": "Lorenzo Venturino",
+            "number": 20,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 1128530,
+            "name": "Neil El Aynaoui",
+            "number": 8,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 848355,
+            "name": "Angeliño",
+            "number": 3,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1084730,
+            "name": "Bryan Zaragoza",
+            "number": 97,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 1923599,
+            "name": "Antonio Arena",
+            "number": 68,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 256219,
+            "name": "Paulo Dybala",
+            "number": 21,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 1514800,
+            "name": "Robinio Vaz",
+            "number": 78,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 45925,
+            "name": "Stephan El Shaarawy",
+            "number": 92,
+            "position": "F",
+            "rating": ""
+        }
+    ],
+    "away_substitutes": [
+        {
+            "id": 844609,
+            "name": "Michele Di Gregorio",
+            "number": 16,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 46420,
+            "name": "Carlo Pinsoglio",
+            "number": 23,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 988037,
+            "name": "Juan Cabal",
+            "number": 32,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1128063,
+            "name": "Federico Gatti",
+            "number": 4,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1149288,
+            "name": "Vasilije Adžić",
+            "number": 17,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 126588,
+            "name": "Filip Kostić",
+            "number": 18,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1010223,
+            "name": "Fabio Miretti",
+            "number": 21,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 887766,
+            "name": "Edon Zhegrova",
+            "number": 11,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 367056,
+            "name": "Jérémie Boga",
+            "number": 13,
+            "position": "F",
+            "rating": ""
+        },
+        {
+            "id": 835480,
+            "name": "Loïs Openda",
+            "number": 20,
+            "position": "F",
+            "rating": ""
+        }
+    ],
+    "home_missing_players": [
+        {
+            "name": "Artem Dovbyk",
+            "position": "F",
+            "type": "missing",
+            "description": "Thigh Injury",
+            "expected_end_date": "2026-04-27T00:00:00+00:00"
+        },
+        {
+            "name": "Matías Soulé",
+            "position": "F",
+            "type": "missing",
+            "description": "Groin Injury",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Mario Hermoso",
+            "position": "D",
+            "type": "missing",
+            "description": "Hip Injury",
+            "expected_end_date": "2026-03-02T00:00:00+00:00"
+        },
+        {
+            "name": "Evan Ferguson",
+            "position": "F",
+            "type": "missing",
+            "description": "Ankle Injury",
+            "expected_end_date": "2026-03-27T00:00:00+00:00"
+        }
+    ],
+    "away_missing_players": [
+        {
+            "name": "Emil Holm",
+            "position": "D",
+            "type": "missing",
+            "description": "Calf Injury",
+            "expected_end_date": "2026-03-02T00:00:00+00:00"
+        },
+        {
+            "name": "Manuel Locatelli",
+            "position": "M",
+            "type": "missing",
+            "description": "Yellow card accumulation suspension",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Dušan Vlahović",
+            "position": "F",
+            "type": "missing",
+            "description": "Groin Injury",
+            "expected_end_date": "2026-03-16T00:00:00+00:00"
+        },
+        {
+            "name": "Bremer",
+            "position": "D",
+            "type": "doubtful",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Kenan Yıldız",
+            "position": "F",
+            "type": "doubtful",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Arkadiusz Milik",
+            "position": "F",
+            "type": "missing",
+            "description": "Calf Injury",
+            "expected_end_date": "2026-03-02T00:00:00+00:00"
+        }
+    ]
+}

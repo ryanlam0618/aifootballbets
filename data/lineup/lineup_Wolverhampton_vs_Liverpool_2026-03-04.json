@@ -1,0 +1,346 @@
+{
+    "event_id": 14023985,
+    "match_date": "2026-03-04",
+    "match_time": "04:15",
+    "tournament_name": "Premier League",
+    "category_name": "England",
+    "home_team": "Wolverhampton",
+    "away_team": "Liverpool",
+    "home_formation": "3-5-2",
+    "away_formation": "4-2-3-1",
+    "home_coach": "",
+    "away_coach": "",
+    "home_starters": [
+        {
+            "id": 252669,
+            "name": "José Sá",
+            "number": 1,
+            "position": "G",
+            "rating": 6.85
+        },
+        {
+            "id": 143047,
+            "name": "Matt Doherty",
+            "number": 2,
+            "position": "D",
+            "rating": 6.49
+        },
+        {
+            "id": 846308,
+            "name": "Santiago Bueno",
+            "number": 4,
+            "position": "D",
+            "rating": 6.78
+        },
+        {
+            "id": 856250,
+            "name": "Ladislav Krejčí",
+            "number": 37,
+            "position": "D",
+            "rating": 6.7
+        },
+        {
+            "id": 1096210,
+            "name": "Jackson Tchatchoua",
+            "number": 38,
+            "position": "M",
+            "rating": 6.57
+        },
+        {
+            "id": 867441,
+            "name": "Angel Gomes",
+            "number": 47,
+            "position": "M",
+            "rating": 6.8
+        },
+        {
+            "id": 1015267,
+            "name": "João Gomes",
+            "number": 8,
+            "position": "M",
+            "rating": 6.76
+        },
+        {
+            "id": 1035996,
+            "name": "André",
+            "number": 7,
+            "position": "M",
+            "rating": 6.8
+        },
+        {
+            "id": 1031283,
+            "name": "David Möller Wolfe",
+            "number": 6,
+            "position": "M",
+            "rating": 6.62
+        },
+        {
+            "id": 1899647,
+            "name": "Mateus Mané",
+            "number": 36,
+            "position": "F",
+            "rating": 6.89
+        },
+        {
+            "id": 361352,
+            "name": "Adam Armstrong",
+            "number": 9,
+            "position": "F",
+            "rating": 6.58
+        }
+    ],
+    "away_starters": [
+        {
+            "id": 243609,
+            "name": "Alisson",
+            "number": 1,
+            "position": "G",
+            "rating": 6.84
+        },
+        {
+            "id": 970361,
+            "name": "Jeremie Frimpong",
+            "number": 30,
+            "position": "D",
+            "rating": 6.8
+        },
+        {
+            "id": 826215,
+            "name": "Ibrahima Konaté",
+            "number": 5,
+            "position": "D",
+            "rating": 7.13
+        },
+        {
+            "id": 151545,
+            "name": "Virgil van Dijk",
+            "number": 4,
+            "position": "D",
+            "rating": 7.3
+        },
+        {
+            "id": 1097425,
+            "name": "Miloš Kerkez",
+            "number": 6,
+            "position": "D",
+            "rating": 6.62
+        },
+        {
+            "id": 904897,
+            "name": "Ryan Gravenberch",
+            "number": 38,
+            "position": "M",
+            "rating": 7.15
+        },
+        {
+            "id": 895324,
+            "name": "Alexis Mac Allister",
+            "number": 10,
+            "position": "M",
+            "rating": 6.75
+        },
+        {
+            "id": 159665,
+            "name": "Mohamed Salah",
+            "number": 11,
+            "position": "M",
+            "rating": 6.78
+        },
+        {
+            "id": 869856,
+            "name": "Dominik Szoboszlai",
+            "number": 8,
+            "position": "M",
+            "rating": 7.15
+        },
+        {
+            "id": 862967,
+            "name": "Cody Gakpo",
+            "number": 18,
+            "position": "M",
+            "rating": 7.02
+        },
+        {
+            "id": 1048422,
+            "name": "Hugo Ekitiké",
+            "number": 22,
+            "position": "F",
+            "rating": 6.97
+        }
+    ],
+    "home_substitutes": [
+        {
+            "id": 98427,
+            "name": "Sam Johnstone",
+            "number": 31,
+            "position": "G",
+            "rating": 6.88
+        },
+        {
+            "id": 1014835,
+            "name": "Yerson Mosquera",
+            "number": 15,
+            "position": "D",
+            "rating": 6.71
+        },
+        {
+            "id": 1013928,
+            "name": "Hugo Bueno",
+            "number": 3,
+            "position": "D",
+            "rating": 6.72
+        },
+        {
+            "id": 1597270,
+            "name": "Pedro Lima",
+            "number": 17,
+            "position": "D",
+            "rating": 6.7
+        },
+        {
+            "id": 973418,
+            "name": "Toti Gomes",
+            "number": 24,
+            "position": "D",
+            "rating": 6.42
+        },
+        {
+            "id": 845273,
+            "name": "Jean-Ricner Bellegarde",
+            "number": 27,
+            "position": "M",
+            "rating": 6.77
+        },
+        {
+            "id": 1006073,
+            "name": "Rodrigo Gomes",
+            "number": 21,
+            "position": "D",
+            "rating": 6.82
+        },
+        {
+            "id": 786186,
+            "name": "Hee-Chan Hwang",
+            "number": 11,
+            "position": "F",
+            "rating": 6.61
+        },
+        {
+            "id": 987734,
+            "name": "Tolu Arokodare",
+            "number": 14,
+            "position": "F",
+            "rating": 6.5
+        }
+    ],
+    "away_substitutes": [
+        {
+            "id": 930997,
+            "name": "Giorgi Mamardashvili",
+            "number": 25,
+            "position": "G",
+            "rating": 6.48
+        },
+        {
+            "id": 318927,
+            "name": "Joe Gomez",
+            "number": 2,
+            "position": "D",
+            "rating": 6.58
+        },
+        {
+            "id": 262911,
+            "name": "Andrew Robertson",
+            "number": 26,
+            "position": "D",
+            "rating": 6.72
+        },
+        {
+            "id": 991227,
+            "name": "Calvin Ramsay",
+            "number": 47,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1445945,
+            "name": "Trey Nyoni",
+            "number": 42,
+            "position": "M",
+            "rating": 6.4
+        },
+        {
+            "id": 927353,
+            "name": "Curtis Jones",
+            "number": 17,
+            "position": "M",
+            "rating": 6.85
+        },
+        {
+            "id": 1462781,
+            "name": "Kieran Morrison",
+            "number": 68,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 845386,
+            "name": "Federico Chiesa",
+            "number": 14,
+            "position": "F",
+            "rating": 6.63
+        },
+        {
+            "id": 1881902,
+            "name": "Rio Ngumoha",
+            "number": 73,
+            "position": "F",
+            "rating": 6.79
+        }
+    ],
+    "home_missing_players": [],
+    "away_missing_players": [
+        {
+            "name": "Alexander Isak",
+            "position": "F",
+            "type": "missing",
+            "description": "Ankle Injury",
+            "expected_end_date": "2026-04-26T00:00:00+00:00"
+        },
+        {
+            "name": "Conor Bradley",
+            "position": "D",
+            "type": "missing",
+            "description": "Knee Injury",
+            "expected_end_date": "2026-05-25T00:00:00+00:00"
+        },
+        {
+            "name": "Florian Wirtz",
+            "position": "M",
+            "type": "doubtful",
+            "description": "Back Injury",
+            "expected_end_date": "2026-03-04T00:00:00+00:00"
+        },
+        {
+            "name": "Giovanni Leoni",
+            "position": "D",
+            "type": "missing",
+            "description": "ACL Knee Injury",
+            "expected_end_date": "2026-05-25T00:00:00+00:00"
+        },
+        {
+            "name": "Stefan Bajčetić",
+            "position": "M",
+            "type": "missing",
+            "description": "Hamstring",
+            "expected_end_date": "2026-03-04T00:00:00+00:00"
+        },
+        {
+            "name": "Wataru Endo",
+            "position": "M",
+            "type": "missing",
+            "description": "Foot Injury",
+            "expected_end_date": "2026-05-25T00:00:00+00:00"
+        }
+    ]
+}
