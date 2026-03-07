@@ -1,0 +1,410 @@
+{
+    "event_id": "14083607",
+    "match_date": "2026-03-07",
+    "match_time": "04:00",
+    "tournament_name": "LaLiga",
+    "category_name": "Spain",
+    "home_team": "Celta Vigo",
+    "away_team": "Real Madrid",
+    "home_formation": "3-4-3",
+    "away_formation": "4-3-3",
+    "home_coach": "",
+    "away_coach": "",
+    "home_starters": [
+        {
+            "id": 815202,
+            "name": "Ionuț Radu",
+            "number": 13,
+            "position": "G",
+            "rating": 7.09
+        },
+        {
+            "id": 1526627,
+            "name": "Javi Rodríguez",
+            "number": 32,
+            "position": "D",
+            "rating": 6.8
+        },
+        {
+            "id": 360718,
+            "name": "Carl Starfelt",
+            "number": 2,
+            "position": "D",
+            "rating": 6.82
+        },
+        {
+            "id": 69408,
+            "name": "Marcos Alonso",
+            "number": 20,
+            "position": "D",
+            "rating": 7.09
+        },
+        {
+            "id": 859773,
+            "name": "Óscar Mingueza",
+            "number": 3,
+            "position": "M",
+            "rating": 6.98
+        },
+        {
+            "id": 1398526,
+            "name": "Miguel Román",
+            "number": 16,
+            "position": "M",
+            "rating": 6.96
+        },
+        {
+            "id": 962890,
+            "name": "Ilaix Moriba",
+            "number": 6,
+            "position": "M",
+            "rating": 6.69
+        },
+        {
+            "id": 1002764,
+            "name": "Sergio Carreira",
+            "number": 5,
+            "position": "M",
+            "rating": 6.87
+        },
+        {
+            "id": 949962,
+            "name": "Ferran Jutglà",
+            "number": 9,
+            "position": "F",
+            "rating": 6.76
+        },
+        {
+            "id": 785989,
+            "name": "Borja Iglesias",
+            "number": 7,
+            "position": "F",
+            "rating": 6.79
+        },
+        {
+            "id": 1126779,
+            "name": "Williot Swedberg",
+            "number": 19,
+            "position": "F",
+            "rating": 6.67
+        }
+    ],
+    "away_starters": [
+        {
+            "id": 70988,
+            "name": "Thibaut Courtois",
+            "number": 1,
+            "position": "G",
+            "rating": 6.9
+        },
+        {
+            "id": 795064,
+            "name": "Trent Alexander-Arnold",
+            "number": 12,
+            "position": "D",
+            "rating": 6.85
+        },
+        {
+            "id": 1156645,
+            "name": "Raúl Asencio",
+            "number": 17,
+            "position": "D",
+            "rating": 7
+        },
+        {
+            "id": 142622,
+            "name": "Antonio Rüdiger",
+            "number": 22,
+            "position": "D",
+            "rating": 6.84
+        },
+        {
+            "id": 792073,
+            "name": "Ferland Mendy",
+            "number": 23,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 831808,
+            "name": "Federico Valverde",
+            "number": 8,
+            "position": "M",
+            "rating": 7.22
+        },
+        {
+            "id": 859025,
+            "name": "Aurélien Tchouaméni",
+            "number": 14,
+            "position": "M",
+            "rating": 7.23
+        },
+        {
+            "id": 2237795,
+            "name": "Thiago Pitarch",
+            "number": 45,
+            "position": "M",
+            "rating": 6.5
+        },
+        {
+            "id": 1091116,
+            "name": "Arda Güler",
+            "number": 15,
+            "position": "F",
+            "rating": 7.14
+        },
+        {
+            "id": 835485,
+            "name": "Brahim Díaz",
+            "number": 21,
+            "position": "F",
+            "rating": 6.65
+        },
+        {
+            "id": 868812,
+            "name": "Vinicius Júnior",
+            "number": 7,
+            "position": "F",
+            "rating": 7.39
+        }
+    ],
+    "home_substitutes": [
+        {
+            "id": 848980,
+            "name": "Iván Villar",
+            "number": 1,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 1069703,
+            "name": "Carlos Domínguez",
+            "number": 24,
+            "position": "D",
+            "rating": 6.84
+        },
+        {
+            "id": 1630975,
+            "name": "Manu Fernández",
+            "number": 12,
+            "position": "D",
+            "rating": 6.7
+        },
+        {
+            "id": 1008259,
+            "name": "Javier Rueda",
+            "number": 17,
+            "position": "D",
+            "rating": 6.89
+        },
+        {
+            "id": 796320,
+            "name": "Joseph Aidoo",
+            "number": 4,
+            "position": "D",
+            "rating": 6.62
+        },
+        {
+            "id": 1012410,
+            "name": "Alvaro Núñez",
+            "number": 14,
+            "position": "D",
+            "rating": 6.98
+        },
+        {
+            "id": 1526628,
+            "name": "Fer López",
+            "number": 8,
+            "position": "M",
+            "rating": 6.78
+        },
+        {
+            "id": 158615,
+            "name": "Matías Vecino",
+            "number": 15,
+            "position": "M",
+            "rating": 6.8
+        },
+        {
+            "id": 1154935,
+            "name": "Hugo Álvarez",
+            "number": 23,
+            "position": "M",
+            "rating": 6.76
+        },
+        {
+            "id": 1120669,
+            "name": "Hugo Sotelo",
+            "number": 22,
+            "position": "M",
+            "rating": 7.02
+        },
+        {
+            "id": 19356,
+            "name": "Iago Aspas",
+            "number": 10,
+            "position": "F",
+            "rating": 6.88
+        },
+        {
+            "id": 1173575,
+            "name": "Jones El-Abdellaoui",
+            "number": 39,
+            "position": "F",
+            "rating": 6.68
+        }
+    ],
+    "away_substitutes": [
+        {
+            "id": 1403015,
+            "name": "Sergio Mestre",
+            "number": 43,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 857574,
+            "name": "Andriy Lunin",
+            "number": 13,
+            "position": "G",
+            "rating": ""
+        },
+        {
+            "id": 138572,
+            "name": "Daniel Carvajal",
+            "number": 2,
+            "position": "D",
+            "rating": 6.87
+        },
+        {
+            "id": 851271,
+            "name": "Fran García",
+            "number": 20,
+            "position": "D",
+            "rating": 6.56
+        },
+        {
+            "id": 1614687,
+            "name": "Diego Aguado",
+            "number": 27,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 2048439,
+            "name": "Lamini Fati",
+            "number": 48,
+            "position": "D",
+            "rating": ""
+        },
+        {
+            "id": 1402688,
+            "name": "César Palacios",
+            "number": 38,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1142683,
+            "name": "Manuel Ángel Morán",
+            "number": 37,
+            "position": "M",
+            "rating": ""
+        },
+        {
+            "id": 1590121,
+            "name": "Jorge Cestero",
+            "number": 28,
+            "position": "M",
+            "rating": 6.6
+        },
+        {
+            "id": 1402716,
+            "name": "Gonzalo García",
+            "number": 16,
+            "position": "F",
+            "rating": 6.65
+        }
+    ],
+    "home_missing_players": [
+        {
+            "name": "Pablo Durán",
+            "position": "F",
+            "type": "missing",
+            "description": "MCL Knee Injury",
+            "expected_end_date": "2026-03-08T00:00:00+00:00"
+        }
+    ],
+    "away_missing_players": [
+        {
+            "name": "Éder Militão",
+            "position": "D",
+            "type": "missing",
+            "description": "Hamstring",
+            "expected_end_date": "2026-04-20T00:00:00+00:00"
+        },
+        {
+            "name": "Dani Ceballos",
+            "position": "M",
+            "type": "missing",
+            "description": "Calf Injury",
+            "expected_end_date": "2026-03-08T00:00:00+00:00"
+        },
+        {
+            "name": "Eduardo Camavinga",
+            "position": "M",
+            "type": "missing",
+            "description": "Mouth Injury",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Dean Huijsen",
+            "position": "D",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Jude Bellingham",
+            "position": "M",
+            "type": "missing",
+            "description": "Hamstring",
+            "expected_end_date": "2026-04-06T00:00:00+00:00"
+        },
+        {
+            "name": "Kylian Mbappé",
+            "position": "F",
+            "type": "missing",
+            "description": "Knee Injury",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Rodrygo",
+            "position": "F",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "David Alaba",
+            "position": "D",
+            "type": "missing",
+            "description": "",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Álvaro Carreras",
+            "position": "D",
+            "type": "missing",
+            "description": "Yellow card accumulation suspension",
+            "expected_end_date": ""
+        },
+        {
+            "name": "Franco Mastantuono",
+            "position": "F",
+            "type": "missing",
+            "description": "Red card suspension",
+            "expected_end_date": ""
+        }
+    ]
+}
