@@ -22,13 +22,15 @@ import requests
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
+from config import settings
+
 sys.stdout.reconfigure(encoding='utf-8')
 
 
 class APIFootballLineups:
     """API-Football 陣容數據"""
     
-    API_KEY = "147e3f1218fa63de077c346ddac4f5ad"
+    API_KEY = settings.API_FOOTBALL_KEY
     BASE_URL = "https://v3.football.api-sports.io"
     
     # 球隊名稱到 API-Football ID 的映射
@@ -97,6 +99,9 @@ class APIFootballLineups:
             'x-apisports-key': self.API_KEY,
             'x-apisports-host': 'v3.football.api-sports.io'
         })
+
+        if not self.API_KEY:
+            print("[WARN] API_FOOTBALL_KEY 未配置，APIFootballLineups 將無法取得真實數據")
     
     def _get_team_id(self, team_name: str) -> int:
         """獲取球隊 ID"""
@@ -113,6 +118,9 @@ class APIFootballLineups:
     
     def search_fixtures(self, home_team: str, away_team: str, date: str = None) -> Optional[int]:
         """搜索比賽 ID"""
+        if not self.API_KEY:
+            return None
+
         url = f"{self.BASE_URL}/fixtures"
         
         params = {
@@ -153,6 +161,9 @@ class APIFootballLineups:
     
     def get_lineup(self, home_team: str, away_team: str, date: str = None) -> Optional[Dict]:
         """獲取比賽陣容"""
+        if not self.API_KEY:
+            return None
+
         # 步驟 1: 搜索比賽 ID
         fixture_id = self.search_fixtures(home_team, away_team, date)
         

@@ -12,7 +12,9 @@ import urllib.error
 import ssl
 import time
 
-API_KEY = "147e3f1218fa63de077c346ddac4f5ad"
+from config import settings
+
+API_KEY = settings.API_FOOTBALL_KEY
 BASE_URL = "https://v3.football.api-sports.io"
 
 # 五大聯賽 ID
@@ -74,7 +76,11 @@ def main():
     print("=" * 70)
     print("從 API-Football 獲取五大聯賽球隊 ID")
     print("=" * 70)
-    
+
+    if not API_KEY:
+        print("[ERROR] API_FOOTBALL_KEY 未配置，請先設定 .env")
+        return
+
     all_leagues_data = {}
     
     for league_name, league_id in LEAGUES.items():

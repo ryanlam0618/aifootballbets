@@ -146,7 +146,7 @@ python tests/test_api.py
 ### 測試 Grok 即時搜尋
 
 ```bash
-python tests/test.py
+python tests/test_web_search.py
 ```
 
 ### 驗證聯賽配置
@@ -181,12 +181,12 @@ A: 可能原因：
 
 ### Q: 如何調整資金管理參數？
 
-A: 編輯 `config.py`：
+A: 編輯 `.env`（或環境變數）：
 
-```python
-INITIAL_BANKROLL = 1000    # 初始資金
-KELLY_FRACTION = 0.75      # Kelly 比例（0.5-1.0）
-MIN_EDGE = 0.09            # 最小期望值門檻
+```env
+INITIAL_BANKROLL=1000
+KELLY_FRACTION=0.75
+MIN_EDGE=0.09
 ```
 
 ### Q: Excel 記錄失敗？
@@ -194,7 +194,7 @@ MIN_EDGE = 0.09            # 最小期望值門檻
 A: 請確認：
 1. Excel 文件未被其他程式開啟
 2. 有寫入權限
-3. 路徑設定正確（`config.py` 中的 `EXCEL_FILEPATH`）
+3. 路徑設定正確（`.env` 中的 `GDRIVE_PATH` / `EXCEL_FILENAME`）
 
 ### Q: 如何添加新聯賽？
 

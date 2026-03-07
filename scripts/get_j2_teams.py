@@ -3,14 +3,21 @@
 """獲取 J2 League 球隊列表"""
 
 import sys
+import os
 import requests
 import json
 
+from config import settings
+
 sys.stdout.reconfigure(encoding='utf-8')
 
-API_KEY = "147e3f1218fa63de077c346ddac4f5ad"
+API_KEY = settings.API_FOOTBALL_KEY
 BASE_URL = "https://v3.football.api-sports.io"
 J2_LEAGUE_ID = 99  # v3 - 正確的日本J2聯賽ID
+
+if not API_KEY:
+    print("Error: API_FOOTBALL_KEY 未配置，請先設定 .env")
+    raise SystemExit(1)
 
 response = requests.get(
     f"{BASE_URL}/teams",

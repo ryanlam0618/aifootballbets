@@ -13,7 +13,11 @@ pip install -r requirements.txt
 
 複製範例文件並填入 API Keys：
 ```bash
-copy env.example .env
+# macOS / Linux
+cp .env.example .env
+
+# Windows (PowerShell)
+Copy-Item .env.example .env
 ```
 
 編輯 `.env`：

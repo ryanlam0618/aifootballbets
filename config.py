@@ -21,15 +21,17 @@ import os
 from dotenv import load_dotenv
 from typing import List, Dict
 
-# 載入 .env
-load_dotenv()
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# 優先載入專案根目錄 .env，再 fallback 到當前工作目錄
+load_dotenv(dotenv_path=os.path.join(BASE_DIR, ".env"))
+load_dotenv()
 
 
 class Settings:
     # --- 路徑設定 ---
-    GDRIVE_PATH = r"G:\我的雲端硬碟\AI"
+    # 用環境變數覆蓋，避免硬編碼到單一 Windows 路徑
+    GDRIVE_PATH = os.getenv("GDRIVE_PATH", "")
     
     # 歷史數據路徑
     HISTORY_CSV_PATH = os.path.join(BASE_DIR, "data", "history_data.csv")
@@ -46,26 +48,26 @@ class Settings:
     API_FOOTBALL_KEY = os.getenv("API_FOOTBALL_KEY", "")
 
     # --- API 端點 ---
-    API_BASE_URL = os.getenv("API_BASE_URL", "https://api.whatai.cc/v1")
-    NETWORK_API_URL = os.getenv("NETWORK_API_URL", "https://api.whatai.cc/v1")
+    API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
+    NETWORK_API_URL = os.getenv("NETWORK_API_URL", API_BASE_URL)
 
     # --- Excel 報表名稱 ---
-    EXCEL_FILENAME = "Betting_Records.xlsx"
-    
-    if os.path.exists(GDRIVE_PATH):
+    EXCEL_FILENAME = os.getenv("EXCEL_FILENAME", "Betting_Records.xlsx")
+
+    if GDRIVE_PATH and os.path.exists(GDRIVE_PATH):
         EXCEL_FILEPATH = os.path.join(GDRIVE_PATH, EXCEL_FILENAME)
     else:
         EXCEL_FILEPATH = os.path.join(BASE_DIR, EXCEL_FILENAME)
 
     # --- 資金管理設定 ---
-    INITIAL_BANKROLL = 2000
-    KELLY_FRACTION = 0.75
-    MIN_EDGE = 0.05
+    INITIAL_BANKROLL = float(os.getenv("INITIAL_BANKROLL", "2000"))
+    KELLY_FRACTION = float(os.getenv("KELLY_FRACTION", "0.75"))
+    MIN_EDGE = float(os.getenv("MIN_EDGE", "0.05"))
 
     # --- 模型名稱設定 ---
-    MODEL_GEMINI = os.getenv("MODEL_GEMINI", "gemini-3-flash-preview-thinking-*")
+    MODEL_GEMINI = os.getenv("MODEL_GEMINI", "gemini-2.5-flash")
     MODEL_GROK = os.getenv("MODEL_GROK", "grok-4")
-    MODEL_GPT = os.getenv("MODEL_GPT", "gpt-5.2")
+    MODEL_GPT = os.getenv("MODEL_GPT", "gpt-4o-mini")
 
     # --- 驗證 API Keys 是否存在 ---
     def validate_api_keys(self) -> Dict[str, bool]:

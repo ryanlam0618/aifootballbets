@@ -28,6 +28,8 @@ import hashlib
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 
+from config import settings
+
 sys.stdout.reconfigure(encoding='utf-8')
 
 
@@ -160,7 +162,8 @@ class TransfermarktInjuryScraper:
                         injury_date = datetime.strptime(date, '%d %b %Y')
                         if injury_date < datetime.now() - timedelta(days=365):
                             continue  # 跳過過期數據
-                    except:
+                    except (ValueError, TypeError):
+                        # 日期格式不符時保留該筆，避免因單筆髒資料中斷
                         pass
 
                     injuries.append({
@@ -196,7 +199,7 @@ class APIFootballIntegration:
     """API-Football 整合 (傷停數據)"""
 
     # API 配置
-    API_KEY = "147e3f1218fa63de077c346ddac4f5ad"
+    API_KEY = settings.API_FOOTBALL_KEY
     BASE_URL = "https://v3.football.api-sports.io"
 
     # 球隊名稱到 API-Football ID 的映射 (通過 API 搜索確認)
@@ -315,6 +318,9 @@ class APIFootballIntegration:
             'x-apisports-host': 'v3.football.api-sports.io'
         })
 
+        if not self.API_KEY:
+            print("[WARN] API_FOOTBALL_KEY 未配置，APIFootballIntegration 將無法取得真實數據")
+
     def _get_team_id(self, team_name: str) -> int:
         """獲取球隊 ID"""
         name_lower = team_name.lower().strip()
@@ -332,6 +338,9 @@ class APIFootballIntegration:
 
     def get_team_injuries(self, team_name: str, league_id: int = None, season: int = 2024) -> Dict:
         """獲取球隊傷停 (使用 API-Football)"""
+        if not self.API_KEY:
+            return {'error': 'API_FOOTBALL_KEY not configured'}
+
         team_id = self._get_team_id(team_name)
 
         if not team_id:

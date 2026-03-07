@@ -182,9 +182,9 @@ class LLMOrchestrator:
             away_odds = odds_package.get('1x2_away', 0)
             lines.append(f"1x2 市場: 主 {home_odds} | 和 {draw_odds} | 客 {away_odds}")
             try:
-                if home_odds > 0:
+                if home_odds > 0 and draw_odds > 0 and away_odds > 0:
                     lines.append(f"隱含概率: 主 {1/home_odds:.1%} | 和 {1/draw_odds:.1%} | 客 {1/away_odds:.1%}")
-            except:
+            except (TypeError, ZeroDivisionError):
                 pass
         
         # 舊格式兼容：1x2 赔率
@@ -196,12 +196,12 @@ class LLMOrchestrator:
             try:
                 home_odds = float(odds.get('home', 0))
                 draw_odds = float(odds.get('draw', 0))
-                away_odds = float(odds_package.get('away', 0))
-                
-                if home_odds > 0:
+                away_odds = float(odds.get('away', 0))
+
+                if home_odds > 0 and draw_odds > 0 and away_odds > 0:
                     home_impl = 1 / home_odds
                     lines.append(f"隱含概率: 主 {home_impl:.1%} | 和 {1/draw_odds:.1%} | 客 {1/away_odds:.1%}")
-            except:
+            except (TypeError, ValueError, ZeroDivisionError):
                 pass
         
         # 市場資金流向
@@ -457,7 +457,7 @@ You excel at finding and synthesizing:
                 return json.loads(result)
             else:
                 return {"recommendation": {"market": "Error", "reasoning": "Empty Response"}}
-        except:
+        except (json.JSONDecodeError, AttributeError):
             return {"recommendation": {"market": "Error", "reasoning": "JSON Parse Error"}}
 
 llm = LLMOrchestrator()

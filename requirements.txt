@@ -1,0 +1,18 @@
+# Core
+numpy
+pandas
+scipy
+python-dotenv
+openai
+httpx
+requests
+
+# HTML parsing
+beautifulsoup4
+
+# Excel I/O
+openpyxl
+
+# Machine Learning
+scikit-learn
+xgboost

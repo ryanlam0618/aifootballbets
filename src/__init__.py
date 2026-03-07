@@ -16,6 +16,7 @@ __author__ = "AI Football Betting System"
 from .data_modules import HistoryRepo, RealOddsFetcher, OddsPoint, LEAGUE_OPTIONS
 from .llm_clients import llm
 from .finance import calculate_kelly_stake, ExcelLogger
+from .cli_helpers import parse_match_input, choose_league
 
 # 整合後的數學模型 (v7.0)
 from .math_models import (
@@ -50,6 +51,9 @@ __all__ = [
     # 資金管理
     'calculate_kelly_stake',
     'ExcelLogger',
+    # CLI helpers
+    'parse_match_input',
+    'choose_league',
     # 數學模型 - 進球預測
     'PoissonModel',
     'NegativeBinomialModel',

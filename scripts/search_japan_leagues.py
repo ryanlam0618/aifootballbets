@@ -6,10 +6,16 @@ import sys
 import requests
 import json
 
+from config import settings
+
 sys.stdout.reconfigure(encoding='utf-8')
 
-API_KEY = "147e3f1218fa63de077c346ddac4f5ad"
+API_KEY = settings.API_FOOTBALL_KEY
 BASE_URL = "https://v3.football.api-sports.io"
+
+if not API_KEY:
+    print("Error: API_FOOTBALL_KEY 未配置，請先設定 .env")
+    raise SystemExit(1)
 
 # 搜索 Japan 相關聯賽
 print("🔍 搜索 Japan 相關聯賽...")

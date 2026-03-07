@@ -39,6 +39,8 @@ ENV/
 
 # --- Environment Variables ---
 .env
+.env.*
+!.env.example
 .env.local
 env.example
 
@@ -64,6 +66,9 @@ Thumbs.db
 data/*.csv
 data/*.json
 !data/.gitkeep
+# lineup 為執行期產物，預設不追蹤；保留 .gitkeep 維持資料夾
+/data/lineup/*
+!/data/lineup/.gitkeep
 Betting_Records*.xlsx
 xgb_model.pkl
 archive/

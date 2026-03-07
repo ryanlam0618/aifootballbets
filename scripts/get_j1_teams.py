@@ -11,10 +11,12 @@ import os
 import requests
 import json
 
+from config import settings
+
 sys.stdout.reconfigure(encoding='utf-8')
 
-# API 配置 (使用 injury_api 中的 KEY)
-API_KEY = "147e3f1218fa63de077c346ddac4f5ad"
+# API 配置 (從 .env 讀取)
+API_KEY = settings.API_FOOTBALL_KEY
 BASE_URL = "https://v3.football.api-sports.io"
 
 # J1 League ID
@@ -117,6 +119,10 @@ def main():
     print("=" * 80)
     print("🏆 API-Football - J1 League 球隊列表獲取工具")
     print("=" * 80)
+
+    if not API_KEY:
+        print("❌ API_FOOTBALL_KEY 未配置，請先設定 .env")
+        return
 
     # 獲取 J1 球隊 (2024賽季)
     teams = get_league_teams(J1_LEAGUE_ID, 2024)

@@ -84,6 +84,7 @@ try:
     
     from src.injury_api import InjuryDataAggregator, get_injury_report
     from src.lineup_api import LineupAggregator, get_lineup
+    from src.cli_helpers import parse_match_input, choose_league
 except ImportError as e:
     print(f"模組載入失敗: {e}", flush=True)
     sys.exit(1)
@@ -716,12 +717,8 @@ def main():
         print(f"   [{key}] {LEAGUE_OPTIONS[key]['name']}")
     
     league_idx = input("👉 選擇: ").strip()
-    
-    if league_idx not in LEAGUE_OPTIONS:
-        print("⚠️ 輸入無效，預設使用 Premier League")
-        league_idx = "1"
-        
-    selected_league = LEAGUE_OPTIONS[league_idx]
+    league_idx, selected_league = choose_league(league_idx, LEAGUE_OPTIONS)
+
     league_name = selected_league['name']
     league_key = selected_league['key']
     
@@ -732,15 +729,10 @@ def main():
     if not match_input: match_input = "Bournemouth vs Tottenham"
 
     try:
-        if re.search(r"\s+vs\.?\s+", match_input, re.IGNORECASE) or " v " in match_input:
-            parts = re.split(r"\s+vs\.?\s+|\s+v\s+", match_input, flags=re.IGNORECASE)
-            if len(parts) >= 2:
-                home, away = parts[0].strip(), parts[1].strip()
-            else:
-                print("⚠️ 格式錯誤"); return
-        else: 
-            print("⚠️ 格式錯誤"); return
-    except ValueError: return
+        home, away = parse_match_input(match_input)
+    except ValueError:
+        print("⚠️ 格式錯誤")
+        return
 
     # ============================================
     # 使用 Gemini API 進行球隊名稱匹配
@@ -1384,7 +1376,7 @@ def main():
                 }
             else:
                 raise Exception("No repo data")
-        except:
+        except Exception as e:
             print(f"      ⚠️ xGOT 效率分析失敗: {str(e)[:50]}")
             xgot_analysis = {'home_efficiency': 1.0, 'away_efficiency': 1.0}
 
@@ -1468,7 +1460,7 @@ def main():
                 }
             else:
                 raise Exception("No repo data")
-        except:
+        except Exception as e:
             print(f"      ⚠️ 防守質量分析失敗: {str(e)[:50]}")
             defense_analysis = {'home_quality': 0.5, 'away_quality': 0.5}
 
@@ -1545,7 +1537,7 @@ def main():
                 home_team=db_home,
                 away_team=db_away
             )
-        except:
+        except Exception:
             corner_pred = {'home_corners': 5.5, 'away_corners': 4.5, 'total_corners': 10.0}
         
         print(f"      {odds_home} 預測角球: {corner_pred.get('home_corners', 5.5):.1f}")
