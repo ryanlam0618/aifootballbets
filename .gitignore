@@ -58,6 +58,10 @@ env.example
 # --- Logs ---
 *.log
 
+# --- Generated reports ---
+reports/*
+!reports/.gitkeep
+
 # --- OS ---
 .DS_Store
 Thumbs.db

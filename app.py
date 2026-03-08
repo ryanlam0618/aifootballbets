@@ -869,12 +869,13 @@ def main(auto_mode=False):
                     if lineup_data:
                         print(f"   [SOFA] 成功獲取陣容: {lineup_data['home_team']} vs {lineup_data['away_team']}")
                 else:
-                    # 嘗試手動輸入 event_id
-                    event_id = input("   👉 請輸入 SofaScore event_id (或按 Enter 跳過): ").strip()
-                    if event_id:
-                        lineup_data = SofaScoreLineupHarvester.get_lineup_by_event_id(event_id)
-                        if lineup_data:
-                            print(f"   [SOFA] 成功獲取陣容: {lineup_data['home_team']} vs {lineup_data['away_team']}")
+                    # 嘗試手動輸入 event_id（自動模式下跳過）
+                    if not auto_mode:
+                        event_id = input("   👉 請輸入 SofaScore event_id (或按 Enter 跳過): ").strip()
+                        if event_id:
+                            lineup_data = SofaScoreLineupHarvester.get_lineup_by_event_id(event_id)
+                            if lineup_data:
+                                print(f"   [SOFA] 成功獲取陣容: {lineup_data['home_team']} vs {lineup_data['away_team']}")
 
         except Exception as e:
             print(f"   [SOFA] 獲取失敗: {e}")

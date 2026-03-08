@@ -65,9 +65,9 @@ class Settings:
     MIN_EDGE = float(os.getenv("MIN_EDGE", "0.05"))
 
     # --- 模型名稱設定 ---
-    MODEL_GEMINI = os.getenv("MODEL_GEMINI", "gemini-2.5-flash")
+    MODEL_GEMINI = os.getenv("MODEL_GEMINI", "gemini-3-flash-preview-thinking-*")
     MODEL_GROK = os.getenv("MODEL_GROK", "grok-4")
-    MODEL_GPT = os.getenv("MODEL_GPT", "gpt-4o-mini")
+    MODEL_GPT = os.getenv("MODEL_GPT", "gpt-5.2")
 
     # --- 驗證 API Keys 是否存在 ---
     def validate_api_keys(self) -> Dict[str, bool]:
