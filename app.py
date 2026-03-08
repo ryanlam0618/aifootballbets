@@ -156,6 +156,56 @@ except Exception as e:
 # ============================================
 # Gemini API Team Matching Functions
 # ============================================
+def _is_invalid_team_name(value):
+    """判斷球隊名稱是否無效（None/null/空字串）。"""
+    if value is None:
+        return True
+    if not isinstance(value, str):
+        return True
+    v = value.strip().lower()
+    return v in {"", "null", "none", "n/a", "na", "unknown"}
+
+
+def _normalize_confidence(value, default="low"):
+    if isinstance(value, str):
+        v = value.strip().lower()
+        if v in {"high", "medium", "low"}:
+            return v
+    return default
+
+
+def _fuzzy_match_team_name(input_name, candidates):
+    """在候選列表中做保守模糊匹配，失敗則回傳原始輸入。"""
+    if _is_invalid_team_name(input_name):
+        return input_name
+
+    if not candidates:
+        return input_name
+
+    text = input_name.strip()
+    text_lower = text.lower()
+
+    # 1) case-insensitive exact match
+    for c in candidates:
+        if isinstance(c, str) and c.lower() == text_lower:
+            return c
+
+    # 2) substring match
+    for c in candidates:
+        if not isinstance(c, str):
+            continue
+        c_lower = c.lower()
+        if text_lower in c_lower or c_lower in text_lower:
+            return c
+
+    # 3) difflib close match (保守門檻)
+    close = difflib.get_close_matches(text, [c for c in candidates if isinstance(c, str)], n=1, cutoff=0.6)
+    if close:
+        return close[0]
+
+    return input_name
+
+
 def match_with_gemini(home_input, away_input, historical_names, league_context=""):
     """
     使用 Gemini API 智能匹配球隊名稱到歷史數據庫
@@ -221,34 +271,26 @@ Respond in this exact format (JSON):
         
         print(f"   [GEMINI] API 返回結果: {result}")
         
-        # 驗證結果是否在數據庫中
-        home_matched = result.get('home', home_input)
-        away_matched = result.get('away', away_input)
-        
-        # 標準化比對
-        home_lower = home_matched.lower().strip()
-        away_lower = away_matched.lower().strip()
-        
-        for hist_name in historical_names:
-            if home_lower == hist_name.lower():
-                home_matched = hist_name
-                break
-            if hist_name.lower() in home_lower or home_lower in hist_name.lower():
-                home_matched = hist_name
-                break
-        
-        for hist_name in historical_names:
-            if away_lower == hist_name.lower():
-                away_matched = hist_name
-                break
-            if away_lower in hist_name.lower() or hist_name.lower() in away_lower:
-                away_matched = hist_name
-                break
-        
+        # 驗證與清洗結果，禁止 null/None 等無效值流入下游
+        raw_home = result.get('home', home_input)
+        raw_away = result.get('away', away_input)
+
+        if _is_invalid_team_name(raw_home) or _is_invalid_team_name(raw_away):
+            raise ValueError(f"Gemini returned invalid team names: home={raw_home}, away={raw_away}")
+
+        home_matched = _fuzzy_match_team_name(raw_home, historical_names)
+        away_matched = _fuzzy_match_team_name(raw_away, historical_names)
+
+        # 保底：若匹配後仍無效，回退原始輸入
+        if _is_invalid_team_name(home_matched):
+            home_matched = home_input
+        if _is_invalid_team_name(away_matched):
+            away_matched = away_input
+
         return {
             'home': home_matched,
             'away': away_matched,
-            'confidence': result.get('confidence', 'medium')
+            'confidence': _normalize_confidence(result.get('confidence', 'medium'))
         }
     except json.JSONDecodeError as e:
         print(f"[WARN] Gemini 返回無效 JSON: {e}")
