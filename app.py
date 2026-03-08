@@ -174,7 +174,27 @@ def _normalize_confidence(value, default="low"):
     return default
 
 
-def _fuzzy_match_team_name(input_name, candidates):
+def _normalize_team_text(value):
+    if value is None:
+        return ""
+    if not isinstance(value, str):
+        value = str(value)
+    value = value.strip().lower().replace("_", " ").replace("-", " ")
+    value = re.sub(r"\s+", " ", value)
+    return value
+
+
+def _name_in_history(name, historical_names):
+    target = _normalize_team_text(name)
+    if not target:
+        return False
+    for h in historical_names:
+        if isinstance(h, str) and _normalize_team_text(h) == target:
+            return True
+    return False
+
+
+def _fuzzy_match_team_name(input_name, candidates, cutoff=0.6):
     """在候選列表中做保守模糊匹配，失敗則回傳原始輸入。"""
     if _is_invalid_team_name(input_name):
         return input_name
@@ -182,28 +202,100 @@ def _fuzzy_match_team_name(input_name, candidates):
     if not candidates:
         return input_name
 
-    text = input_name.strip()
-    text_lower = text.lower()
-
-    # 1) case-insensitive exact match
+    # 建立 normalized -> canonical 映射
+    norm_map = {}
     for c in candidates:
-        if isinstance(c, str) and c.lower() == text_lower:
-            return c
+        if isinstance(c, str) and c.strip():
+            norm_map[_normalize_team_text(c)] = c
+
+    norm_input = _normalize_team_text(input_name)
+    if not norm_input:
+        return input_name
+
+    # 常見別名（僅在候選集內存在時生效）
+    alias_map = {
+        "man utd": "manchester united",
+        "man united": "manchester united",
+        "man city": "manchester city",
+        "spurs": "tottenham hotspur",
+        "tottenham": "tottenham hotspur",
+        "psg": "paris saint germain",
+    }
+    alias_target = alias_map.get(norm_input)
+    if alias_target and alias_target in norm_map:
+        return norm_map[alias_target]
+
+    # 1) normalized exact match
+    if norm_input in norm_map:
+        return norm_map[norm_input]
 
     # 2) substring match
-    for c in candidates:
-        if not isinstance(c, str):
-            continue
-        c_lower = c.lower()
-        if text_lower in c_lower or c_lower in text_lower:
-            return c
+    for norm_name, original in norm_map.items():
+        if norm_input in norm_name or norm_name in norm_input:
+            return original
 
-    # 3) difflib close match (保守門檻)
-    close = difflib.get_close_matches(text, [c for c in candidates if isinstance(c, str)], n=1, cutoff=0.6)
+    # 3) difflib close match
+    close = difflib.get_close_matches(norm_input, list(norm_map.keys()), n=1, cutoff=cutoff)
     if close:
-        return close[0]
+        return norm_map[close[0]]
 
     return input_name
+
+
+def _build_history_candidates(home_input, away_input, historical_names, max_items=120):
+    """建立給 Gemini 的候選歷史隊名列表，優先放相似名稱。"""
+    clean = [n for n in historical_names if isinstance(n, str) and n.strip()]
+    if len(clean) <= max_items:
+        return clean
+
+    picked = []
+
+    def add_item(x):
+        if x not in picked:
+            picked.append(x)
+
+    for query in [home_input, away_input]:
+        # 寬鬆相似匹配，先把可能相關的放前面
+        for m in difflib.get_close_matches(query, clean, n=50, cutoff=0.0):
+            add_item(m)
+
+        qn = _normalize_team_text(query)
+        if qn:
+            for c in clean:
+                cn = _normalize_team_text(c)
+                if qn in cn or cn in qn:
+                    add_item(c)
+                    if len(picked) >= max_items:
+                        break
+
+        if len(picked) >= max_items:
+            break
+
+    # 不足補齊
+    if len(picked) < max_items:
+        for c in clean:
+            add_item(c)
+            if len(picked) >= max_items:
+                break
+
+    return picked[:max_items]
+
+
+def _resolve_to_history_name(model_name, original_input, historical_names):
+    """把 LLM 名稱解析成歷史庫中的 canonical 名稱；失敗則回退原始輸入。"""
+    if _is_invalid_team_name(model_name):
+        candidate = _fuzzy_match_team_name(original_input, historical_names, cutoff=0.72)
+        return candidate if _name_in_history(candidate, historical_names) else original_input
+
+    candidate = _fuzzy_match_team_name(model_name, historical_names, cutoff=0.58)
+    if _name_in_history(candidate, historical_names):
+        return candidate
+
+    fallback = _fuzzy_match_team_name(original_input, historical_names, cutoff=0.72)
+    if _name_in_history(fallback, historical_names):
+        return fallback
+
+    return original_input
 
 
 def match_with_gemini(home_input, away_input, historical_names, league_context=""):
@@ -214,13 +306,8 @@ def match_with_gemini(home_input, away_input, historical_names, league_context="
     if not historical_names:
         return {'home': home_input, 'away': away_input, 'confidence': 'low'}
     
-    # 精簡歷史名稱列表 (避免超過 token limit)
-    key_leagues = ['Premier League', 'La Liga', 'Serie A', 'Bundesliga', 'Ligue 1']
-    filtered_names = [n for n in historical_names if any(lg.lower() in n.lower() or n.lower() in lg.lower() for lg in key_leagues)]
-    if len(filtered_names) > 50:
-        filtered_names = filtered_names[:50]
-    elif len(filtered_names) < 10:
-        filtered_names = historical_names[:50]
+    # 動態候選列表：優先與輸入隊名相近的歷史名稱，避免固定只看五大聯賽
+    filtered_names = _build_history_candidates(home_input, away_input, historical_names, max_items=120)
     
     prompt = f"""Match these 2 football teams to the historical database.
 
@@ -278,28 +365,28 @@ Respond in this exact format (JSON):
         if _is_invalid_team_name(raw_home) or _is_invalid_team_name(raw_away):
             raise ValueError(f"Gemini returned invalid team names: home={raw_home}, away={raw_away}")
 
-        home_matched = _fuzzy_match_team_name(raw_home, historical_names)
-        away_matched = _fuzzy_match_team_name(raw_away, historical_names)
+        home_matched = _resolve_to_history_name(raw_home, home_input, historical_names)
+        away_matched = _resolve_to_history_name(raw_away, away_input, historical_names)
 
-        # 保底：若匹配後仍無效，回退原始輸入
-        if _is_invalid_team_name(home_matched):
-            home_matched = home_input
-        if _is_invalid_team_name(away_matched):
-            away_matched = away_input
+        conf = _normalize_confidence(result.get('confidence', 'medium'))
+        if (home_matched == home_input or away_matched == away_input) and conf == 'high':
+            conf = 'medium'
 
         return {
             'home': home_matched,
             'away': away_matched,
-            'confidence': _normalize_confidence(result.get('confidence', 'medium'))
+            'confidence': conf
         }
     except json.JSONDecodeError as e:
         print(f"[WARN] Gemini 返回無效 JSON: {e}")
         print(f"       原始回應: {response[:200] if response else 'None'}...")
     except Exception as e:
         print(f"[WARN] Gemini matching failed: {e}")
-    
-    # 最後 fallback: 返回原始輸入
-    return {'home': home_input, 'away': away_input, 'confidence': 'low'}
+
+    # 最後 fallback: 優先回退到歷史庫可識別名稱，其次才是原始輸入
+    fallback_home = _resolve_to_history_name(home_input, home_input, historical_names)
+    fallback_away = _resolve_to_history_name(away_input, away_input, historical_names)
+    return {'home': fallback_home, 'away': fallback_away, 'confidence': 'low'}
 
 
 def match_to_odds_api(home_input, away_input, league_key):
