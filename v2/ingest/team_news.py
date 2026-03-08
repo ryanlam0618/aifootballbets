@@ -1,0 +1,174 @@
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, List
+
+import pandas as pd
+
+from src.injury_api import get_injury_report
+from src.lineup_api import APIFootballLineups, FotMobLineups
+from src.networking_llm import NetworkedLLM
+from v2.config import settings_v2
+
+
+def _safe_player_name(item: Any) -> str:
+    if isinstance(item, dict):
+        return str(item.get("name") or item.get("player") or "Unknown")
+    return str(item)
+
+
+def _format_lineup_block(lineup: dict | None, side_key: str) -> str:
+    if not lineup:
+        return "N/A"
+    team = (lineup.get(side_key) or {})
+    name = team.get("name", side_key)
+    formation = team.get("formation", "Unknown")
+    starters = team.get("starters", []) or []
+    subs = team.get("substitutes", []) or []
+
+    st_names = [f"{p.get('name', 'Unknown')}" for p in starters]
+    sb_names = [f"{_safe_player_name(p)}" for p in subs]
+    return (
+        f"[{name}] Formation: {formation}\n"
+        f"Starters: {', '.join(st_names) if st_names else 'N/A'}\n"
+        f"Subs: {', '.join(sb_names) if sb_names else 'N/A'}"
+    )
+
+
+def collect_lineup_and_injury(home_team: str, away_team: str, match_date: str) -> Dict[str, Any]:
+    lineup = None
+    injury = None
+
+    # Non-interactive lineup retrieval (avoid manual prompt)
+    try:
+        af = APIFootballLineups()
+        lineup = af.get_lineup(home_team, away_team, match_date)
+    except Exception:
+        lineup = None
+
+    if not lineup:
+        try:
+            fm = FotMobLineups()
+            lineup = fm.get_lineup(home_team, away_team, match_date)
+        except Exception:
+            lineup = None
+
+    try:
+        injury = get_injury_report(home_team, away_team, match_date)
+    except Exception:
+        injury = {
+            "home": {"injuries": [], "suspensions": [], "total_impact": 0.0},
+            "away": {"injuries": [], "suspensions": [], "total_impact": 0.0},
+            "source": "unavailable",
+        }
+
+    return {"lineup": lineup, "injury": injury}
+
+
+def grok_research(home_team: str, away_team: str, match_date: str) -> str:
+    if not settings_v2.grok_api_key:
+        return "[Grok disabled] GROK_API_KEY missing"
+
+    client = NetworkedLLM(settings_v2.grok_api_key, settings_v2.network_api_url)
+    prompt = f"""
+Match: {home_team} vs {away_team}
+Date: {match_date}
+Task:
+1) Search X/Twitter and trusted football reporters
+2) Extract probable XI, confirmed XI (if any), and key injuries/suspensions
+3) Include source links with UTC timestamp
+4) Keep concise and factual
+""".strip()
+
+    try:
+        return client.chat_with_search(
+            model=settings_v2.model_grok,
+            messages=[
+                {"role": "system", "content": "You are a football news researcher. Return evidence-based notes."},
+                {"role": "user", "content": prompt},
+            ],
+            search_enabled=True,
+        )
+    except Exception as e:
+        return f"[Grok error] {e}"
+
+
+def write_lineup_text(
+    match_id: str,
+    home_team: str,
+    away_team: str,
+    payload: Dict[str, Any],
+    grok_text: str,
+    out_dir: Path,
+) -> Path:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    lineup = payload.get("lineup")
+    injury = payload.get("injury") or {}
+
+    home_inj = injury.get("home", {}).get("injuries", []) or []
+    away_inj = injury.get("away", {}).get("injuries", []) or []
+
+    text = [
+        f"Match: {home_team} vs {away_team}",
+        f"Generated UTC: {datetime.now(timezone.utc).isoformat()}",
+        "",
+        "== Lineup ==",
+        _format_lineup_block(lineup, "home_team"),
+        "",
+        _format_lineup_block(lineup, "away_team"),
+        "",
+        "== Injuries / Suspensions ==",
+        f"Home ({len(home_inj)}): " + ", ".join([_safe_player_name(x) for x in home_inj]) if home_inj else "Home: none",
+        f"Away ({len(away_inj)}): " + ", ".join([_safe_player_name(x) for x in away_inj]) if away_inj else "Away: none",
+        "",
+        "== Grok Research (X + web) ==",
+        grok_text or "N/A",
+        "",
+    ]
+
+    out_path = out_dir / f"{match_id}_lineup_text.txt"
+    out_path.write_text("\n".join(text), encoding="utf-8")
+    return out_path
+
+
+def injury_rows(match_id: str, home_team: str, away_team: str, injury_report: Dict[str, Any]) -> List[dict]:
+    rows: list[dict] = []
+    source = injury_report.get("source", "unknown")
+
+    for side_key, team_name in [("home", home_team), ("away", away_team)]:
+        side = injury_report.get(side_key, {}) or {}
+        for x in side.get("injuries", []) or []:
+            rows.append(
+                {
+                    "match_id": match_id,
+                    "team_side": side_key,
+                    "team_name": team_name,
+                    "player_name": _safe_player_name(x),
+                    "status": x.get("type", "injury") if isinstance(x, dict) else "injury",
+                    "detail": x.get("reason", x.get("description", "")) if isinstance(x, dict) else "",
+                    "impact_score": x.get("impact_score") if isinstance(x, dict) else None,
+                    "source": source,
+                }
+            )
+        for x in side.get("suspensions", []) or []:
+            rows.append(
+                {
+                    "match_id": match_id,
+                    "team_side": side_key,
+                    "team_name": team_name,
+                    "player_name": _safe_player_name(x),
+                    "status": "suspension",
+                    "detail": x.get("reason", x.get("description", "")) if isinstance(x, dict) else "",
+                    "impact_score": x.get("impact_score") if isinstance(x, dict) else None,
+                    "source": source,
+                }
+            )
+    return rows
+
+
+def injuries_to_csv(rows: List[dict], out_csv: Path) -> pd.DataFrame:
+    df = pd.DataFrame(rows)
+    out_csv.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(out_csv, index=False, encoding="utf-8-sig")
+    return df

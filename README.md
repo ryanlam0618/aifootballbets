@@ -167,6 +167,16 @@ python app.py
 - 美洲聯賽 (MLS、巴甲)
 - 國際賽事 (世界盃、國家聯賽)
 
+## 🧩 Prompt v2 重構流程（新）
+
+新增 `v2/` 模組化流程，對齊「多場輸入 → 24h 賠率變化 → T-60 情報 → 特徵整合 → 三市場建議 → 資金管理 → 報表/同步」。
+
+```bash
+python -m v2.main --matches "soccer_epl|Arsenal vs Chelsea" "soccer_epl|Liverpool vs Man City"
+```
+
+詳細請看：`v2/README.md`
+
 ## ⚠️ 免責聲明
 
 本系統僅供學術研究與教育用途。博彩涉及風險，請謹慎評估並遵守當地法律。
