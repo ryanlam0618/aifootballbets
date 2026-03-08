@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
+import subprocess
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, Iterable, List, Optional, Tuple
 
 import pandas as pd
 import requests
@@ -25,6 +27,12 @@ class OddsRow:
     line: str
     selection: str
     decimal_odds: float
+
+
+def _norm_team(x: str) -> str:
+    x = str(x or "").lower().strip()
+    x = re.sub(r"[^a-z0-9\u4e00-\u9fff\s]", " ", x)
+    return re.sub(r"\s+", " ", x).strip()
 
 
 def _init_db(db_path: Path) -> None:
@@ -51,6 +59,10 @@ def _init_db(db_path: Path) -> None:
     finally:
         conn.close()
 
+
+# ============================================================
+# A) The Odds API: realtime only (token saving)
+# ============================================================
 
 def _request_odds(league_key: str) -> list[dict]:
     if not settings_v2.odds_api_key:
@@ -134,14 +146,46 @@ def _event_to_rows(event: dict, ts_utc: str, league_key: str) -> list[OddsRow]:
     return rows
 
 
-def collect_and_store_snapshot(league_keys: list[str], db_path: Path) -> pd.DataFrame:
+def _event_matches_fixture(event: dict, fixtures_df: pd.DataFrame) -> bool:
+    if fixtures_df is None or fixtures_df.empty:
+        return True
+
+    eh = _norm_team(event.get("home_team", ""))
+    ea = _norm_team(event.get("away_team", ""))
+
+    for _, fx in fixtures_df.iterrows():
+        fh = _norm_team(fx.get("home_team", ""))
+        fa = _norm_team(fx.get("away_team", ""))
+        if (eh == fh and ea == fa) or (eh == fa and ea == fh):
+            return True
+    return False
+
+
+def collect_and_store_snapshot(
+    league_keys: list[str],
+    db_path: Path,
+    fixtures_df: Optional[pd.DataFrame] = None,
+) -> pd.DataFrame:
+    """
+    Realtime odds only (The Odds API). No 24h history reliance here.
+    Token-saving behavior:
+    - fetch only requested leagues
+    - cap leagues per run with ODDS_API_MAX_LEAGUES_PER_RUN
+    - keep only events matching target fixtures (if provided)
+    """
     _init_db(db_path)
     ts_utc = datetime.now(timezone.utc).isoformat()
-    all_rows: list[OddsRow] = []
 
-    for league_key in league_keys:
+    uniq_leagues = list(dict.fromkeys([k for k in league_keys if k]))
+    if settings_v2.odds_api_max_leagues_per_run > 0:
+        uniq_leagues = uniq_leagues[: settings_v2.odds_api_max_leagues_per_run]
+
+    all_rows: list[OddsRow] = []
+    for league_key in uniq_leagues:
         events = _request_odds(league_key)
         for ev in events:
+            if not _event_matches_fixture(ev, fixtures_df if fixtures_df is not None else pd.DataFrame()):
+                continue
             all_rows.extend(_event_to_rows(ev, ts_utc, league_key))
 
     if not all_rows:
@@ -156,42 +200,301 @@ def collect_and_store_snapshot(league_keys: list[str], db_path: Path) -> pd.Data
     return df
 
 
-def build_odds_24h_csv(match_ids: list[str], db_path: Path, out_csv: Path) -> pd.DataFrame:
-    _init_db(db_path)
-    conn = sqlite3.connect(db_path)
+# ============================================================
+# B) OddsPortal/OddsHarvester: 24h history source
+# ============================================================
+
+def maybe_run_oddsharvester_refresh() -> None:
+    """
+    Optional: run external OddsHarvester command before parsing files.
+    User can set ODDSHARVESTER_CMD in .env.
+    """
+    cmd = (settings_v2.oddsharvester_cmd or "").strip()
+    if not cmd:
+        return
     try:
-        if not match_ids:
-            return pd.DataFrame()
+        subprocess.run(cmd, shell=True, check=False, timeout=900)
+    except Exception:
+        pass
 
-        since = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
-        placeholders = ",".join(["?"] * len(match_ids))
-        sql = f"""
-        SELECT match_id, league_key, home_team, away_team, timestamp_utc, bookmaker,
-               market, line, selection, decimal_odds
-        FROM odds_snapshots
-        WHERE match_id IN ({placeholders})
-          AND timestamp_utc >= ?
-        ORDER BY timestamp_utc ASC
-        """
-        params = [*match_ids, since]
-        df = pd.read_sql_query(sql, conn, params=params)
 
-        if df.empty:
-            out_csv.parent.mkdir(parents=True, exist_ok=True)
-            df.to_csv(out_csv, index=False, encoding="utf-8-sig")
-            return df
+def _iter_json_files(root: Path, within_hours: int = 30) -> List[Path]:
+    if not root.exists():
+        return []
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=within_hours)
+    files: List[Path] = []
+    for p in root.rglob("*.json"):
+        try:
+            mtime = datetime.fromtimestamp(p.stat().st_mtime, tz=timezone.utc)
+            if mtime >= cutoff:
+                files.append(p)
+        except Exception:
+            continue
+    return sorted(files, key=lambda x: x.stat().st_mtime)
 
+
+def _extract_match_list(obj) -> List[dict]:
+    if isinstance(obj, list):
+        return [x for x in obj if isinstance(x, dict)]
+    if isinstance(obj, dict):
+        for key in ["matches", "data", "events", "fixtures", "results"]:
+            v = obj.get(key)
+            if isinstance(v, list):
+                return [x for x in v if isinstance(x, dict)]
+        return [obj]
+    return []
+
+
+def _extract_timestamp(match_obj: dict, fallback_ts: datetime) -> str:
+    for key in ["timestamp", "updated_at", "updatedAt", "scraped_at", "collected_at", "time"]:
+        val = match_obj.get(key)
+        if not val:
+            continue
+        if isinstance(val, (int, float)):
+            try:
+                return datetime.fromtimestamp(float(val), tz=timezone.utc).isoformat()
+            except Exception:
+                pass
+        if isinstance(val, str):
+            s = val.strip().replace("Z", "+00:00")
+            try:
+                return datetime.fromisoformat(s).astimezone(timezone.utc).isoformat()
+            except Exception:
+                continue
+    return fallback_ts.isoformat()
+
+
+def _line_from_market_name(name: str) -> str:
+    # over_under_2_5 -> 2.5 ; asian_handicap_-0_5 -> -0.5
+    if name.startswith("over_under_"):
+        return name.replace("over_under_", "").replace("_", ".")
+    if name.startswith("asian_handicap_"):
+        return name.replace("asian_handicap_", "").replace("_", ".")
+    return ""
+
+
+def _to_float(x) -> Optional[float]:
+    try:
+        v = float(x)
+        return v if v > 1.0 else None
+    except Exception:
+        return None
+
+
+def _infer_bookmaker(row: dict) -> str:
+    for k in ["bookmaker", "bookie", "name", "site"]:
+        if k in row and row[k]:
+            return str(row[k])
+    return "OddsPortal"
+
+
+def _extract_market_rows(
+    match_obj: dict,
+    match_id: str,
+    league_key: str,
+    home_team: str,
+    away_team: str,
+    ts_iso: str,
+) -> List[dict]:
+    out: List[dict] = []
+
+    # New/known structure: keys ending with _market
+    for key, value in match_obj.items():
+        if not str(key).endswith("_market"):
+            continue
+        if not isinstance(value, list):
+            continue
+
+        mname = str(key).replace("_market", "")
+        line = _line_from_market_name(mname)
+
+        if mname == "1x2":
+            market = "1X2"
+            for row in value:
+                if not isinstance(row, dict):
+                    continue
+                bk = _infer_bookmaker(row)
+                pairs = [
+                    ("Home", row.get("1") or row.get("home")),
+                    ("Draw", row.get("X") or row.get("x") or row.get("draw")),
+                    ("Away", row.get("2") or row.get("away")),
+                ]
+                for sel, odd in pairs:
+                    ov = _to_float(odd)
+                    if ov:
+                        out.append(
+                            {
+                                "match_id": match_id,
+                                "league_key": league_key,
+                                "home_team": home_team,
+                                "away_team": away_team,
+                                "timestamp_utc": ts_iso,
+                                "bookmaker": bk,
+                                "market": market,
+                                "line": "",
+                                "selection": sel,
+                                "decimal_odds": ov,
+                            }
+                        )
+
+        elif mname.startswith("over_under_"):
+            market = "Over/Under"
+            for row in value:
+                if not isinstance(row, dict):
+                    continue
+                bk = _infer_bookmaker(row)
+                over = _to_float(row.get("over") or row.get("o") or row.get("Over"))
+                under = _to_float(row.get("under") or row.get("u") or row.get("Under"))
+                if over:
+                    out.append(
+                        {
+                            "match_id": match_id,
+                            "league_key": league_key,
+                            "home_team": home_team,
+                            "away_team": away_team,
+                            "timestamp_utc": ts_iso,
+                            "bookmaker": bk,
+                            "market": market,
+                            "line": line,
+                            "selection": "Over",
+                            "decimal_odds": over,
+                        }
+                    )
+                if under:
+                    out.append(
+                        {
+                            "match_id": match_id,
+                            "league_key": league_key,
+                            "home_team": home_team,
+                            "away_team": away_team,
+                            "timestamp_utc": ts_iso,
+                            "bookmaker": bk,
+                            "market": market,
+                            "line": line,
+                            "selection": "Under",
+                            "decimal_odds": under,
+                        }
+                    )
+
+        elif mname.startswith("asian_handicap_"):
+            market = "Asian Handicap"
+            for row in value:
+                if not isinstance(row, dict):
+                    continue
+                bk = _infer_bookmaker(row)
+                home = _to_float(row.get("home") or row.get("1") or row.get("h"))
+                away = _to_float(row.get("away") or row.get("2") or row.get("a"))
+                if home:
+                    out.append(
+                        {
+                            "match_id": match_id,
+                            "league_key": league_key,
+                            "home_team": home_team,
+                            "away_team": away_team,
+                            "timestamp_utc": ts_iso,
+                            "bookmaker": bk,
+                            "market": market,
+                            "line": line,
+                            "selection": "Home",
+                            "decimal_odds": home,
+                        }
+                    )
+                if away:
+                    out.append(
+                        {
+                            "match_id": match_id,
+                            "league_key": league_key,
+                            "home_team": home_team,
+                            "away_team": away_team,
+                            "timestamp_utc": ts_iso,
+                            "bookmaker": bk,
+                            "market": market,
+                            "line": line,
+                            "selection": "Away",
+                            "decimal_odds": away,
+                        }
+                    )
+
+    return out
+
+
+def _match_fixture_id(fixtures_df: pd.DataFrame, home: str, away: str) -> Optional[str]:
+    eh = _norm_team(home)
+    ea = _norm_team(away)
+    for _, fx in fixtures_df.iterrows():
+        fh = _norm_team(fx.get("home_team", ""))
+        fa = _norm_team(fx.get("away_team", ""))
+        if (eh == fh and ea == fa) or (eh == fa and ea == fh):
+            return str(fx.get("match_id"))
+    return None
+
+
+def build_odds_24h_csv(fixtures_df: pd.DataFrame, out_csv: Path, source_dir: Optional[Path] = None) -> pd.DataFrame:
+    """
+    Build 24h odds history from OddsPortal/OddsHarvester JSON outputs.
+    This replaces The Odds API history usage.
+    """
+    src = source_dir or Path(settings_v2.oddsharvester_data_dir)
+    maybe_run_oddsharvester_refresh()
+
+    files = _iter_json_files(src, within_hours=30)
+    rows: List[dict] = []
+
+    for fp in files:
+        try:
+            obj = json.loads(fp.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+
+        mtime = datetime.fromtimestamp(fp.stat().st_mtime, tz=timezone.utc)
+        match_list = _extract_match_list(obj)
+
+        for m in match_list:
+            home = m.get("home_team") or m.get("home") or m.get("homeTeam") or ""
+            away = m.get("away_team") or m.get("away") or m.get("awayTeam") or ""
+            if not home or not away:
+                continue
+
+            match_id = _match_fixture_id(fixtures_df, str(home), str(away))
+            if not match_id:
+                continue
+
+            league_key = str(m.get("league_key") or m.get("league") or "")
+            ts_iso = _extract_timestamp(m, mtime)
+            rows.extend(
+                _extract_market_rows(
+                    m,
+                    match_id=match_id,
+                    league_key=league_key,
+                    home_team=str(home),
+                    away_team=str(away),
+                    ts_iso=ts_iso,
+                )
+            )
+
+    df = pd.DataFrame(rows)
+
+    if not df.empty:
+        # Keep last 24h only
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+        ts = pd.to_datetime(df["timestamp_utc"], errors="coerce", utc=True)
+        df = df[ts >= cutoff]
+        df = df.sort_values("timestamp_utc")
         df["implied_prob"] = (1.0 / df["decimal_odds"]).round(6)
-        out_csv.parent.mkdir(parents=True, exist_ok=True)
-        df.to_csv(out_csv, index=False, encoding="utf-8-sig")
-        return df
-    finally:
-        conn.close()
+        df["source"] = "oddsportal_oddsharvester"
 
+    out_csv.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(out_csv, index=False, encoding="utf-8-sig")
+    return df
+
+
+# ============================================================
+# C) Realtime market map for model pricing (from The Odds API snapshots)
+# ============================================================
 
 def current_market_snapshot(match_ids: list[str], db_path: Path) -> Dict[Tuple[str, str, str], float]:
     """
-    Return latest odds map keyed by (match_id, market, selection)
+    Return latest realtime odds map keyed by (match_id, market, selection)
     using average across bookmakers for the latest timestamp.
     """
     conn = sqlite3.connect(db_path)
@@ -224,11 +527,11 @@ def current_market_snapshot(match_ids: list[str], db_path: Path) -> Dict[Tuple[s
 
 def current_market_snapshot_by_teams(fixtures_df: pd.DataFrame, db_path: Path) -> Dict[Tuple[str, str, str], float]:
     """
-    Fallback: map latest snapshot rows by home/away names and rewrite key to fixture.match_id.
+    Fallback: map latest realtime snapshot rows by home/away names and rewrite key to fixture.match_id.
     """
 
     def n(x: str) -> str:
-        return " ".join(str(x or "").lower().replace("-", " ").split())
+        return _norm_team(x)
 
     conn = sqlite3.connect(db_path)
     try:

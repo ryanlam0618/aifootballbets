@@ -138,11 +138,11 @@ def run(matches: List[str], bankroll: float | None, default_league_key: str = "s
 
     # 2) odds snapshots + 24h changes
     league_keys = sorted(set(fixtures_df["league_key"].tolist()))
-    snap_df = collect_and_store_snapshot(league_keys, snapshot_db)
-    print(f"[OK] snapshot rows: {len(snap_df)}")
+    snap_df = collect_and_store_snapshot(league_keys, snapshot_db, fixtures_df=fixtures_df)
+    print(f"[OK] realtime snapshot rows (The Odds API): {len(snap_df)}")
 
-    odds_24h_df = build_odds_24h_csv(fixtures_df["match_id"].astype(str).tolist(), snapshot_db, odds_24h_csv)
-    print(f"[OK] odds 24h rows: {len(odds_24h_df)} -> {odds_24h_csv}")
+    odds_24h_df = build_odds_24h_csv(fixtures_df, odds_24h_csv)
+    print(f"[OK] odds 24h rows (OddsPortal/OddsHarvester): {len(odds_24h_df)} -> {odds_24h_csv}")
 
     # 3) lineup + injuries + grok (T-60 gate)
     injury_all_rows = []

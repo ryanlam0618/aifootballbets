@@ -4,7 +4,8 @@
 
 - 多場比賽輸入（可逐行）
 - fixture 基本資料輸出 CSV
-- The Odds API 24h odds snapshot + 變化 CSV
+- The Odds API 僅作即時賠率（token-saving）
+- 24h odds 變化改由 OddsPortal/OddsHarvester 輸出解析
 - T-60 才觸發 Grok web research（X 平台）
 - 首發與傷停整合（lineup text + injuries.csv）
 - features_master.csv（含 prompt 要求的大部分核心欄位，缺失用 NA）
@@ -46,6 +47,15 @@ python -m v2.main
 GOOGLE_DRIVE_FOLDER_ID=
 GOOGLE_SERVICE_ACCOUNT_JSON=
 DEFAULT_TIMEZONE=Asia/Hong_Kong
+
+# OddsPortal/OddsHarvester 24h 來源
+ODDSHARVESTER_DATA_DIR=OddsHarvester
+ODDSHARVESTER_CMD=
+ODDS_API_MAX_LEAGUES_PER_RUN=4
 ```
+
+- `ODDSHARVESTER_DATA_DIR`：OddsHarvester 輸出 JSON 目錄（會在 24h 內掃描）
+- `ODDSHARVESTER_CMD`：可選；每次 run 前先執行一次刷新命令
+- `ODDS_API_MAX_LEAGUES_PER_RUN`：限制 The Odds API 每次最多查幾個聯賽，節省 token
 
 > `GOOGLE_SERVICE_ACCOUNT_JSON` 內容可直接放 JSON 字串。

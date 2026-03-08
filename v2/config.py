@@ -35,6 +35,13 @@ class V2Settings:
 
     timezone: str = os.getenv("DEFAULT_TIMEZONE", "Asia/Hong_Kong")
 
+    # OddsPortal / OddsHarvester integration
+    oddsharvester_data_dir: str = os.getenv("ODDSHARVESTER_DATA_DIR", str(BASE_DIR / "OddsHarvester"))
+    oddsharvester_cmd: str = os.getenv("ODDSHARVESTER_CMD", "")
+
+    # token saving: limit leagues fetched from The Odds API per run
+    odds_api_max_leagues_per_run: int = int(os.getenv("ODDS_API_MAX_LEAGUES_PER_RUN", "4"))
+
     def missing_keys(self) -> list[str]:
         missing = []
         if not self.odds_api_key:
