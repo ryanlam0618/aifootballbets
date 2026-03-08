@@ -152,6 +152,27 @@ except Exception as e:
     ODDS_API_TEAMS = {}
     ODDS_API_TEAMS_LIST = {}
 
+# 將 JSON 球隊名併入歷史候選，避免只有 CSV 名稱導致匹配落空
+try:
+    json_team_names = set()
+    for teams in ODDS_API_TEAMS_LIST.values():
+        if isinstance(teams, list):
+            json_team_names.update([t for t in teams if isinstance(t, str) and t.strip()])
+
+    csv_team_names = set(HISTORICAL_TEAMS.get('csv_names', []))
+    merged_names = sorted(csv_team_names | json_team_names)
+
+    HISTORICAL_TEAMS['json_names'] = sorted(json_team_names)
+    HISTORICAL_TEAMS['csv_names'] = merged_names
+
+    if json_team_names:
+        print(
+            f"[INFO] 已合併歷史+JSON 球隊名稱: "
+            f"CSV {len(csv_team_names)} + JSON {len(json_team_names)} -> {len(merged_names)}"
+        )
+except Exception as e:
+    print(f"[WARN] 合併歷史/JSON 球隊名稱失敗: {e}")
+
 
 # ============================================
 # Gemini API Team Matching Functions
