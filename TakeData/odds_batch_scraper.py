@@ -31,6 +31,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 
+import pandas as pd
+
 # ============== 配置 ==============
 
 # 獲取腳本所在目錄（支持 exe 和 py 運行）
@@ -48,19 +50,29 @@ SCRIPT_DIR = get_script_dir()
 # OddsHarvester 路徑配置
 # pyinstaller 打包時: SCRIPT_DIR = dist/
 # 開發時: SCRIPT_DIR = TakeData/
-ODDS_HARVESTER_PATH = os.path.join(SCRIPT_DIR, "OddsHarvester")
-ODDS_HARVESTER_VENV = os.path.join(ODDS_HARVESTER_PATH, ".venv", "Scripts", "python.exe")
+POSSIBLE_ODDS_HARVESTER_PATHS = [
+    os.path.join(SCRIPT_DIR, "OddsHarvester"),
+    os.path.join(os.path.dirname(SCRIPT_DIR), "TakeData", "OddsHarvester"),
+    os.path.join(os.path.dirname(SCRIPT_DIR), "OddsHarvester"),
+]
+ODDS_HARVESTER_PATH = next((p for p in POSSIBLE_ODDS_HARVESTER_PATHS if os.path.exists(p)), POSSIBLE_ODDS_HARVESTER_PATHS[0])
 
-# 檢查是否存在虛擬環境，如果不存在則使用系統 Python
-if not os.path.exists(ODDS_HARVESTER_VENV):
-    # 嘗試使用 OddsHarvester 目錄下的 python
-    ODDS_HARVESTER_VENV = os.path.join(ODDS_HARVESTER_PATH, ".venv", "Scripts", "python.exe")
-    # 如果還是不存在，嘗試系統 python
-    if not os.path.exists(ODDS_HARVESTER_VENV):
-        ODDS_HARVESTER_VENV = "python"
+PY_CANDIDATES = [
+    os.path.join(os.path.dirname(SCRIPT_DIR), ".venv", "bin", "python"),
+    os.path.join(ODDS_HARVESTER_PATH, ".venv", "bin", "python"),
+    os.path.join(ODDS_HARVESTER_PATH, ".venv", "Scripts", "python.exe"),
+    sys.executable,
+    "python",
+]
+ODDS_HARVESTER_VENV = next((p for p in PY_CANDIDATES if os.path.exists(p)), sys.executable)
 
 # 數據輸出目錄
-OUTPUT_BASE_PATH = os.path.join(SCRIPT_DIR, "data", "odds")
+OUTPUT_BASE_PATH = os.path.join(os.path.dirname(SCRIPT_DIR), "data", "odds")
+
+# 歷史數據路徑（優先 10y backfill）
+HISTORY_DATA_PATH = os.path.join(os.path.dirname(SCRIPT_DIR), "data", "backfill_sofascore_10y", "history_data_10y_leagues_cups.csv")
+if not os.path.exists(HISTORY_DATA_PATH):
+    HISTORY_DATA_PATH = os.path.join(os.path.dirname(SCRIPT_DIR), "data", "history_data.csv")
 
 # 起始賽季 (2015-2016賽季)
 START_SEASON = "2015-2016"
@@ -386,46 +398,60 @@ def run_odds_harvester(
     """
     logger = log_logger or logging.getLogger(__name__)
     
+    # League key 修正（OddsHarvester 不支援 classic slug 時 fallback）
+    if league_key == "south-korea-k-league-classic":
+        league_key = "south-korea-k-league-1"
+
     # 獲取聯賽URL
     league_url = get_league_url(league_key)
     if not league_url:
         logger.error(f"無法獲取聯賽 URL: {league_key}")
         return False, ""
     
-    # 構建市場參數
+    # 構建市場參數（OddsHarvester 新版支援逗號分隔）
     markets_str = ",".join(markets)
-    
-    # 構建輸出文件路徑 (不使用tmp，避免擴展名問題)
+
+    # 構建輸出文件路徑
     output_file = os.path.join(output_dir, build_output_filename(league_key, season, markets[0]))
-    
-    # 構建命令 - 注意: file_path 必須是 .csv 結尾
+
+    # OddsHarvester 新 CLI
     cmd = [
         ODDS_HARVESTER_VENV,
-        "-m", "src.main",
-        "scrape_historic",
-        "--sport", "football",
-        "--leagues", league_key,
+        "-m", "oddsharvester",
+        "historic",
+        "-s", "football",
+        "-l", league_key,
         "--season", season,
-        "--markets", markets_str,
-        "--format", "csv",
-        "--file_path", output_file,  # 直接使用最終路徑
-        "--concurrency_tasks", str(concurrency),
+        "-m", markets_str,
+        "-f", "csv",
+        "-o", output_file,
+        "-c", str(concurrency),
+        "--max-pages", "50",
     ]
-    
+
     if headless:
         cmd.append("--headless")
-    
+    else:
+        cmd.append("--no-headless")
+
     if scrape_history:
-        cmd.append("--scrape_odds_history")
-    
-    # 不使用 --preview_submarkets_only，獲取完整歷史數據
-    
+        cmd.append("--odds-history")
+    else:
+        cmd.append("--no-odds-history")
+
+    if use_preview_mode:
+        cmd.append("--preview-only")
+    else:
+        cmd.append("--full-scrape")
+
     # 設置環境變量
     env = os.environ.copy()
-    env["PYTHONPATH"] = ODDS_HARVESTER_PATH
+    # oddsharvester package 在 src/ 下
+    env["PYTHONPATH"] = os.path.join(ODDS_HARVESTER_PATH, "src")
     env["PYTHONUNBUFFERED"] = "1"
-    # 設置編碼避免Windows中文編碼問題
     env["PYTHONIOENCODING"] = "utf-8"
+    # ARM/低資源環境下可改 firefox（前提已安裝 playwright firefox）
+    env.setdefault("ODDSH_BROWSER", "chromium")
     
     logger.info(f"開始爬取: {league_key} - {season}, 市場: {markets_str}")
     logger.info(f"命令: {' '.join(cmd)}")
@@ -506,39 +532,48 @@ def run_odds_harvester_by_url(
     
     # 構建市場參數
     markets_str = ",".join(markets)
-    
+
     # 構建輸出文件路徑
     safe_name = league_name.replace(" ", "_").replace("-", "_")
     safe_market = markets[0].replace("-", "_").replace(".", "_")
     output_file = os.path.join(output_dir, f"odds_{safe_name}_{season}_{safe_market}.csv")
-    temp_file = output_file + ".tmp"
-    
-    # 構建命令 - 使用 match_links (需要 --sport 參數)
+
+    # 構建命令（historic + --match-link）
     cmd = [
         ODDS_HARVESTER_VENV,
-        "-m", "src.main",
-        "scrape_upcoming",  # 使用 scrape_upcoming 配合 match_links
-        "--sport", "football",
-        "--match_links", url,
-        "--markets", markets_str,
-        "--format", "csv",
-        "--file_path", temp_file,
-        "--concurrency_tasks", str(concurrency),
+        "-m", "oddsharvester",
+        "historic",
+        "-s", "football",
+        "--season", season,
+        "--match-link", url,
+        "-m", markets_str,
+        "-f", "csv",
+        "-o", output_file,
+        "-c", str(concurrency),
+        "--max-pages", "50",
     ]
-    
+
     if headless:
         cmd.append("--headless")
-    
+    else:
+        cmd.append("--no-headless")
+
     if scrape_history:
-        cmd.append("--scrape_odds_history")
-    
-    # 不使用 --preview_submarkets_only，獲取完整歷史數據
-    
+        cmd.append("--odds-history")
+    else:
+        cmd.append("--no-odds-history")
+
+    if use_preview_mode:
+        cmd.append("--preview-only")
+    else:
+        cmd.append("--full-scrape")
+
     # 設置環境變量
     env = os.environ.copy()
-    env["PYTHONPATH"] = ODDS_HARVESTER_PATH
+    env["PYTHONPATH"] = os.path.join(ODDS_HARVESTER_PATH, "src")
     env["PYTHONUNBUFFERED"] = "1"
     env["PYTHONIOENCODING"] = "utf-8"
+    env.setdefault("ODDSH_BROWSER", "chromium")
     
     logger.info(f"開始爬取: {league_name} - {season}, URL: {url}")
     
@@ -853,7 +888,16 @@ def scrape_all_leagues_and_cups(
     logger.info(f"失敗: {total_stats['failed']}")
     logger.info(f"輸出目錄: {output_dir}")
     logger.info("=" * 60)
-    
+
+    # 歷史對齊
+    try:
+        aligned_path = align_scraped_with_history(output_dir, HISTORY_DATA_PATH, logger=logger)
+        if aligned_path:
+            total_stats["aligned_path"] = aligned_path
+    except Exception as e:
+        logger.warning(f"對齊過程發生錯誤: {e}")
+
+    total_stats["output_dir"] = output_dir
     return total_stats
 
 
@@ -895,7 +939,7 @@ def scrape_single_league(
         return False, ""
     
     if "custom_url" in league_info:
-        return run_odds_harvester_by_url(
+        success, out = run_odds_harvester_by_url(
             url=league_info["custom_url"],
             season=season,
             markets=markets,
@@ -908,7 +952,7 @@ def scrape_single_league(
             log_logger=logger
         )
     else:
-        return run_odds_harvester(
+        success, out = run_odds_harvester(
             league_key=league_key,
             season=season,
             markets=markets,
@@ -919,6 +963,14 @@ def scrape_single_league(
             use_preview_mode=use_preview_mode,
             log_logger=logger
         )
+
+    if success:
+        try:
+            align_scraped_with_history(output_dir, HISTORY_DATA_PATH, logger=logger)
+        except Exception as e:
+            logger.warning(f"對齊失敗: {e}")
+
+    return success, out
 
 
 def scrape_single_cup(
@@ -959,7 +1011,7 @@ def scrape_single_cup(
         return False, ""
     
     if "custom_url" in cup_info:
-        return run_odds_harvester_by_url(
+        success, out = run_odds_harvester_by_url(
             url=cup_info["custom_url"],
             season=season,
             markets=markets,
@@ -972,7 +1024,7 @@ def scrape_single_cup(
             log_logger=logger
         )
     else:
-        return run_odds_harvester(
+        success, out = run_odds_harvester(
             league_key=cup_key,
             season=season,
             markets=markets,
@@ -983,6 +1035,106 @@ def scrape_single_cup(
             use_preview_mode=use_preview_mode,
             log_logger=logger
         )
+
+    if success:
+        try:
+            align_scraped_with_history(output_dir, HISTORY_DATA_PATH, logger=logger)
+        except Exception as e:
+            logger.warning(f"對齊失敗: {e}")
+
+    return success, out
+
+
+def normalize_team_name(name: str) -> str:
+    """簡單隊名標準化，用於歷史賽事對齊"""
+    if not isinstance(name, str):
+        return ""
+    s = name.lower().strip()
+    for ch in ["-", ".", "'", "\"", "(", ")", ",", "/"]:
+        s = s.replace(ch, " ")
+    s = " ".join(s.split())
+    return s
+
+
+def align_scraped_with_history(scrape_output_dir: str, history_csv: str = HISTORY_DATA_PATH, logger: Optional[logging.Logger] = None) -> str:
+    """
+    將 OddsHarvester 爬下來的 CSV 與 history_data 對齊（主客隊 + 日期）。
+    會輸出一個 aligned CSV，包含 1x2 / AH / OU 三市場。
+    """
+    log = logger or logging.getLogger(__name__)
+
+    if not os.path.exists(history_csv):
+        log.warning(f"歷史數據不存在，跳過對齊: {history_csv}")
+        return ""
+
+    # 讀取歷史數據
+    hist = pd.read_csv(history_csv)
+    for c in ["match_date", "home_team", "away_team"]:
+        if c not in hist.columns:
+            log.warning("歷史數據缺必要欄位，跳過對齊")
+            return ""
+
+    hist = hist.copy()
+    hist["match_date"] = pd.to_datetime(hist["match_date"], errors="coerce").dt.date
+    hist["home_norm"] = hist["home_team"].astype(str).map(normalize_team_name)
+    hist["away_norm"] = hist["away_team"].astype(str).map(normalize_team_name)
+
+    # 收集爬蟲輸出
+    csv_files = []
+    for root, _, files in os.walk(scrape_output_dir):
+        for fn in files:
+            if fn.lower().endswith(".csv"):
+                csv_files.append(os.path.join(root, fn))
+
+    if not csv_files:
+        log.warning("未找到爬蟲 CSV，跳過對齊")
+        return ""
+
+    odds_frames = []
+    for fp in csv_files:
+        try:
+            df = pd.read_csv(fp)
+            if len(df) == 0:
+                continue
+            odds_frames.append(df)
+        except Exception as e:
+            log.warning(f"讀取失敗: {fp} - {e}")
+
+    if not odds_frames:
+        log.warning("未讀到有效爬蟲數據，跳過對齊")
+        return ""
+
+    odds = pd.concat(odds_frames, ignore_index=True)
+
+    # 兼容欄位名
+    date_col = "match_date" if "match_date" in odds.columns else ("date" if "date" in odds.columns else None)
+    if not date_col or "home_team" not in odds.columns or "away_team" not in odds.columns:
+        log.warning("爬蟲數據缺必要欄位(match_date/home_team/away_team)，無法對齊")
+        return ""
+
+    odds = odds.copy()
+    odds["match_date"] = pd.to_datetime(odds[date_col], errors="coerce").dt.date
+    odds["home_norm"] = odds["home_team"].astype(str).map(normalize_team_name)
+    odds["away_norm"] = odds["away_team"].astype(str).map(normalize_team_name)
+
+    # 僅保留三市場
+    if "market" in odds.columns:
+        mk = odds["market"].astype(str).str.lower()
+        keep = mk.str.contains("1x2") | mk.str.contains("asian_handicap") | mk.str.contains("over_under")
+        odds = odds[keep]
+
+    aligned = odds.merge(
+        hist[["match_date", "home_team", "away_team", "league", "home_norm", "away_norm"]],
+        on=["match_date", "home_norm", "away_norm"],
+        how="inner",
+        suffixes=("_odds", "_hist"),
+    )
+
+    aligned_out = os.path.join(scrape_output_dir, "odds_aligned_history_matches.csv")
+    aligned.to_csv(aligned_out, index=False, encoding="utf-8-sig")
+
+    log.info(f"對齊完成: {aligned_out}, rows={len(aligned)}")
+    return aligned_out
 
 
 # ============== 主程序入口 ==============
