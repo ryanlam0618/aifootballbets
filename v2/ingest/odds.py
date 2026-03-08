@@ -288,6 +288,93 @@ def _infer_bookmaker(row: dict) -> str:
     return "OddsPortal"
 
 
+def _mkrow(
+    match_id: str,
+    league_key: str,
+    home_team: str,
+    away_team: str,
+    ts_iso: str,
+    bookmaker: str,
+    market: str,
+    line: str,
+    selection: str,
+    odd: float,
+) -> dict:
+    return {
+        "match_id": match_id,
+        "league_key": league_key,
+        "home_team": home_team,
+        "away_team": away_team,
+        "timestamp_utc": ts_iso,
+        "bookmaker": bookmaker or "OddsPortal",
+        "market": market,
+        "line": line,
+        "selection": selection,
+        "decimal_odds": odd,
+    }
+
+
+def _extract_market_rows_from_generic_markets(
+    match_obj: dict,
+    match_id: str,
+    league_key: str,
+    home_team: str,
+    away_team: str,
+    ts_iso: str,
+) -> List[dict]:
+    """
+    Fallback parser for non-standard schemas, e.g.:
+    {
+      "markets": [
+        {"market":"1X2","bookmaker":"x","home":1.9,"draw":3.4,"away":4.2},
+        {"market":"OU","line":2.5,"over":1.91,"under":1.95},
+        {"market":"AH","line":-0.25,"home":1.96,"away":1.90}
+      ]
+    }
+    """
+    out: List[dict] = []
+    generic = match_obj.get("markets")
+    if not isinstance(generic, list):
+        return out
+
+    for row in generic:
+        if not isinstance(row, dict):
+            continue
+
+        mk_raw = str(row.get("market") or row.get("type") or row.get("name") or "").lower()
+        bk = _infer_bookmaker(row)
+        line = str(row.get("line") or row.get("point") or "")
+
+        if mk_raw in {"1x2", "h2h", "moneyline"}:
+            h = _to_float(row.get("home") or row.get("1"))
+            d = _to_float(row.get("draw") or row.get("x") or row.get("X"))
+            a = _to_float(row.get("away") or row.get("2"))
+            if h:
+                out.append(_mkrow(match_id, league_key, home_team, away_team, ts_iso, bk, "1X2", "", "Home", h))
+            if d:
+                out.append(_mkrow(match_id, league_key, home_team, away_team, ts_iso, bk, "1X2", "", "Draw", d))
+            if a:
+                out.append(_mkrow(match_id, league_key, home_team, away_team, ts_iso, bk, "1X2", "", "Away", a))
+
+        elif mk_raw in {"ou", "o/u", "totals", "over_under", "over under"}:
+            over = _to_float(row.get("over") or row.get("o") or row.get("Over"))
+            under = _to_float(row.get("under") or row.get("u") or row.get("Under"))
+            if over:
+                out.append(_mkrow(match_id, league_key, home_team, away_team, ts_iso, bk, "Over/Under", line, "Over", over))
+            if under:
+                out.append(_mkrow(match_id, league_key, home_team, away_team, ts_iso, bk, "Over/Under", line, "Under", under))
+
+        elif mk_raw in {"ah", "asian", "asian handicap", "spreads"}:
+            h = _to_float(row.get("home") or row.get("1") or row.get("h"))
+            a = _to_float(row.get("away") or row.get("2") or row.get("a"))
+            if h:
+                out.append(_mkrow(match_id, league_key, home_team, away_team, ts_iso, bk, "Asian Handicap", line, "Home", h))
+            if a:
+                out.append(_mkrow(match_id, league_key, home_team, away_team, ts_iso, bk, "Asian Handicap", line, "Away", a))
+
+    return out
+
+
 def _extract_market_rows(
     match_obj: dict,
     match_id: str,
@@ -322,20 +409,7 @@ def _extract_market_rows(
                 for sel, odd in pairs:
                     ov = _to_float(odd)
                     if ov:
-                        out.append(
-                            {
-                                "match_id": match_id,
-                                "league_key": league_key,
-                                "home_team": home_team,
-                                "away_team": away_team,
-                                "timestamp_utc": ts_iso,
-                                "bookmaker": bk,
-                                "market": market,
-                                "line": "",
-                                "selection": sel,
-                                "decimal_odds": ov,
-                            }
-                        )
+                        out.append(_mkrow(match_id, league_key, home_team, away_team, ts_iso, bk, market, "", sel, ov))
 
         elif mname.startswith("over_under_"):
             market = "Over/Under"
@@ -346,35 +420,9 @@ def _extract_market_rows(
                 over = _to_float(row.get("over") or row.get("o") or row.get("Over"))
                 under = _to_float(row.get("under") or row.get("u") or row.get("Under"))
                 if over:
-                    out.append(
-                        {
-                            "match_id": match_id,
-                            "league_key": league_key,
-                            "home_team": home_team,
-                            "away_team": away_team,
-                            "timestamp_utc": ts_iso,
-                            "bookmaker": bk,
-                            "market": market,
-                            "line": line,
-                            "selection": "Over",
-                            "decimal_odds": over,
-                        }
-                    )
+                    out.append(_mkrow(match_id, league_key, home_team, away_team, ts_iso, bk, market, line, "Over", over))
                 if under:
-                    out.append(
-                        {
-                            "match_id": match_id,
-                            "league_key": league_key,
-                            "home_team": home_team,
-                            "away_team": away_team,
-                            "timestamp_utc": ts_iso,
-                            "bookmaker": bk,
-                            "market": market,
-                            "line": line,
-                            "selection": "Under",
-                            "decimal_odds": under,
-                        }
-                    )
+                    out.append(_mkrow(match_id, league_key, home_team, away_team, ts_iso, bk, market, line, "Under", under))
 
         elif mname.startswith("asian_handicap_"):
             market = "Asian Handicap"
@@ -385,35 +433,20 @@ def _extract_market_rows(
                 home = _to_float(row.get("home") or row.get("1") or row.get("h"))
                 away = _to_float(row.get("away") or row.get("2") or row.get("a"))
                 if home:
-                    out.append(
-                        {
-                            "match_id": match_id,
-                            "league_key": league_key,
-                            "home_team": home_team,
-                            "away_team": away_team,
-                            "timestamp_utc": ts_iso,
-                            "bookmaker": bk,
-                            "market": market,
-                            "line": line,
-                            "selection": "Home",
-                            "decimal_odds": home,
-                        }
-                    )
+                    out.append(_mkrow(match_id, league_key, home_team, away_team, ts_iso, bk, market, line, "Home", home))
                 if away:
-                    out.append(
-                        {
-                            "match_id": match_id,
-                            "league_key": league_key,
-                            "home_team": home_team,
-                            "away_team": away_team,
-                            "timestamp_utc": ts_iso,
-                            "bookmaker": bk,
-                            "market": market,
-                            "line": line,
-                            "selection": "Away",
-                            "decimal_odds": away,
-                        }
-                    )
+                    out.append(_mkrow(match_id, league_key, home_team, away_team, ts_iso, bk, market, line, "Away", away))
+
+    # fallback parser if no rows parsed from *_market keys
+    if not out:
+        out = _extract_market_rows_from_generic_markets(
+            match_obj,
+            match_id=match_id,
+            league_key=league_key,
+            home_team=home_team,
+            away_team=away_team,
+            ts_iso=ts_iso,
+        )
 
     return out
 
@@ -427,6 +460,61 @@ def _match_fixture_id(fixtures_df: pd.DataFrame, home: str, away: str) -> Option
         if (eh == fh and ea == fa) or (eh == fa and ea == fh):
             return str(fx.get("match_id"))
     return None
+
+
+def validate_and_normalize_24h_schema(df: pd.DataFrame) -> pd.DataFrame:
+    required = {
+        "match_id": "",
+        "league_key": "",
+        "home_team": "",
+        "away_team": "",
+        "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        "bookmaker": "OddsPortal",
+        "market": "",
+        "line": "",
+        "selection": "",
+        "decimal_odds": pd.NA,
+    }
+
+    out = df.copy()
+    for col, default_val in required.items():
+        if col not in out.columns:
+            out[col] = default_val
+
+    out["bookmaker"] = out["bookmaker"].fillna("OddsPortal").replace("", "OddsPortal")
+
+    # decimal odds validation
+    out["decimal_odds"] = pd.to_numeric(out["decimal_odds"], errors="coerce")
+    out = out[(out["decimal_odds"].notna()) & (out["decimal_odds"] > 1.0)]
+
+    # known market normalization fallback
+    mk = out["market"].astype(str).str.lower()
+    out.loc[mk.isin(["h2h", "moneyline"]), "market"] = "1X2"
+    out.loc[mk.isin(["ou", "totals", "over_under", "over under"]), "market"] = "Over/Under"
+    out.loc[mk.isin(["ah", "asian", "asian handicap", "spreads"]), "market"] = "Asian Handicap"
+
+    # keep only target markets
+    out = out[out["market"].isin(["1X2", "Over/Under", "Asian Handicap"])]
+
+    # selection fallback
+    out["selection"] = out["selection"].replace({"1": "Home", "2": "Away", "X": "Draw", "x": "Draw"})
+
+    # canonical order
+    out = out[
+        [
+            "match_id",
+            "league_key",
+            "home_team",
+            "away_team",
+            "timestamp_utc",
+            "bookmaker",
+            "market",
+            "line",
+            "selection",
+            "decimal_odds",
+        ]
+    ]
+    return out
 
 
 def build_odds_24h_csv(fixtures_df: pd.DataFrame, out_csv: Path, source_dir: Optional[Path] = None) -> pd.DataFrame:
@@ -475,6 +563,8 @@ def build_odds_24h_csv(fixtures_df: pd.DataFrame, out_csv: Path, source_dir: Opt
     df = pd.DataFrame(rows)
 
     if not df.empty:
+        df = validate_and_normalize_24h_schema(df)
+
         # Keep last 24h only
         cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
         ts = pd.to_datetime(df["timestamp_utc"], errors="coerce", utc=True)
@@ -482,6 +572,17 @@ def build_odds_24h_csv(fixtures_df: pd.DataFrame, out_csv: Path, source_dir: Opt
         df = df.sort_values("timestamp_utc")
         df["implied_prob"] = (1.0 / df["decimal_odds"]).round(6)
         df["source"] = "oddsportal_oddsharvester"
+
+        # schema quality stats
+        needs_line = df[df["market"].isin(["Over/Under", "Asian Handicap"])]
+        if len(needs_line):
+            missing_line = (needs_line["line"].astype(str).str.strip() == "").mean()
+        else:
+            missing_line = 0
+        missing_bookie = (df["bookmaker"].astype(str).str.strip() == "").mean() if len(df) else 0
+        df["schema_quality"] = "ok"
+        if missing_line > 0.2 or missing_bookie > 0.2:
+            df["schema_quality"] = "fallback"
 
     out_csv.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(out_csv, index=False, encoding="utf-8-sig")
