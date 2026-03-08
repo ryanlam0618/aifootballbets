@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 from datetime import datetime
+from pathlib import Path
 from config import settings
 
 def calculate_kelly_stake(prob: float, odds: float, bankroll: float) -> dict:
@@ -22,12 +23,18 @@ def calculate_kelly_stake(prob: float, odds: float, bankroll: float) -> dict:
 class ExcelLogger:
     def __init__(self):
         self.filepath = settings.EXCEL_FILEPATH
+        self.csv_filepath = self._derive_csv_path(self.filepath)
         self.columns = [
             "Date", "League", "Home", "Away", "Market", "Selection",
             "Odds", "Model Prob", "EV", "Kelly %", "Stake ($)",
             "Result (Win/Loss)", "Profit"
         ]
         self._init_file()
+
+    @staticmethod
+    def _derive_csv_path(xlsx_path: str) -> str:
+        p = Path(xlsx_path)
+        return str(p.with_suffix('.csv'))
 
     def _init_file(self):
         # 嘗試建立目錄與檔案
@@ -39,6 +46,7 @@ class ExcelLogger:
 
                 df = pd.DataFrame(columns=self.columns)
                 df.to_excel(self.filepath, index=False)
+                self._sync_csv(df)
                 print(f"[INFO] 已建立新記錄檔: {self.filepath}")
             except Exception as e:
                 print(f"ERROR: 建立檔案失敗: {e}")
@@ -76,6 +84,7 @@ class ExcelLogger:
                 df_new = pd.DataFrame([new_row])
                 df_new.to_excel(self.filepath, index=False)
 
+            self._sync_csv(df_combined if 'df_combined' in locals() else pd.DataFrame([new_row]))
             print(f"[INFO] 記錄已成功儲存至 Excel: {self.filepath}")
 
         except PermissionError:
@@ -84,6 +93,14 @@ class ExcelLogger:
             print(f"ERROR: 寫入失敗: {e}")
             import traceback
             traceback.print_exc()
+
+    def _sync_csv(self, df: pd.DataFrame):
+        """每次寫入 Excel 後，同步輸出 CSV。"""
+        try:
+            df.to_csv(self.csv_filepath, index=False, encoding='utf-8-sig')
+            print(f"[INFO] CSV 已同步輸出: {self.csv_filepath}")
+        except Exception as e:
+            print(f"[WARN] CSV 同步失敗: {e}")
 
     def show_stats(self):
         if not os.path.exists(self.filepath):

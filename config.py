@@ -23,9 +23,9 @@ from typing import List, Dict
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# 優先載入專案根目錄 .env，再 fallback 到當前工作目錄
-load_dotenv(dotenv_path=os.path.join(BASE_DIR, ".env"))
-load_dotenv()
+# 優先載入專案根目錄 .env，並覆蓋既有環境變數（避免舊 token 殘留）
+load_dotenv(dotenv_path=os.path.join(BASE_DIR, ".env"), override=True)
+load_dotenv(override=True)
 
 
 class Settings:
