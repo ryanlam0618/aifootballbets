@@ -531,7 +531,7 @@ def find_lineup_file(home_team, away_team, data_folder="data"):
     return None
 
 
-def run_test_mode():
+def run_test_mode(auto_mode=False):
     """
     測試模式：使用模擬數據測試資金管理功能
     """
@@ -689,11 +689,12 @@ def run_test_mode():
     print("\n" + "=" * 50)
     print("🧪 測試模式完成！")
     print("=" * 50)
-    
-    input("\n執行完畢，請按 Enter 離開...")
+
+    if not auto_mode:
+        input("\n執行完畢，請按 Enter 離開...")
 
 
-def main():
+def main(auto_mode=False):
     print("========================================", flush=True)
     print("⚽ AI Football Analysis System v6.6 (Gemini API Matching)", flush=True)
     print("========================================", flush=True)
@@ -707,7 +708,7 @@ def main():
             print("\n🧪 測試模式：使用模擬數據")
     
     if test_mode:
-        run_test_mode()
+        run_test_mode(auto_mode=auto_mode)
         return
 
     # 1. 選擇聯賽
@@ -1771,7 +1772,8 @@ def main():
     # 9. 資金計算
     if "No Bet" in str(rec_market) or "Error" in str(rec_market):
         print("\n🚫 系統建議觀望 (No Bet)，跳過資金計算。")
-        input("\n執行完畢，請按 Enter 離開...")
+        if not auto_mode:
+            input("\n執行完畢，請按 Enter 離開...")
         return
 
     print(f"\n💰 資金管理...", flush=True)
@@ -1816,11 +1818,12 @@ def main():
             target_label = f"{best_match['market']} - {best_match['selection']} (Max)"
             print(f"   ✅ 自動匹配賠率: {target_label} @ {target_odds}")
 
-    if not target_odds:
+    if not target_odds and not auto_mode:
         try:
             user_odds = input("   👉 請手動輸入該選項賠率 (或按 Enter 跳過): ").strip()
             target_odds = float(user_odds) if user_odds else None
-        except: pass
+        except (ValueError, TypeError):
+            pass
 
     if target_odds:
         prob = float(model_p) if isinstance(model_p, (int, float)) else 0
@@ -1829,8 +1832,8 @@ def main():
         print(f"\n   💰 [v3] 信心度 Kelly 資金管理:")
         try:
             kelly_v3 = ConfidenceKelly(
-                base_fraction=0.75,
-                min_edge=0.02,  # 調降至 2% 門檻，與測試模式一致
+                base_fraction=settings.KELLY_FRACTION,
+                min_edge=settings.MIN_EDGE,
                 initial_bankroll=settings.INITIAL_BANKROLL
             )
             
@@ -1953,7 +1956,8 @@ def main():
         
         if final_stake > 0:
             print(f"      >>> 建議下注: ${final_stake:.2f} (EV: {final_ev:.3f})")
-            if input("\n[?] 記錄注單到 Excel? (y/n): ").lower() == 'y':
+            should_log = auto_mode or input("\n[?] 記錄注單到 Excel? (y/n): ").lower() == 'y'
+            if should_log:
                 match_info = {"league": league_name, "home": odds_home, "away": odds_away}
                 bet_info = {"market": rec_market, "selection": rec_selection, "odds": target_odds, "model_probability": v3_prob}
                 logger.log_bet(match_info, bet_info, kelly_v3_result)
@@ -1961,7 +1965,9 @@ def main():
         else:
             print(f"      >>> 不建議下注 (EV < 0)")
 
-    input("\n執行完畢，請按 Enter 離開...")
+    if not auto_mode:
+        input("\n執行完畢，請按 Enter 離開...")
 
 if __name__ == "__main__":
-    main()
+    auto_mode = os.getenv("AUTO_MODE", "0").lower() in {"1", "true", "yes", "on"}
+    main(auto_mode=auto_mode)

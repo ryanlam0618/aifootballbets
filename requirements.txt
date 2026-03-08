@@ -1,18 +1,18 @@
-# Core
-numpy
-pandas
-scipy
-python-dotenv
-openai
-httpx
-requests
+# Core (ARM/aarch64-friendly pinned set)
+numpy==1.26.4
+pandas==2.2.3
+scipy==1.12.0
+python-dotenv==1.0.1
+openai==1.52.2
+httpx==0.27.2
+requests==2.32.3
 
 # HTML parsing
-beautifulsoup4
+beautifulsoup4==4.12.3
 
 # Excel I/O
-openpyxl
+openpyxl==3.1.5
 
 # Machine Learning
-scikit-learn
-xgboost
+scikit-learn==1.4.2
+xgboost==2.0.3
