@@ -84,3 +84,7 @@ archive/
 TakeData/other/Football data crawling tool/
 OddsHarvester/node_modules/
 OddsHarvester/*.log
+# --- Local release bundles / cloned tools ---
+release/
+TakeData/OddsHarvester/
+data/magisk_modules/
