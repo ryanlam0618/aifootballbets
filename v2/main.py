@@ -8,7 +8,6 @@ from typing import List
 import pandas as pd
 from openai import OpenAI
 
-from config import settings
 from v2.config import settings_v2
 from v2.features.build_features import build_features
 from v2.ingest.fixtures import fixtures_to_csv, parse_match_lines, resolve_fixtures
@@ -175,7 +174,7 @@ def run(matches: List[str], bankroll: float | None, default_league_key: str = "s
         fixtures_df=fixtures_df,
         odds_24h_df=odds_24h_df,
         injuries_df=injuries_df,
-        history_csv_path=settings.HISTORY_CSV_PATH,
+        history_csv_path=settings_v2.history_csv_path,
         out_csv=features_csv,
     )
     print(f"[OK] features: {len(features_df)} -> {features_csv}")

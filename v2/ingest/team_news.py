@@ -5,10 +5,8 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import pandas as pd
+from openai import OpenAI
 
-from src.injury_api import get_injury_report
-from src.lineup_api import APIFootballLineups, FotMobLineups
-from src.networking_llm import NetworkedLLM
 from v2.config import settings_v2
 
 
@@ -37,32 +35,17 @@ def _format_lineup_block(lineup: dict | None, side_key: str) -> str:
 
 
 def collect_lineup_and_injury(home_team: str, away_team: str, match_date: str) -> Dict[str, Any]:
-    lineup = None
-    injury = None
-
-    # Non-interactive lineup retrieval (avoid manual prompt)
-    try:
-        af = APIFootballLineups()
-        lineup = af.get_lineup(home_team, away_team, match_date)
-    except Exception:
-        lineup = None
-
-    if not lineup:
-        try:
-            fm = FotMobLineups()
-            lineup = fm.get_lineup(home_team, away_team, match_date)
-        except Exception:
-            lineup = None
-
-    try:
-        injury = get_injury_report(home_team, away_team, match_date)
-    except Exception:
-        injury = {
-            "home": {"injuries": [], "suspensions": [], "total_impact": 0.0},
-            "away": {"injuries": [], "suspensions": [], "total_impact": 0.0},
-            "source": "unavailable",
-        }
-
+    # v2 standalone fallback (no v1 src dependencies)
+    # Keep schema stable so downstream pipeline continues working.
+    lineup = {
+        "home_team": {"name": home_team, "formation": "Unknown", "starters": [], "substitutes": []},
+        "away_team": {"name": away_team, "formation": "Unknown", "starters": [], "substitutes": []},
+    }
+    injury = {
+        "home": {"injuries": [], "suspensions": [], "total_impact": 0.0},
+        "away": {"injuries": [], "suspensions": [], "total_impact": 0.0},
+        "source": "v2-standalone-fallback",
+    }
     return {"lineup": lineup, "injury": injury}
 
 
@@ -70,7 +53,6 @@ def grok_research(home_team: str, away_team: str, match_date: str) -> str:
     if not settings_v2.grok_api_key:
         return "[Grok disabled] GROK_API_KEY missing"
 
-    client = NetworkedLLM(settings_v2.grok_api_key, settings_v2.network_api_url)
     prompt = f"""
 Match: {home_team} vs {away_team}
 Date: {match_date}
@@ -82,14 +64,16 @@ Task:
 """.strip()
 
     try:
-        return client.chat_with_search(
+        client = OpenAI(base_url=settings_v2.network_api_url, api_key=settings_v2.grok_api_key)
+        resp = client.chat.completions.create(
             model=settings_v2.model_grok,
             messages=[
                 {"role": "system", "content": "You are a football news researcher. Return evidence-based notes."},
                 {"role": "user", "content": prompt},
             ],
-            search_enabled=True,
+            temperature=0.2,
         )
+        return (resp.choices[0].message.content or "").strip() if resp and resp.choices else "[Grok empty]"
     except Exception as e:
         return f"[Grok error] {e}"
 

@@ -35,6 +35,9 @@ class V2Settings:
 
     timezone: str = os.getenv("DEFAULT_TIMEZONE", "Asia/Hong_Kong")
 
+    # history source used by v2 features
+    history_csv_path: str = os.getenv("HISTORY_CSV_PATH", str(BASE_DIR / "data" / "history_data.csv"))
+
     # OddsPortal / OddsHarvester integration
     oddsharvester_data_dir: str = os.getenv("ODDSHARVESTER_DATA_DIR", str(BASE_DIR / "OddsHarvester"))
     oddsharvester_cmd: str = os.getenv("ODDSHARVESTER_CMD", "")

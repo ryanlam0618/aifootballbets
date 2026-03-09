@@ -8,7 +8,6 @@ from typing import Dict, Optional
 import numpy as np
 import pandas as pd
 
-from src.data_modules import HistoryRepo
 
 
 @dataclass
@@ -148,8 +147,22 @@ def build_features(
     history_csv_path: str,
     out_csv: Path,
 ) -> pd.DataFrame:
-    repo = HistoryRepo(history_csv_path)
-    hist = repo.df.copy() if repo.df is not None else pd.DataFrame()
+    try:
+        hist = pd.read_csv(history_csv_path)
+    except Exception:
+        hist = pd.DataFrame()
+
+    if not hist.empty:
+        # normalize date column for downstream filters
+        date_col = None
+        for c in ["date", "match_date", "Date", "datetime"]:
+            if c in hist.columns:
+                date_col = c
+                break
+        if date_col and date_col != "date":
+            hist = hist.rename(columns={date_col: "date"})
+        if "date" in hist.columns:
+            hist["date"] = pd.to_datetime(hist["date"], errors="coerce")
 
     rows = []
 

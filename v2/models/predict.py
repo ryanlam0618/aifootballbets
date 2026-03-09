@@ -8,7 +8,6 @@ import numpy as np
 import pandas as pd
 from scipy.stats import poisson
 
-from src.math_models import DixonColesModel, NegativeBinomialModel, PoissonModel
 
 
 @dataclass
@@ -88,16 +87,22 @@ def _ev(prob: float, odds: float) -> float:
 
 
 def _build_probabilities(mu_h: float, mu_a: float) -> Dict[str, float]:
-    p_model = PoissonModel(mu_h, mu_a).calculate_probabilities()
-    dc = DixonColesModel(mu_h, mu_a).calculate_probabilities()
-    nb = NegativeBinomialModel(mu_h, mu_a).calculate_probabilities()
+    # v2 standalone: use Poisson score matrix directly (no v1 src dependencies)
+    mat = _score_matrix(mu_h, mu_a, max_goals=10)
+    home_win = 0.0
+    draw = 0.0
+    away_win = 0.0
+    for h in range(mat.shape[0]):
+        for a in range(mat.shape[1]):
+            p = float(mat[h, a])
+            if h > a:
+                home_win += p
+            elif h == a:
+                draw += p
+            else:
+                away_win += p
 
-    out = {
-        "home_win": float(np.mean([p_model.get("home_win", 0), dc.get("home_win", 0), nb.get("home_win", 0)])),
-        "draw": float(np.mean([p_model.get("draw", 0), dc.get("draw", 0), nb.get("draw", 0)])),
-        "away_win": float(np.mean([p_model.get("away_win", 0), dc.get("away_win", 0), nb.get("away_win", 0)])),
-    }
-    # normalize
+    out = {"home_win": home_win, "draw": draw, "away_win": away_win}
     s = out["home_win"] + out["draw"] + out["away_win"]
     if s > 0:
         for k in list(out.keys()):
