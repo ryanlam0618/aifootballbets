@@ -1,0 +1,209 @@
+from __future__ import annotations
+
+import math
+from typing import Dict, List, Optional, Tuple
+
+import numpy as np
+
+from v2.config import settings_v2
+from v2.paper.models import CandidateBet, MatchInfo, SelectedBet
+
+
+def _score_matrix(mu_h: float, mu_a: float, max_goals: int = 10) -> np.ndarray:
+    # Poisson matrix with stdlib math only (python3.9, minimal deps)
+    def pmf(k: int, mu: float) -> float:
+        if mu <= 0:
+            return 1.0 if k == 0 else 0.0
+        return math.exp(-mu) * (mu ** k) / math.factorial(k)
+
+    mat = np.zeros((max_goals + 1, max_goals + 1), dtype=float)
+    for h in range(max_goals + 1):
+        ph = pmf(h, mu_h)
+        for a in range(max_goals + 1):
+            mat[h, a] = ph * pmf(a, mu_a)
+    s = mat.sum()
+    return mat / s if s > 0 else mat
+
+
+def _prob_1x2(mat: np.ndarray) -> Dict[str, float]:
+    home = draw = away = 0.0
+    for h in range(mat.shape[0]):
+        for a in range(mat.shape[1]):
+            p = float(mat[h, a])
+            if h > a:
+                home += p
+            elif h == a:
+                draw += p
+            else:
+                away += p
+    return {"Home": home, "Draw": draw, "Away": away}
+
+
+def _prob_over(mat: np.ndarray, line: float) -> float:
+    p = 0.0
+    for h in range(mat.shape[0]):
+        for a in range(mat.shape[1]):
+            if (h + a) > line:
+                p += float(mat[h, a])
+    return p
+
+
+def _prob_home_ah(mat: np.ndarray, line: float) -> float:
+    p = 0.0
+    for h in range(mat.shape[0]):
+        for a in range(mat.shape[1]):
+            if (h + line) > a:
+                p += float(mat[h, a])
+    return p
+
+
+def _implied(odds: float) -> float:
+    return 1.0 / odds if odds > 1 else math.nan
+
+
+def _ev(prob: float, odds: float) -> float:
+    if odds <= 1:
+        return -1.0
+    return (prob * (odds - 1.0)) - (1.0 - prob)
+
+
+def kelly_full(prob: float, odds: float) -> float:
+    if odds <= 1:
+        return 0.0
+    b = odds - 1.0
+    q = 1.0 - prob
+    k = (b * prob - q) / b
+    return max(0.0, k)
+
+
+def expected_log_growth(prob: float, odds: float, f: float) -> float:
+    # G = p*log(1+f*b) + (1-p)*log(1-f)
+    if f <= 0 or odds <= 1:
+        return 0.0
+    b = odds - 1.0
+    if (1.0 + f * b) <= 0 or (1.0 - f) <= 0:
+        return -1e9
+    return (prob * math.log(1.0 + f * b)) + ((1.0 - prob) * math.log(1.0 - f))
+
+
+def _parse_market_key(market_key: str) -> Tuple[str, str]:
+    s = (market_key or "").strip()
+    if s.startswith("Over/Under"):
+        tail = s.replace("Over/Under", "", 1).strip()
+        return "Over/Under", tail
+    if s.startswith("Asian Handicap"):
+        tail = s.replace("Asian Handicap", "", 1).strip()
+        return "Asian Handicap", tail
+    return s, ""
+
+
+def generate_candidates_for_match(
+    match: MatchInfo,
+    odds_map: Dict[Tuple[str, str, str], float],
+    mu_home: float = 1.25,
+    mu_away: float = 1.10,
+    kelly_fraction: Optional[float] = None,
+) -> List[CandidateBet]:
+    k_frac = settings_v2.kelly_fraction if kelly_fraction is None else kelly_fraction
+
+    mat = _score_matrix(mu_home, mu_away)
+    probs_1x2 = _prob_1x2(mat)
+
+    out: List[CandidateBet] = []
+
+    # 1X2
+    for sel in ("Home", "Draw", "Away"):
+        odd = odds_map.get((match.match_id, "1X2", sel))
+        if not odd:
+            continue
+        p = probs_1x2[sel]
+        ip = _implied(float(odd))
+        ev = _ev(p, float(odd))
+        edge = p - ip
+        k = kelly_full(p, float(odd)) * k_frac
+        g = expected_log_growth(p, float(odd), k)
+        out.append(
+            CandidateBet(
+                match_id=match.match_id,
+                league_key=match.league_key,
+                league_name=match.league_name,
+                kickoff_utc=match.kickoff_utc,
+                home_team=match.home_team,
+                away_team=match.away_team,
+                market="1X2",
+                line="",
+                selection=sel,
+                odds=float(odd),
+                model_probability=p,
+                implied_probability=ip,
+                edge=edge,
+                ev=ev,
+                expected_log_growth=g,
+            )
+        )
+
+    # O/U + AH from odds keys
+    for (mid, market_key, sel), odd in odds_map.items():
+        if mid != match.match_id:
+            continue
+        market, line = _parse_market_key(market_key)
+        if market == "Over/Under":
+            try:
+                line_f = float(line)
+            except Exception:
+                line_f = 2.5
+            p_over = _prob_over(mat, line_f)
+            p = p_over if sel == "Over" else (1.0 - p_over)
+        elif market == "Asian Handicap":
+            try:
+                line_f = float(line)
+            except Exception:
+                line_f = 0.0
+            p_home = _prob_home_ah(mat, line_f)
+            p = p_home if sel == "Home" else (1.0 - p_home)
+        else:
+            continue
+
+        ip = _implied(float(odd))
+        ev = _ev(p, float(odd))
+        edge = p - ip
+        k = kelly_full(p, float(odd)) * k_frac
+        g = expected_log_growth(p, float(odd), k)
+
+        out.append(
+            CandidateBet(
+                match_id=match.match_id,
+                league_key=match.league_key,
+                league_name=match.league_name,
+                kickoff_utc=match.kickoff_utc,
+                home_team=match.home_team,
+                away_team=match.away_team,
+                market=market,
+                line=str(line),
+                selection=sel,
+                odds=float(odd),
+                model_probability=p,
+                implied_probability=ip,
+                edge=edge,
+                ev=ev,
+                expected_log_growth=g,
+            )
+        )
+
+    return out
+
+
+def select_best_per_match(
+    candidates: List[CandidateBet],
+    min_edge: float | None = None,
+    min_ev: float = 0.0,
+) -> Dict[str, CandidateBet]:
+    edge_cut = settings_v2.min_edge if min_edge is None else min_edge
+    filtered = [c for c in candidates if c.edge >= edge_cut and c.ev > min_ev and c.expected_log_growth > 0]
+
+    best: Dict[str, CandidateBet] = {}
+    for c in filtered:
+        old = best.get(c.match_id)
+        if old is None or c.expected_log_growth > old.expected_log_growth:
+            best[c.match_id] = c
+    return best
