@@ -3,33 +3,42 @@ from __future__ import annotations
 import math
 from typing import Dict, List, Optional, Tuple
 
-import numpy as np
-
 from v2.config import settings_v2
-from v2.paper.models import CandidateBet, MatchInfo, SelectedBet
+from v2.paper.models import CandidateBet, MatchInfo
 
 
-def _score_matrix(mu_h: float, mu_a: float, max_goals: int = 10) -> np.ndarray:
-    # Poisson matrix with stdlib math only (python3.9, minimal deps)
+Matrix = List[List[float]]
+
+
+def _score_matrix(mu_h: float, mu_a: float, max_goals: int = 10) -> Matrix:
     def pmf(k: int, mu: float) -> float:
         if mu <= 0:
             return 1.0 if k == 0 else 0.0
         return math.exp(-mu) * (mu ** k) / math.factorial(k)
 
-    mat = np.zeros((max_goals + 1, max_goals + 1), dtype=float)
+    mat: Matrix = [[0.0 for _ in range(max_goals + 1)] for _ in range(max_goals + 1)]
+    total = 0.0
     for h in range(max_goals + 1):
         ph = pmf(h, mu_h)
         for a in range(max_goals + 1):
-            mat[h, a] = ph * pmf(a, mu_a)
-    s = mat.sum()
-    return mat / s if s > 0 else mat
+            v = ph * pmf(a, mu_a)
+            mat[h][a] = v
+            total += v
+
+    if total > 0:
+        inv = 1.0 / total
+        for h in range(max_goals + 1):
+            for a in range(max_goals + 1):
+                mat[h][a] *= inv
+    return mat
 
 
-def _prob_1x2(mat: np.ndarray) -> Dict[str, float]:
+def _prob_1x2(mat: Matrix) -> Dict[str, float]:
     home = draw = away = 0.0
-    for h in range(mat.shape[0]):
-        for a in range(mat.shape[1]):
-            p = float(mat[h, a])
+    n = len(mat)
+    for h in range(n):
+        for a in range(n):
+            p = float(mat[h][a])
             if h > a:
                 home += p
             elif h == a:
@@ -39,21 +48,23 @@ def _prob_1x2(mat: np.ndarray) -> Dict[str, float]:
     return {"Home": home, "Draw": draw, "Away": away}
 
 
-def _prob_over(mat: np.ndarray, line: float) -> float:
+def _prob_over(mat: Matrix, line: float) -> float:
     p = 0.0
-    for h in range(mat.shape[0]):
-        for a in range(mat.shape[1]):
+    n = len(mat)
+    for h in range(n):
+        for a in range(n):
             if (h + a) > line:
-                p += float(mat[h, a])
+                p += float(mat[h][a])
     return p
 
 
-def _prob_home_ah(mat: np.ndarray, line: float) -> float:
+def _prob_home_ah(mat: Matrix, line: float) -> float:
     p = 0.0
-    for h in range(mat.shape[0]):
-        for a in range(mat.shape[1]):
+    n = len(mat)
+    for h in range(n):
+        for a in range(n):
             if (h + line) > a:
-                p += float(mat[h, a])
+                p += float(mat[h][a])
     return p
 
 
@@ -77,7 +88,6 @@ def kelly_full(prob: float, odds: float) -> float:
 
 
 def expected_log_growth(prob: float, odds: float, f: float) -> float:
-    # G = p*log(1+f*b) + (1-p)*log(1-f)
     if f <= 0 or odds <= 1:
         return 0.0
     b = odds - 1.0
@@ -111,7 +121,6 @@ def generate_candidates_for_match(
 
     out: List[CandidateBet] = []
 
-    # 1X2
     for sel in ("Home", "Draw", "Away"):
         odd = odds_map.get((match.match_id, "1X2", sel))
         if not odd:
@@ -142,7 +151,6 @@ def generate_candidates_for_match(
             )
         )
 
-    # O/U + AH from odds keys
     for (mid, market_key, sel), odd in odds_map.items():
         if mid != match.match_id:
             continue

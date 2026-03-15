@@ -3,11 +3,49 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from dotenv import load_dotenv
+
+try:
+    from dotenv import load_dotenv as _dotenv_load
+except Exception:
+    _dotenv_load = None
+
 
 BASE_DIR = Path(__file__).resolve().parents[1]
-load_dotenv(BASE_DIR / ".env", override=True)
-load_dotenv(override=True)
+
+
+def _stdlib_load_dotenv(path: Path, override: bool = True) -> None:
+    """Minimal .env loader fallback when python-dotenv is unavailable."""
+    if not path.exists():
+        return
+    try:
+        text = path.read_text(encoding="utf-8")
+    except Exception:
+        return
+
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("export "):
+            line = line[len("export ") :].strip()
+        if "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip()
+        if not key:
+            continue
+        if (value.startswith('"') and value.endswith('"')) or (value.startswith("'") and value.endswith("'")):
+            value = value[1:-1]
+        if override or key not in os.environ:
+            os.environ[key] = value
+
+
+if _dotenv_load is not None:
+    _dotenv_load(BASE_DIR / ".env", override=True)
+    _dotenv_load(override=True)
+else:
+    _stdlib_load_dotenv(BASE_DIR / ".env", override=True)
 
 
 @dataclass

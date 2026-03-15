@@ -9,7 +9,7 @@ from v2.config import settings_v2
 from v2.paper.constants import LEAGUE_UNIVERSE
 from v2.paper.ledger import append_selected_bets, bankroll_before_day
 from v2.paper.models import CandidateBet, MatchInfo
-from v2.paper.providers import OddsApiEspnPlaceholderProvider
+from v2.paper.providers import JsonFileOddsProvider, OddsApiEspnPlaceholderProvider, OddsProvider
 from v2.paper.staking import DailyRiskManager, make_selected_bet
 from v2.paper.strategy import generate_candidates_for_match, select_best_per_match
 
@@ -26,8 +26,9 @@ def run_for_day(
     snapshot_db: Path,
     initial_bankroll: float,
     run_id: str,
+    provider: OddsProvider | None = None,
 ) -> dict:
-    provider = OddsApiEspnPlaceholderProvider(snapshot_db=snapshot_db)
+    provider = provider or OddsApiEspnPlaceholderProvider(snapshot_db=snapshot_db)
 
     matches = provider.fetch_matches(day=day, league_keys=LEAGUE_UNIVERSE)
     if not matches:
@@ -108,10 +109,19 @@ def main() -> None:
         help="odds snapshot sqlite path",
     )
     parser.add_argument("--run-id", default="")
+    parser.add_argument(
+        "--provider-json",
+        default="",
+        help="optional local JSON fixture for deterministic mock provider",
+    )
     args = parser.parse_args()
 
     day = datetime.strptime(args.date, "%Y-%m-%d").date()
     run_id = args.run_id or f"paper_day_{day.isoformat()}"
+
+    provider: OddsProvider | None = None
+    if str(args.provider_json or "").strip():
+        provider = JsonFileOddsProvider(Path(args.provider_json))
 
     res = run_for_day(
         day=day,
@@ -119,6 +129,7 @@ def main() -> None:
         snapshot_db=Path(args.snapshot_db),
         initial_bankroll=settings_v2.initial_bankroll,
         run_id=run_id,
+        provider=provider,
     )
     print(f"[OK] day={day.isoformat()} -> {res}")
 

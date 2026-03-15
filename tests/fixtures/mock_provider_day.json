@@ -1,0 +1,17 @@
+{
+  "matches": [
+    {
+      "match_id": "m1",
+      "league_key": "soccer_epl",
+      "league_name": "EPL",
+      "kickoff_utc": "2026-03-16T12:00:00+00:00",
+      "home_team": "Alpha FC",
+      "away_team": "Beta FC"
+    }
+  ],
+  "odds": [
+    {"match_id": "m1", "market": "1X2", "selection": "Home", "odds": 4.0},
+    {"match_id": "m1", "market": "1X2", "selection": "Draw", "odds": 4.0},
+    {"match_id": "m1", "market": "1X2", "selection": "Away", "odds": 4.0}
+  ]
+}

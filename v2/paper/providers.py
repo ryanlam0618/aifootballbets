@@ -1,14 +1,14 @@
 from __future__ import annotations
 
+import json
 from abc import ABC, abstractmethod
 from datetime import date
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
 
-import requests
-
-from v2.ingest.fixtures import Fixture
-from v2.ingest.odds import collect_and_store_snapshot, current_market_snapshot
+from v2.config import settings_v2
 from v2.paper.constants import ESPN_LEAGUE_MAP, LEAGUE_UNIVERSE
 from v2.paper.models import MatchInfo
 
@@ -38,6 +38,18 @@ class ResultsProvider(ABC):
         raise NotImplementedError
 
 
+def _http_get_json(url: str, params: Dict[str, str] | None = None, timeout: int = 25):
+    q = urlencode(params or {})
+    full_url = f"{url}?{q}" if q else url
+    req = Request(full_url, headers={"User-Agent": "aifootballbets-paper/1.0"})
+    with urlopen(req, timeout=timeout) as resp:
+        status = getattr(resp, "status", 200)
+        if status != 200:
+            return None
+        body = resp.read().decode("utf-8", errors="replace")
+        return json.loads(body)
+
+
 def normalize_team(name: str) -> str:
     return " ".join((name or "").lower().replace("'", "").replace(".", " ").split())
 
@@ -48,29 +60,29 @@ def match_key(home: str, away: str) -> str:
 
 class OddsApiEspnPlaceholderProvider(OddsProvider):
     """
-    Primary: The Odds API for fixtures+odds.
-    Placeholder extension point: ESPN odds ingest can be added in this class later.
+    Stdlib-only provider:
+    - Match/odds source: The Odds API
+    - Keeps same interface but avoids pandas/requests dependencies
     """
 
-    def __init__(self, snapshot_db: Path) -> None:
+    def __init__(self, snapshot_db: Path | None = None) -> None:
         self.snapshot_db = snapshot_db
 
     def fetch_matches(self, day: date, league_keys: List[str]) -> List[MatchInfo]:
-        # Reuse existing The Odds API fixture resolver with synthetic fixture objects.
         fixtures = self._fetch_fixtures(league_keys)
         out: List[MatchInfo] = []
-        for f in fixtures:
+        for ev in fixtures:
             out.append(
                 MatchInfo(
-                    match_id=f.match_id,
-                    league_key=f.league_key,
-                    league_name=f.league_name,
-                    kickoff_utc=f.commence_time_utc,
-                    home_team=f.home_team,
-                    away_team=f.away_team,
+                    match_id=str(ev.get("id", "")),
+                    league_key=str(ev.get("league_key", "")),
+                    league_name=str(ev.get("sport_title", ev.get("league_key", ""))),
+                    kickoff_utc=str(ev.get("commence_time", "")),
+                    home_team=str(ev.get("home_team", "")),
+                    away_team=str(ev.get("away_team", "")),
                 )
             )
-        return out
+        return [m for m in out if m.match_id and m.home_team and m.away_team]
 
     def fetch_market_odds(
         self,
@@ -78,43 +90,142 @@ class OddsApiEspnPlaceholderProvider(OddsProvider):
         league_keys: List[str],
         matches: List[MatchInfo],
     ) -> Dict[Tuple[str, str, str], float]:
-        import pandas as pd
+        match_ids = {m.match_id for m in matches}
+        sums: Dict[Tuple[str, str, str], float] = {}
+        counts: Dict[Tuple[str, str, str], int] = {}
 
-        fixtures_df = pd.DataFrame(
-            [
-                {
-                    "match_id": m.match_id,
-                    "league_key": m.league_key,
-                    "home_team": m.home_team,
-                    "away_team": m.away_team,
-                }
-                for m in matches
-            ]
-        )
-        collect_and_store_snapshot(league_keys, self.snapshot_db, fixtures_df=fixtures_df)
-        return current_market_snapshot([m.match_id for m in matches], self.snapshot_db)
-
-    def _fetch_fixtures(self, league_keys: List[str]) -> List[Fixture]:
-        from v2.ingest.fixtures import _fetch_league_events  # existing internal util
-
-        fixtures: List[Fixture] = []
         for lk in league_keys:
-            events = _fetch_league_events(lk)
+            events = self._fetch_league_events(lk)
             for ev in events:
-                fixtures.append(
-                    Fixture(
-                        match_id=str(ev.get("id", "")),
-                        league_key=lk,
-                        league_name=str(ev.get("sport_title", lk)),
-                        match_date=str(ev.get("commence_time", ""))[:10],
-                        match_time=str(ev.get("commence_time", ""))[11:16],
-                        commence_time_utc=str(ev.get("commence_time", "")),
-                        home_team=str(ev.get("home_team", "")),
-                        away_team=str(ev.get("away_team", "")),
-                        source="the_odds_api",
-                    )
+                mid = str(ev.get("id", ""))
+                if mid not in match_ids:
+                    continue
+                home = str(ev.get("home_team", ""))
+                away = str(ev.get("away_team", ""))
+
+                for bk in (ev.get("bookmakers") or []):
+                    for mk in (bk.get("markets") or []):
+                        mkey = str(mk.get("key", ""))
+                        for out in (mk.get("outcomes") or []):
+                            selection = str(out.get("name", ""))
+                            point = out.get("point")
+                            line_str = "" if point is None else str(point)
+                            try:
+                                odd = float(out.get("price"))
+                            except Exception:
+                                continue
+
+                            market_key = ""
+                            if mkey == "h2h":
+                                market_key = "1X2"
+                                if selection == home:
+                                    selection = "Home"
+                                elif selection == away:
+                                    selection = "Away"
+                                else:
+                                    selection = "Draw"
+                            elif mkey == "spreads":
+                                market_key = f"Asian Handicap {line_str}".strip()
+                                if selection == home:
+                                    selection = "Home"
+                                elif selection == away:
+                                    selection = "Away"
+                            elif mkey == "totals":
+                                market_key = f"Over/Under {line_str}".strip()
+                                s = selection.lower()
+                                if s.startswith("over"):
+                                    selection = "Over"
+                                elif s.startswith("under"):
+                                    selection = "Under"
+                            else:
+                                continue
+
+                            key = (mid, market_key, selection)
+                            sums[key] = sums.get(key, 0.0) + odd
+                            counts[key] = counts.get(key, 0) + 1
+
+        out_map: Dict[Tuple[str, str, str], float] = {}
+        for key, total in sums.items():
+            c = counts.get(key, 0)
+            if c > 0:
+                out_map[key] = total / c
+        return out_map
+
+    def _fetch_league_events(self, league_key: str) -> List[dict]:
+        if not settings_v2.odds_api_key:
+            return []
+
+        url = f"https://api.the-odds-api.com/v4/sports/{league_key}/odds"
+        params = {
+            "apiKey": settings_v2.odds_api_key,
+            "regions": "eu,uk",
+            "markets": "h2h,spreads,totals",
+            "oddsFormat": "decimal",
+        }
+        try:
+            data = _http_get_json(url, params=params, timeout=25)
+            return data if isinstance(data, list) else []
+        except Exception:
+            return []
+
+    def _fetch_fixtures(self, league_keys: List[str]) -> List[dict]:
+        out: List[dict] = []
+        for lk in league_keys:
+            for ev in self._fetch_league_events(lk):
+                ev = dict(ev)
+                ev["league_key"] = lk
+                out.append(ev)
+        return out
+
+
+class JsonFileOddsProvider(OddsProvider):
+    """Deterministic mock provider from local JSON fixture."""
+
+    def __init__(self, json_path: Path) -> None:
+        self.json_path = json_path
+
+    def _load(self) -> dict:
+        try:
+            return json.loads(self.json_path.read_text(encoding="utf-8"))
+        except Exception:
+            return {}
+
+    def fetch_matches(self, day: date, league_keys: List[str]) -> List[MatchInfo]:
+        obj = self._load()
+        out: List[MatchInfo] = []
+        for m in (obj.get("matches") or []):
+            out.append(
+                MatchInfo(
+                    match_id=str(m.get("match_id", "")),
+                    league_key=str(m.get("league_key", "")),
+                    league_name=str(m.get("league_name", m.get("league_key", ""))),
+                    kickoff_utc=str(m.get("kickoff_utc", "")),
+                    home_team=str(m.get("home_team", "")),
+                    away_team=str(m.get("away_team", "")),
                 )
-        return fixtures
+            )
+        return [m for m in out if m.match_id and m.home_team and m.away_team]
+
+    def fetch_market_odds(
+        self,
+        day: date,
+        league_keys: List[str],
+        matches: List[MatchInfo],
+    ) -> Dict[Tuple[str, str, str], float]:
+        obj = self._load()
+        out: Dict[Tuple[str, str, str], float] = {}
+        for row in (obj.get("odds") or []):
+            try:
+                odd = float(row.get("odds"))
+            except Exception:
+                continue
+            key = (
+                str(row.get("match_id", "")),
+                str(row.get("market", "")),
+                str(row.get("selection", "")),
+            )
+            out[key] = odd
+        return out
 
 
 class EspnResultsProvider(ResultsProvider):
@@ -133,10 +244,9 @@ class EspnResultsProvider(ResultsProvider):
             url = f"https://site.api.espn.com/apis/site/v2/sports/{sport}/{league}/scoreboard"
             params = {"dates": ymd}
             try:
-                r = requests.get(url, params=params, timeout=self.timeout)
-                if r.status_code != 200:
+                data = _http_get_json(url, params=params, timeout=self.timeout)
+                if not isinstance(data, dict):
                     continue
-                data = r.json()
             except Exception:
                 continue
 

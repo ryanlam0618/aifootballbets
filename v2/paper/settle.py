@@ -3,12 +3,85 @@ from __future__ import annotations
 import argparse
 from datetime import date, datetime
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import List, Tuple
 
 from v2.config import settings_v2
 from v2.paper.constants import LEAGUE_UNIVERSE
 from v2.paper.ledger import bankroll_before_day, open_unsettled_bets_for_day, settle_bet
 from v2.paper.providers import EspnResultsProvider, match_key
+
+_EPS = 1e-9
+
+
+def _close(a: float, b: float) -> bool:
+    return abs(a - b) <= _EPS
+
+
+def _split_quarter_line(line: float) -> List[float]:
+    """
+    Asian quarter line decomposition:
+    x.25 -> [x.0, x.5]
+    x.75 -> [x.5, x.0+1]
+    same for negatives via +/- 0.25
+    """
+    frac = abs(line - math_floor(line))
+    if _close(frac, 0.25) or _close(frac, 0.75):
+        a = round(line - 0.25, 2)
+        b = round(line + 0.25, 2)
+        return [a, b]
+    return [line]
+
+
+def math_floor(x: float) -> float:
+    import math
+
+    return float(math.floor(x))
+
+
+def _single_ah_profit(stake: float, odds: float, home_goals: int, away_goals: int, selection: str, line: float) -> Tuple[str, float]:
+    diff = home_goals - away_goals
+    base = diff if selection == "Home" else -diff
+    adj = base + line
+    if adj > _EPS:
+        return "win", stake * (odds - 1.0)
+    if _close(adj, 0.0):
+        return "push", 0.0
+    return "loss", -stake
+
+
+def _single_ou_profit(stake: float, odds: float, total_goals: int, selection: str, line: float) -> Tuple[str, float]:
+    if selection == "Over":
+        val = total_goals - line
+    else:
+        val = line - total_goals
+
+    if val > _EPS:
+        return "win", stake * (odds - 1.0)
+    if _close(val, 0.0):
+        return "push", 0.0
+    return "loss", -stake
+
+
+def _aggregate_half_results(results: List[Tuple[str, float]]) -> Tuple[str, float]:
+    profit = sum(p for _, p in results)
+    labels = [r for r, _ in results]
+
+    if all(r == "win" for r in labels):
+        return "win", profit
+    if all(r == "loss" for r in labels):
+        return "loss", profit
+    if all(r == "push" for r in labels):
+        return "push", profit
+
+    if "win" in labels and "push" in labels:
+        return "half_win", profit
+    if "loss" in labels and "push" in labels:
+        return "half_loss", profit
+    if "win" in labels and "loss" in labels:
+        # rare edge case with malformed mixed split; keep neutral wording
+        return "split", profit
+
+    return "void", profit
 
 
 def _resolve_profit(row, score: Tuple[int, int]) -> Tuple[str, float]:
@@ -19,7 +92,6 @@ def _resolve_profit(row, score: Tuple[int, int]) -> Tuple[str, float]:
     stake = float(row["stake"] or 0)
     line_raw = row["line"]
 
-    # Conservative settlement for quarter lines: treat as full-line approximation.
     line = None
     try:
         if line_raw is not None and str(line_raw).strip() != "":
@@ -41,32 +113,21 @@ def _resolve_profit(row, score: Tuple[int, int]) -> Tuple[str, float]:
 
     if market.startswith("Over/Under"):
         target = float(line if line is not None else 2.5)
+        splits = _split_quarter_line(target)
+        half_stake = stake / len(splits)
         total = home_goals + away_goals
-        if selection == "Over":
-            if total > target:
-                return "win", win_profit()
-            if total == target:
-                return "push", 0.0
-            return "loss", -stake
-        else:
-            if total < target:
-                return "win", win_profit()
-            if total == target:
-                return "push", 0.0
-            return "loss", -stake
+        results = [_single_ou_profit(half_stake, odds, total, selection, s) for s in splits]
+        return _aggregate_half_results(results)
 
     if market.startswith("Asian Handicap"):
         target = float(line if line is not None else 0.0)
-        diff = home_goals - away_goals
-        if selection == "Home":
-            adj = diff + target
-        else:
-            adj = (-diff) - target
-        if adj > 0:
-            return "win", win_profit()
-        if adj == 0:
-            return "push", 0.0
-        return "loss", -stake
+        splits = _split_quarter_line(target)
+        half_stake = stake / len(splits)
+        results = [
+            _single_ah_profit(half_stake, odds, home_goals, away_goals, selection, s)
+            for s in splits
+        ]
+        return _aggregate_half_results(results)
 
     return "void", 0.0
 
