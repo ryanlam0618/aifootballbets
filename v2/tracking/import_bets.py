@@ -332,9 +332,16 @@ def write_sqlite(records: Sequence[Dict[str, object]], db_path: Path, schema_pat
             :odds_close, :clv_abs, :clv_pct
         )
         """
-        conn.executemany(sql, records)
+        inserted = 0
+        for r in records:
+            try:
+                conn.execute(sql, r)
+                inserted += 1
+            except sqlite3.IntegrityError:
+                # duplicate bet_id (idempotent re-import)
+                pass
         conn.commit()
-        return len(records)
+        return inserted
     finally:
         conn.close()
 

@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS bet_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    bet_id TEXT NOT NULL,
+    bet_id TEXT NOT NULL UNIQUE,
     bet_time_hkt TEXT,
     kickoff_time_hkt TEXT,
     closing_time_hkt TEXT,
