@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+import hashlib
 from pathlib import Path
-from typing import Dict
+import sqlite3
+from typing import Dict, Optional
 
 import pandas as pd
 
@@ -139,3 +142,168 @@ def export_summary_report(reco_df: pd.DataFrame, records_df: pd.DataFrame, out_m
     out_md.parent.mkdir(parents=True, exist_ok=True)
     out_md.write_text(content, encoding="utf-8")
     return content
+
+
+def _ensure_tracking_schema(conn: sqlite3.Connection) -> None:
+    conn.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS bet_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            bet_id TEXT NOT NULL,
+            bet_time_hkt TEXT,
+            kickoff_time_hkt TEXT,
+            closing_time_hkt TEXT,
+            league TEXT,
+            home TEXT,
+            away TEXT,
+            market TEXT,
+            market_type TEXT,
+            line TEXT,
+            selection TEXT,
+            odds_bet REAL,
+            model_prob REAL,
+            ev REAL,
+            kelly_pct REAL,
+            stake REAL,
+            result TEXT,
+            profit REAL,
+            bankroll REAL,
+            notes TEXT,
+            source_book TEXT NOT NULL DEFAULT 'sport pp88',
+            source_file TEXT,
+            run_id TEXT,
+            odds_close REAL,
+            clv_abs REAL,
+            clv_pct REAL,
+            created_at_utc TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_bet_log_bet_time ON bet_log (bet_time_hkt);
+        CREATE INDEX IF NOT EXISTS idx_bet_log_league ON bet_log (league);
+        CREATE INDEX IF NOT EXISTS idx_bet_log_market_type ON bet_log (market_type);
+        CREATE INDEX IF NOT EXISTS idx_bet_log_bet_id ON bet_log (bet_id);
+        """
+    )
+    conn.commit()
+
+
+def _market_type_and_line(market: object, line: object) -> tuple[str, Optional[str]]:
+    m = str(market or "").strip()
+    ln = str(line or "").strip() or None
+    lower = m.lower()
+
+    if lower.replace(" ", "") == "1x2":
+        return "1X2", ln
+
+    ah = "asian handicap"
+    ou = "over/under"
+    if lower.startswith(ah):
+        tail = m[len(ah) :].strip()
+        if not ln and tail:
+            ln = tail
+        return "Asian Handicap", ln
+    if lower.startswith(ou):
+        tail = m[len(ou) :].strip()
+        if not ln and tail:
+            ln = tail
+        return "Over/Under", ln
+
+    return m or "(unknown)", ln
+
+
+def append_recommendations_to_tracking_sqlite(
+    reco_df: pd.DataFrame,
+    sqlite_path: Path,
+    source_book: str = "sport pp88",
+    run_id: Optional[str] = None,
+) -> int:
+    """
+    Optional append-only hook. Intended to be off by default.
+    Writes only rows with bet_flag=True into tracking SQLite bet_log.
+    """
+    if reco_df.empty:
+        return 0
+
+    chosen = reco_df[reco_df.get("bet_flag", False) == True].copy()
+    if chosen.empty:
+        return 0
+
+    now_hkt = datetime.now(timezone(timedelta(hours=8))).replace(microsecond=0)
+    run_id = run_id or now_hkt.strftime("run_%Y%m%dT%H%M%S%z")
+
+    rows = []
+    for _, r in chosen.iterrows():
+        market = r.get("market")
+        line = r.get("line")
+        market_type, line_norm = _market_type_and_line(market, line)
+
+        bet_material = "|".join(
+            [
+                str(run_id),
+                str(r.get("match_id", "")),
+                str(r.get("selection", "")),
+                str(r.get("odds", "")),
+            ]
+        )
+        bet_id = hashlib.sha1(bet_material.encode("utf-8")).hexdigest()[:16]
+
+        rows.append(
+            {
+                "bet_id": bet_id,
+                "bet_time_hkt": now_hkt.isoformat(timespec="seconds"),
+                "kickoff_time_hkt": None,
+                "closing_time_hkt": None,
+                "league": r.get("league") or None,
+                "home": r.get("home_team") or None,
+                "away": r.get("away_team") or None,
+                "market": str(market or "") or None,
+                "market_type": market_type,
+                "line": line_norm,
+                "selection": r.get("selection") or None,
+                "odds_bet": pd.to_numeric(r.get("odds"), errors="coerce"),
+                "model_prob": pd.to_numeric(r.get("model_probability"), errors="coerce"),
+                "ev": pd.to_numeric(r.get("ev"), errors="coerce"),
+                "kelly_pct": pd.to_numeric(r.get("bankroll_pct"), errors="coerce"),
+                "stake": pd.to_numeric(r.get("suggested_stake"), errors="coerce"),
+                "result": None,
+                "profit": None,
+                "bankroll": None,
+                "notes": r.get("rationale") or None,
+                "source_book": source_book,
+                "source_file": "v2/reports/exporters.py:append_recommendations_to_tracking_sqlite",
+                "run_id": run_id,
+                "odds_close": None,
+                "clv_abs": None,
+                "clv_pct": None,
+            }
+        )
+
+    sqlite_path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(str(sqlite_path))
+    try:
+        _ensure_tracking_schema(conn)
+        conn.executemany(
+            """
+            INSERT INTO bet_log (
+                bet_id, bet_time_hkt, kickoff_time_hkt, closing_time_hkt,
+                league, home, away,
+                market, market_type, line, selection,
+                odds_bet, model_prob, ev, kelly_pct, stake,
+                result, profit, bankroll,
+                notes, source_book, source_file, run_id,
+                odds_close, clv_abs, clv_pct
+            ) VALUES (
+                :bet_id, :bet_time_hkt, :kickoff_time_hkt, :closing_time_hkt,
+                :league, :home, :away,
+                :market, :market_type, :line, :selection,
+                :odds_bet, :model_prob, :ev, :kelly_pct, :stake,
+                :result, :profit, :bankroll,
+                :notes, :source_book, :source_file, :run_id,
+                :odds_close, :clv_abs, :clv_pct
+            )
+            """,
+            rows,
+        )
+        conn.commit()
+        return len(rows)
+    finally:
+        conn.close()

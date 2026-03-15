@@ -45,6 +45,11 @@ class V2Settings:
     # token saving: limit leagues fetched from The Odds API per run
     odds_api_max_leagues_per_run: int = int(os.getenv("ODDS_API_MAX_LEAGUES_PER_RUN", "4"))
 
+    # Optional tracking export hook (off by default)
+    tracking_export_enabled: bool = os.getenv("TRACKING_EXPORT_ENABLED", "0").strip().lower() in {"1", "true", "yes", "on"}
+    tracking_sqlite_path: str = os.getenv("TRACKING_SQLITE_PATH", str(BASE_DIR / "data" / "v2" / "tracking" / "bets.sqlite"))
+    tracking_source_book: str = os.getenv("TRACKING_SOURCE_BOOK", "sport pp88")
+
     def missing_keys(self) -> list[str]:
         missing = []
         if not self.odds_api_key:

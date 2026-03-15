@@ -26,6 +26,7 @@ from v2.ingest.team_news import (
 )
 from v2.models.predict import predict_markets
 from v2.reports.exporters import (
+    append_recommendations_to_tracking_sqlite,
     export_betting_records_xlsx,
     export_recommendations,
     export_summary_report,
@@ -237,6 +238,14 @@ def run(matches: List[str], bankroll: float | None, default_league_key: str = "s
     records_df = export_betting_records_xlsx(reco_out, records_xlsx)
     export_summary_report(reco_out, records_df, summary_md)
     print(f"[OK] reports: {reco_csv}, {records_xlsx}, {summary_md}")
+
+    if settings_v2.tracking_export_enabled:
+        inserted = append_recommendations_to_tracking_sqlite(
+            reco_df=reco_out,
+            sqlite_path=Path(settings_v2.tracking_sqlite_path),
+            source_book=settings_v2.tracking_source_book,
+        )
+        print(f"[OK] tracking export: inserted {inserted} rows -> {settings_v2.tracking_sqlite_path}")
 
     # 7) sync
     outputs = [reco_csv, records_xlsx, summary_md]
