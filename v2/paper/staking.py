@@ -51,11 +51,20 @@ def make_selected_bet(
     kelly_fraction: Optional[float] = None,
     source_quality: str = "real_odds",
     odds_source: str = "unknown",
+    constraints_triggered: str = "",
 ) -> SelectedBet:
     k_frac = settings_v2.kelly_fraction if kelly_fraction is None else kelly_fraction
     k_full = kelly_full(candidate.model_probability, candidate.odds)
     k_used = max(0.0, k_full * k_frac)
     stake = bankroll_before * k_used
+
+    max_stake_frac = max(0.0, float(settings_v2.paper_max_stake_fraction_per_bet))
+    if max_stake_frac > 0:
+        stake_cap = bankroll_before * max_stake_frac
+        if stake > stake_cap:
+            stake = stake_cap
+    if bankroll_before > 0:
+        k_used = max(0.0, stake / bankroll_before)
 
     material = "|".join(
         [
@@ -96,6 +105,7 @@ def make_selected_bet(
         run_id=run_id,
         source_quality=source_quality,
         odds_source=odds_source,
+        constraints_triggered=constraints_triggered,
     )
 
 

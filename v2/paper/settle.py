@@ -12,6 +12,7 @@ from v2.paper.models import MatchInfo
 from v2.paper.providers import (
     EspnOddsFixturesProvider,
     EspnResultsProvider,
+    JsonFileResultsProvider,
     ResultsProvider,
     SofaScoreFixturesResultsProvider,
     match_key,
@@ -279,7 +280,11 @@ def run_settlement(db_path: Path, day: date, provider: ResultsProvider | None = 
     return settled_count
 
 
-def _build_results_provider(name: str | None) -> ResultsProvider:
+def _build_results_provider(name: str | None, provider_json: str | None = None) -> ResultsProvider:
+    pjson = str(provider_json or "").strip()
+    if pjson:
+        return JsonFileResultsProvider(Path(pjson))
+
     provider_name = str(name or "espn").strip().lower()
     if provider_name == "sofascore":
         return SofaScoreFixturesResultsProvider()
@@ -300,10 +305,15 @@ def main() -> None:
         default="espn",
         help="results provider to use (default: espn)",
     )
+    parser.add_argument(
+        "--provider-json",
+        default="",
+        help="optional local JSON fixture for deterministic settlement results",
+    )
     args = parser.parse_args()
 
     day = datetime.strptime(args.date, "%Y-%m-%d").date()
-    provider = _build_results_provider(args.results_provider)
+    provider = _build_results_provider(args.results_provider, provider_json=args.provider_json)
     n = run_settlement(Path(args.sqlite), day, provider=provider)
     print(f"[OK] settled rows: {n} (provider={args.results_provider})")
 

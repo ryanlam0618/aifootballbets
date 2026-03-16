@@ -86,6 +86,17 @@ class V2Settings:
     # Paper trading selection constraints
     paper_max_bets_per_day: int = int(os.getenv("PAPER_MAX_BETS_PER_DAY", "8"))
     paper_max_bets_per_league_per_day: int = int(os.getenv("PAPER_MAX_BETS_PER_LEAGUE_PER_DAY", "2"))
+    paper_max_stake_fraction_per_bet: float = float(os.getenv("PAPER_MAX_STAKE_FRACTION_PER_BET", "0.05"))
+    paper_max_league_exposure_fraction_per_day: float = float(
+        os.getenv("PAPER_MAX_LEAGUE_EXPOSURE_FRACTION_PER_DAY", "0.20")
+    )
+    paper_allow_synthetic_odds: bool = os.getenv("PAPER_ALLOW_SYNTHETIC_ODDS", "0").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+    paper_flat_stake_fraction: float = float(os.getenv("PAPER_FLAT_STAKE_FRACTION", "0.02"))
 
     # Optional tracking export hook (off by default)
     tracking_export_enabled: bool = os.getenv("TRACKING_EXPORT_ENABLED", "0").strip().lower() in {"1", "true", "yes", "on"}

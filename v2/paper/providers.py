@@ -828,6 +828,54 @@ class JsonFileOddsProvider(OddsProvider):
         return out
 
 
+class JsonFileResultsProvider(ResultsProvider):
+    """Deterministic mock results provider from local JSON fixture."""
+
+    def __init__(self, json_path: Path) -> None:
+        self.json_path = json_path
+
+    def _load(self) -> dict:
+        try:
+            return json.loads(self.json_path.read_text(encoding="utf-8"))
+        except Exception:
+            return {}
+
+    def fetch_ft_scores_with_ids(
+        self,
+        day: date,
+        league_keys: List[str],
+    ) -> Tuple[Dict[str, Tuple[int, int]], Dict[str, Tuple[int, int]]]:
+        _ = (day, league_keys)
+        obj = self._load()
+        by_names: Dict[str, Tuple[int, int]] = {}
+        by_ids: Dict[str, Tuple[int, int]] = {}
+
+        for row in (obj.get("results") or []):
+            try:
+                home_goals = int(row.get("home_goals"))
+                away_goals = int(row.get("away_goals"))
+            except Exception:
+                continue
+
+            home = str(row.get("home_team", "")).strip()
+            away = str(row.get("away_team", "")).strip()
+            match_id = str(row.get("match_id", "")).strip()
+            league_key = str(row.get("league_key", "")).strip()
+
+            if home and away:
+                by_names[match_key(home, away)] = (home_goals, away_goals)
+            if match_id:
+                by_ids[match_id] = (home_goals, away_goals)
+                if league_key and ":" not in match_id:
+                    by_ids[f"{league_key}:{match_id}"] = (home_goals, away_goals)
+
+        return by_names, by_ids
+
+    def fetch_ft_scores(self, day: date, league_keys: List[str]) -> Dict[str, Tuple[int, int]]:
+        names, _ = self.fetch_ft_scores_with_ids(day=day, league_keys=league_keys)
+        return names
+
+
 class EspnResultsProvider(ResultsProvider):
     def __init__(self, timeout: int = 25) -> None:
         self.timeout = timeout
