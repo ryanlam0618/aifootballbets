@@ -29,6 +29,13 @@ venv/
 env/
 ENV/
 .venv/
+.venv*/
+
+# --- Python Tooling Caches ---
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
 
 # --- IDE ---
 .vscode/
@@ -89,3 +96,6 @@ OddsHarvester/*.log
 release/
 TakeData/OddsHarvester/
 data/magisk_modules/
+
+# --- Local bootstrap artifacts ---
+get-pip.py
