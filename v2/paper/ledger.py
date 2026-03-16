@@ -67,7 +67,7 @@ def append_selected_bets(db_path: Path, bets: Iterable[SelectedBet], source_book
                     "result": None,
                     "profit": None,
                     "bankroll": b.bankroll_before,
-                    "notes": f"paper:{b.sim_date.isoformat()} edge={b.edge:.4f}",
+                    "notes": f"paper:{b.sim_date.isoformat()} match_id={b.match_id} edge={b.edge:.4f}",
                     "source_book": source_book,
                     "source_file": "v2/paper/ledger.py",
                     "run_id": b.run_id,

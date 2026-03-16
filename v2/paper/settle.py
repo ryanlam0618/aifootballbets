@@ -132,9 +132,9 @@ def _resolve_profit(row, score: Tuple[int, int]) -> Tuple[str, float]:
     return "void", 0.0
 
 
-def run_settlement(db_path: Path, day: date) -> int:
-    provider = EspnResultsProvider()
-    score_map = provider.fetch_ft_scores(day=day, league_keys=LEAGUE_UNIVERSE)
+def run_settlement(db_path: Path, day: date, provider: EspnResultsProvider | None = None) -> int:
+    provider = provider or EspnResultsProvider()
+    score_map, score_map_ids = provider.fetch_ft_scores_with_ids(day=day, league_keys=LEAGUE_UNIVERSE)
 
     unsettled = open_unsettled_bets_for_day(db_path, day)
     if not unsettled:
@@ -144,8 +144,27 @@ def run_settlement(db_path: Path, day: date) -> int:
     settled_count = 0
 
     for row in unsettled:
-        k = match_key(str(row["home"]), str(row["away"]))
-        score = score_map.get(k)
+        mid = str(row["bet_id"] or "")
+        # bet_id is hashed and not usable as event id; recover from notes if needed in future.
+        _ = mid
+
+        row_match_id = str(row["notes"] or "")
+        score = None
+
+        # Preferred: by match_id stored in notes (if present with match_id=...)
+        if "match_id=" in row_match_id:
+            try:
+                fragment = row_match_id.split("match_id=", 1)[1]
+                candidate_id = fragment.split()[0].strip().strip(",")
+                if candidate_id:
+                    score = score_map_ids.get(candidate_id)
+            except Exception:
+                score = None
+
+        # Fallback: by normalized home/away names
+        if not score:
+            k = match_key(str(row["home"]), str(row["away"]))
+            score = score_map.get(k)
         if not score:
             continue
 
