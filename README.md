@@ -88,6 +88,46 @@ READY 檢查清單請見：`v2/paper/README.md`
 
 ---
 
+## Kickoff Tracker（OddsPortal）
+
+`v2/tracking/run_until_kickoff.py` 會每輪抓取 1X2 / OU / AH，直到解析到的 kickoff 時間為止（或達到 fallback / 測試上限）。
+
+### 基本用法
+
+```bash
+python -m v2.tracking.run_until_kickoff \
+  --base-url "https://www.oddsportal.com/football/england/premier-league/brentford-wolves-0jR7cwU6/" \
+  --sample-every-min 10 \
+  --sqlite data/v2/tracking/brentford_wolves_until_kickoff.sqlite \
+  --jsonl data/v2/tracking/brentford_wolves_until_kickoff.jsonl
+```
+
+### PinchTab 驗證（可選）
+
+啟用 `--pinchtab-verify` 後，**每個成功 snapshot** 都會做輕量驗證：
+1. 呼叫 PinchTab `/navigate` 到相同 URL
+2. 呼叫 `/tabs`，確認 active tab URL 與 snapshot URL 一致
+3. 驗證標題包含 OddsPortal（以及市場關鍵詞）
+
+JSONL 每筆會附帶：
+- `verified`（bool）
+- `verify_error`（失敗原因）
+- `pinchtab_title`
+- `pinchtab_tab_id`
+
+Token 請用環境變數（建議）或 CLI 傳入，不要硬編碼。
+
+```bash
+export PINCHTAB_TOKEN="<your_token>"
+python -m v2.tracking.run_until_kickoff \
+  --base-url "https://www.oddsportal.com/football/england/premier-league/brentford-wolves-0jR7cwU6/" \
+  --pinchtab-verify \
+  --pinchtab-base-url "http://pinchtabd:9867"
+
+# 或者（不建議長期）
+python -m v2.tracking.run_until_kickoff --pinchtab-verify --pinchtab-token "<your_token>"
+```
+
 ## 主要爬蟲腳本
 
 - `TakeData/sofa_score/backfill_10y_leagues_cups.py`
