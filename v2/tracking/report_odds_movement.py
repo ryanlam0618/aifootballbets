@@ -51,13 +51,14 @@ def report_for_match(conn: sqlite3.Connection, match_id: int, label: str, market
             WITH ordered AS (
                 SELECT
                     q.bookmaker,
+                    q.market_type,
                     q.line,
                     s.snapshot_ts_utc,
                     q.home,
                     q.away,
-                    ROW_NUMBER() OVER (PARTITION BY q.bookmaker, q.line ORDER BY s.snapshot_ts_utc ASC) AS rn_first,
-                    ROW_NUMBER() OVER (PARTITION BY q.bookmaker, q.line ORDER BY s.snapshot_ts_utc DESC) AS rn_last,
-                    COUNT(*) OVER (PARTITION BY q.bookmaker, q.line) AS n
+                    ROW_NUMBER() OVER (PARTITION BY q.bookmaker, q.market_type, q.line ORDER BY s.snapshot_ts_utc ASC) AS rn_first,
+                    ROW_NUMBER() OVER (PARTITION BY q.bookmaker, q.market_type, q.line ORDER BY s.snapshot_ts_utc DESC) AS rn_last,
+                    COUNT(*) OVER (PARTITION BY q.bookmaker, q.market_type, q.line) AS n
                 FROM odds_quote q
                 JOIN odds_snapshot s ON s.id = q.snapshot_id
                 WHERE s.match_id = ?
@@ -65,6 +66,7 @@ def report_for_match(conn: sqlite3.Connection, match_id: int, label: str, market
             first_last AS (
                 SELECT
                     f.bookmaker,
+                    f.market_type,
                     f.line,
                     f.home AS first_home,
                     l.home AS last_home,
@@ -74,24 +76,27 @@ def report_for_match(conn: sqlite3.Connection, match_id: int, label: str, market
                 FROM ordered f
                 JOIN ordered l
                   ON l.bookmaker = f.bookmaker
+                 AND l.market_type = f.market_type
                  AND (l.line IS f.line)
                  AND f.rn_first = 1
                  AND l.rn_last = 1
             )
             SELECT
                 bookmaker,
+                market_type,
                 COALESCE(ROUND(line, 3), 'NULL') AS line,
                 samples,
                 ROUND(first_home, 3), ROUND(last_home, 3), ROUND(last_home - first_home, 3),
                 ROUND(first_away, 3), ROUND(last_away, 3), ROUND(last_away - first_away, 3)
             FROM first_last
-            ORDER BY line, bookmaker
+            ORDER BY market_type, line, bookmaker
             """,
             (match_id,),
         ).fetchall()
         _print_table(
             [
                 "bookmaker",
+                "market_type",
                 "line",
                 "samples",
                 "side1_first",
@@ -170,6 +175,7 @@ def report_for_match(conn: sqlite3.Connection, match_id: int, label: str, market
             """
             SELECT
                 s.snapshot_ts_utc,
+                q.market_type,
                 COALESCE(ROUND(q.line, 3), 'NULL') AS line,
                 ROUND(MAX(q.home), 3) AS best_side1,
                 ROUND(MAX(q.away), 3) AS best_side2,
@@ -177,12 +183,12 @@ def report_for_match(conn: sqlite3.Connection, match_id: int, label: str, market
             FROM odds_snapshot s
             LEFT JOIN odds_quote q ON q.snapshot_id = s.id
             WHERE s.match_id = ?
-            GROUP BY s.id, s.snapshot_ts_utc, q.line
-            ORDER BY s.snapshot_ts_utc, q.line
+            GROUP BY s.id, s.snapshot_ts_utc, q.market_type, q.line
+            ORDER BY s.snapshot_ts_utc, q.market_type, q.line
             """,
             (match_id,),
         ).fetchall()
-        _print_table(["snapshot_ts_utc", "line", "best_side1", "best_side2", "bookmakers"], best_rows)
+        _print_table(["snapshot_ts_utc", "market_type", "line", "best_side1", "best_side2", "bookmakers"], best_rows)
     else:
         best_rows = conn.execute(
             """
