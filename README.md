@@ -2,7 +2,7 @@
 
 此分支只保留 **v2 管線** + **資料爬蟲（TakeData）**。
 
-> v1 程式（`app.py` / `src/` / `scripts/` / `tests/` / 舊 docs）已移除。
+> v1 程式（`app.py` / `src/` / 舊 docs）已移除；目前保留的是 v2 專用 `scripts/` 與 `tests/`。
 
 ---
 
