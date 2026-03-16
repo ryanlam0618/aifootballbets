@@ -65,6 +65,12 @@ class MultiMatchProvider(OddsProvider):
         return odds
 
 
+class NoOddsProvider(MultiMatchProvider):
+    def fetch_market_odds_with_meta(self, day: date, league_keys, matches):
+        _ = (day, league_keys, matches)
+        return {}, {}
+
+
 class TestSelectionConstraintsAndReports(unittest.TestCase):
     def test_selection_constraints_day_and_league_caps(self):
         old_day = settings_v2.paper_max_bets_per_day
@@ -189,6 +195,43 @@ class TestSelectionConstraintsAndReports(unittest.TestCase):
             self.assertIn("## By source_quality", text)
             self.assertIn("real_odds", text)
             self.assertIn("synthetic_odds", text)
+
+    def test_results_only_mode_is_selected_and_reported(self):
+        old_day = settings_v2.paper_max_bets_per_day
+        old_league = settings_v2.paper_max_bets_per_league_per_day
+        old_edge = settings_v2.min_edge
+        try:
+            settings_v2.paper_max_bets_per_day = 2
+            settings_v2.paper_max_bets_per_league_per_day = 1
+            settings_v2.min_edge = 0.0
+
+            with tempfile.TemporaryDirectory() as td:
+                db_path = Path(td) / "tracking.sqlite"
+                ensure_tracking_schema(db_path)
+
+                res = run_for_day(
+                    day=date(2026, 3, 16),
+                    db_path=db_path,
+                    snapshot_db=Path(td) / "snap.sqlite",
+                    initial_bankroll=2000.0,
+                    run_id="results_only_ut",
+                    provider=NoOddsProvider(),
+                )
+
+                self.assertTrue(res["results_only_mode"])
+                self.assertEqual(res["selected"], 2)
+                self.assertEqual(res["selected_real_odds"], 0)
+                self.assertEqual(res["selected_synthetic_odds"], 2)
+
+                out_dir = Path(td) / "reports"
+                _daily, weekly = generate_reports(db_path=db_path, day=date(2026, 3, 16), out_dir=out_dir)
+                text = weekly.read_text(encoding="utf-8")
+                self.assertIn("synthetic_odds", text)
+                self.assertNotIn("real_odds", text)
+        finally:
+            settings_v2.paper_max_bets_per_day = old_day
+            settings_v2.paper_max_bets_per_league_per_day = old_league
+            settings_v2.min_edge = old_edge
 
 
 if __name__ == "__main__":
