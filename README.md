@@ -21,6 +21,27 @@ pip install -r requirements.txt
 python -m v2.main --help
 ```
 
+### 環境安裝（無 ensurepip / 無 sudo）
+
+若系統 Python 沒有 `pip`/`ensurepip`，可直接執行：
+
+```bash
+bash scripts/setup_env.sh
+```
+
+此腳本會：
+- 用 `get-pip.py` 安裝使用者層級 pip（`~/.local/bin/pip`）
+- 安裝 `virtualenv`（user site）
+- 建立專案內 `.venv`
+- 安裝 `requirements.txt` + `lxml`
+- 驗證 `dotenv/requests/pandas` 匯入與 `scripts/paper_one_day.py --help`
+
+重建 `.venv`：
+
+```bash
+bash scripts/setup_env.sh --recreate
+```
+
 範例：
 
 ```bash
