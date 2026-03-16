@@ -102,15 +102,22 @@ Suggested Phase B process:
 Added tools:
 
 - `scripts/oddsportal_one_match.py`
-  - now parameterized (`--match-url`, `--market`, `--output`, `--storage-state`, `--headless`)
-- `v2/tracking/schema_odds_tracker.sql`
+  - now supports `1X2`, `OU`, `AH`
+  - OU/AH extract all rows, compute line frequency, keep top-K main lines (`--top-lines`)
+  - optional line constraints: `--prefer-lines` and pinned `--fixed-lines`
+  - parameterized (`--match-url`, `--market`, `--output`, `--storage-state`, `--headless`)
+- `v2/tracking/schema_odds_tracker_v2.sql`
   - sqlite schema for tracked matches, snapshots, and bookmaker quotes
+  - supports 1X2 and 2-way markets (OU/AH) with `market_type` + `line`
 - `v2/tracking/odds_tracker.py`
   - runner that samples odds every N minutes over a duration (default 24h)
   - writes to sqlite, optional JSONL append
+  - OU/AH support with main-line selection and line pinning on first successful snapshot
+  - CLI flags: `--top-lines`, `--prefer-lines` (OU), `--prefer-lines-ah` (AH), `--pin-lines-first-snapshot`
   - robust to partial/missing rows and snapshot failures
 - `v2/tracking/report_odds_movement.py`
   - reports bookmaker movement (first→last + delta) and best available odds over time
+  - groups by `line` automatically for OU/AH
 - `v2/tracking/odds_targets.example.json`
   - sample targets file
 
@@ -122,6 +129,14 @@ xvfb-run -a ./.venv312/bin/python scripts/oddsportal_one_match.py \
   --market 1X2 \
   --output /tmp/oddsportal_match.json \
   --storage-state /tmp/oddsportal_storage.json
+
+# OU example (keep main 2 lines, prefer 2.5/2.75)
+xvfb-run -a ./.venv312/bin/python scripts/oddsportal_one_match.py \
+  --match-url "https://www.oddsportal.com/football/.../#over-under;2" \
+  --market OU \
+  --top-lines 2 \
+  --prefer-lines "2.5,2.75" \
+  --output /tmp/oddsportal_ou_match.json
 ```
 
 ### Example: 24h tracking every 10 minutes
@@ -132,8 +147,11 @@ xvfb-run -a ./.venv312/bin/python -m v2.tracking.odds_tracker \
   --sample-every-min 10 \
   --duration-hours 24 \
   --between-match-delay-sec 8 \
+  --top-lines 2 \
+  --prefer-lines "2.5,2.75" \
+  --prefer-lines-ah "-0.25,0.0" \
   --sqlite data/v2/tracking/odds_tracker.sqlite \
-  --schema v2/tracking/schema_odds_tracker.sql \
+  --schema v2/tracking/schema_odds_tracker_v2.sql \
   --jsonl data/v2/tracking/odds_tracker.jsonl \
   --storage-state /tmp/oddsportal_storage.json
 ```

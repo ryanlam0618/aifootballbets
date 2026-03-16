@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
 
-from scripts.oddsportal_one_match import extract_odds
+from scripts.oddsportal_one_match import extract_odds, normalize_market_type, parse_line_csv
 
 
 @dataclass(frozen=True)
@@ -31,6 +31,17 @@ def load_schema(path: Path) -> str:
 
 def ensure_db(conn: sqlite3.Connection, schema_sql: str) -> None:
     conn.executescript(schema_sql)
+    conn.commit()
+
+    # Migration-friendly guard in case old schema is used.
+    cols = {
+        row[1]
+        for row in conn.execute("PRAGMA table_info(odds_quote)").fetchall()
+    }
+    if "line" not in cols:
+        conn.execute("ALTER TABLE odds_quote ADD COLUMN line REAL")
+    if "market_type" not in cols:
+        conn.execute("ALTER TABLE odds_quote ADD COLUMN market_type TEXT NOT NULL DEFAULT '1X2'")
     conn.commit()
 
 
@@ -75,13 +86,15 @@ def save_snapshot(conn: sqlite3.Connection, match_id: int, payload: dict, succes
     if quotes:
         conn.executemany(
             """
-            INSERT OR REPLACE INTO odds_quote (snapshot_id, bookmaker, home, draw, away, raw)
-            VALUES (?, ?, ?, ?, ?, ?)
-            """,
+            INSERT OR REPLACE INTO odds_quote (snapshot_id, bookmaker, market_type, line, home, draw, away, raw)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, 
             [
                 (
                     snapshot_id,
                     q.get("bookmaker"),
+                    q.get("market_type") or payload.get("market_type") or "1X2",
+                    q.get("line"),
                     q.get("home"),
                     q.get("draw"),
                     q.get("away"),
@@ -127,7 +140,16 @@ def parse_targets(args: argparse.Namespace) -> list[Target]:
     return out
 
 
-async def sample_one(target: Target, storage_state: Path, headless: bool, timeout_ms: int, settle_ms: int) -> tuple[dict, bool, str | None]:
+async def sample_one(
+    target: Target,
+    storage_state: Path,
+    headless: bool,
+    timeout_ms: int,
+    settle_ms: int,
+    top_lines: int,
+    prefer_lines: Iterable[float] | None,
+    fixed_lines: Iterable[float] | None,
+) -> tuple[dict, bool, str | None]:
     try:
         payload = await extract_odds(
             match_url=target.match_url,
@@ -136,6 +158,9 @@ async def sample_one(target: Target, storage_state: Path, headless: bool, timeou
             headless=headless,
             timeout_ms=timeout_ms,
             settle_ms=settle_ms,
+            top_lines=top_lines,
+            prefer_lines=prefer_lines,
+            fixed_lines=fixed_lines,
         )
         quote_count = len(payload.get("odds") or [])
         success = quote_count > 0
@@ -145,9 +170,12 @@ async def sample_one(target: Target, storage_state: Path, headless: bool, timeou
         return {
             "match_url": target.match_url,
             "market": target.market,
+            "market_type": normalize_market_type(target.market),
             "snapshot_ts_utc": utc_now_iso(),
             "row_count_seen": 0,
             "odds": [],
+            "selected_lines": list(fixed_lines or []),
+            "line_frequency": {},
         }, False, str(e)
 
 
@@ -162,13 +190,37 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--between-match-delay-sec", type=float, default=8.0, help="Delay between matches in a cycle")
 
     parser.add_argument("--sqlite", default="data/v2/tracking/odds_tracker.sqlite", help="SQLite output path")
-    parser.add_argument("--schema", default="v2/tracking/schema_odds_tracker.sql", help="Schema SQL path")
+    parser.add_argument("--schema", default="v2/tracking/schema_odds_tracker_v2.sql", help="Schema SQL path")
     parser.add_argument("--jsonl", default="", help="Optional JSONL append path for raw snapshots")
 
     parser.add_argument("--storage-state", default="/tmp/oddsportal_storage.json", help="Playwright storage_state path")
     parser.add_argument("--headless", action="store_true", help="Use headless Chromium")
     parser.add_argument("--timeout-ms", type=int, default=120000, help="Navigation timeout in ms")
     parser.add_argument("--settle-ms", type=int, default=2500, help="Post-render settle time in ms")
+
+    parser.add_argument("--top-lines", type=int, default=2, help="Top-K lines to keep for OU/AH (default: 2)")
+    parser.add_argument(
+        "--prefer-lines",
+        default="",
+        help="Preferred OU lines CSV, e.g. '2.5,2.75'. Applied to OU targets.",
+    )
+    parser.add_argument(
+        "--prefer-lines-ah",
+        default="",
+        help="Preferred AH lines CSV, e.g. '-0.25,0.0'. Applied to AH targets.",
+    )
+    parser.add_argument(
+        "--pin-lines-first-snapshot",
+        action="store_true",
+        default=True,
+        help="Pin selected lines after first successful snapshot per match+market (default: on)",
+    )
+    parser.add_argument(
+        "--no-pin-lines-first-snapshot",
+        action="store_false",
+        dest="pin_lines_first_snapshot",
+        help="Disable line pinning; recompute top lines each snapshot.",
+    )
     return parser.parse_args()
 
 
@@ -181,6 +233,9 @@ async def run_tracker(args: argparse.Namespace) -> int:
     storage_state = Path(args.storage_state)
     jsonl_path = Path(args.jsonl) if args.jsonl else None
 
+    prefer_lines_ou = parse_line_csv(args.prefer_lines)
+    prefer_lines_ah = parse_line_csv(args.prefer_lines_ah)
+
     conn = sqlite3.connect(str(sqlite_path))
     conn.row_factory = sqlite3.Row
     try:
@@ -191,23 +246,48 @@ async def run_tracker(args: argparse.Namespace) -> int:
         total_sec = max(interval_sec, int(args.duration_hours * 3600))
         cycles = max(1, math.ceil(total_sec / interval_sec))
 
+        # Pinned line memory per (match_url, market_type)
+        pinned_lines: dict[tuple[str, str], list[float]] = {}
+
         for cycle_idx in range(cycles):
             cycle_started = time.time()
             print(f"[{utc_now_iso()}] cycle {cycle_idx + 1}/{cycles}: sampling {len(targets)} matches")
 
             for idx, t in enumerate(targets, start=1):
+                mt = normalize_market_type(t.market)
+                key = (t.match_url, mt)
+                preferred = prefer_lines_ou if mt == "OU" else (prefer_lines_ah if mt == "AH" else [])
+                fixed = pinned_lines.get(key) if (args.pin_lines_first_snapshot and mt in {"OU", "AH"}) else None
+
                 payload, success, err = await sample_one(
                     target=t,
                     storage_state=storage_state,
                     headless=args.headless,
                     timeout_ms=args.timeout_ms,
                     settle_ms=args.settle_ms,
+                    top_lines=args.top_lines,
+                    prefer_lines=preferred,
+                    fixed_lines=fixed,
                 )
+
+                selected_lines = payload.get("selected_lines") or []
+                if (
+                    args.pin_lines_first_snapshot
+                    and mt in {"OU", "AH"}
+                    and success
+                    and key not in pinned_lines
+                    and selected_lines
+                ):
+                    pinned_lines[key] = list(selected_lines)
+
                 snapshot_id = save_snapshot(conn, target_ids[t], payload, success=success, error=err)
                 qn = len(payload.get("odds") or [])
+                lines_note = ""
+                if mt in {"OU", "AH"}:
+                    lines_note = f" selected_lines={selected_lines or pinned_lines.get(key, [])}"
                 print(
-                    f"  - [{idx}/{len(targets)}] snapshot_id={snapshot_id} success={success} quotes={qn} "
-                    f"url={t.match_url}"
+                    f"  - [{idx}/{len(targets)}] snapshot_id={snapshot_id} success={success} quotes={qn}"
+                    f" market={mt}{lines_note} url={t.match_url}"
                 )
 
                 if jsonl_path:

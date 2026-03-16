@@ -4,8 +4,11 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import re
+from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Iterable
 
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from playwright.async_api import async_playwright
@@ -24,6 +27,128 @@ def to_float(value: str | None):
         return float(value)
     except ValueError:
         return None
+
+
+def round_line(line: float | None) -> float | None:
+    if line is None:
+        return None
+    return round(float(line), 3)
+
+
+def parse_line_csv(value: str | None) -> list[float]:
+    if not value:
+        return []
+    out: list[float] = []
+    for token in value.split(","):
+        v = to_float(token)
+        if v is not None:
+            out.append(round_line(v))
+    # dedupe preserving order
+    dedup: list[float] = []
+    seen = set()
+    for v in out:
+        if v not in seen:
+            dedup.append(v)
+            seen.add(v)
+    return dedup
+
+
+def normalize_market_type(market: str | None) -> str:
+    m = (market or "1X2").strip().upper().replace(" ", "")
+    if m in {"1X2", "3WAY", "HDA"}:
+        return "1X2"
+    if m in {"OU", "O/U", "OVERUNDER", "TOTALS"}:
+        return "OU"
+    if m in {"AH", "ASIANHANDICAP", "HANDICAP"}:
+        return "AH"
+    return (market or "1X2").strip().upper()
+
+
+def _extract_line_from_raw(raw_text: str, odd_values: list[float], market_type: str) -> float | None:
+    text = raw_text.replace("−", "-")
+
+    # Try explicit market phrases first.
+    if market_type == "OU":
+        for pat in [
+            r"(?:OVER/UNDER|OVER\s*UNDER|O/U)\s*([0-9]+(?:[\.,][0-9]+)?)",
+            r"(?:OVER|UNDER)\s*([0-9]+(?:[\.,][0-9]+)?)",
+        ]:
+            m = re.search(pat, text, flags=re.IGNORECASE)
+            if m:
+                v = to_float(m.group(1))
+                if v is not None:
+                    return round_line(v)
+
+    if market_type == "AH":
+        m = re.search(r"(?:ASIAN\s*HANDICAP|HANDICAP|AH)\s*([+\-]?[0-9]+(?:[\.,][0-9]+)?)", text, flags=re.IGNORECASE)
+        if m:
+            v = to_float(m.group(1))
+            if v is not None:
+                return round_line(v)
+
+    # Generic numeric extraction, excluding currently extracted odds.
+    numbers: list[float] = []
+    for m in re.finditer(r"(?<!\d)([+\-]?\d+(?:[\.,]\d+)?)(?!\d)", text):
+        v = to_float(m.group(1))
+        if v is not None:
+            numbers.append(v)
+
+    non_odds: list[float] = []
+    for n in numbers:
+        if any(abs(n - o) < 0.001 for o in odd_values):
+            continue
+        non_odds.append(n)
+
+    if market_type == "OU":
+        candidates = [v for v in non_odds if 0.0 <= v <= 10.0]
+        if candidates:
+            return round_line(candidates[0])
+
+    if market_type == "AH":
+        candidates = [v for v in non_odds if -8.0 <= v <= 8.0]
+        if candidates:
+            return round_line(candidates[0])
+        signed = re.search(r"([+\-]\d+(?:[\.,]\d+)?)", text)
+        if signed:
+            v = to_float(signed.group(1))
+            if v is not None:
+                return round_line(v)
+
+    return None
+
+
+def _select_main_lines(
+    quotes: list[dict],
+    top_lines: int,
+    preferred_lines: Iterable[float] | None = None,
+    fixed_lines: Iterable[float] | None = None,
+) -> tuple[list[float], dict[float, int]]:
+    freq_pairs: set[tuple[float, str]] = set()
+    for q in quotes:
+        line = round_line(q.get("line"))
+        bm = (q.get("bookmaker") or "").strip().lower()
+        if line is None or not bm:
+            continue
+        freq_pairs.add((line, bm))
+
+    counter: Counter[float] = Counter()
+    for line, _bm in freq_pairs:
+        counter[line] += 1
+
+    ranked = sorted(counter.keys(), key=lambda x: (-counter[x], x))
+
+    fixed = [round_line(x) for x in (fixed_lines or []) if x is not None]
+    if fixed:
+        return fixed, dict(counter)
+
+    preferred = {round_line(x) for x in (preferred_lines or []) if x is not None}
+    if preferred:
+        constrained = [x for x in ranked if x in preferred]
+        if constrained:
+            ranked = constrained
+
+    k = max(1, int(top_lines))
+    return ranked[:k], dict(counter)
 
 
 async def accept_consent_if_present(page) -> bool:
@@ -65,7 +190,13 @@ async def extract_odds(
     headless: bool = False,
     timeout_ms: int = 120000,
     settle_ms: int = 2500,
+    top_lines: int = 2,
+    prefer_lines: Iterable[float] | None = None,
+    fixed_lines: Iterable[float] | None = None,
 ) -> dict:
+    market_type = normalize_market_type(market)
+    expected_outcomes = 3 if market_type == "1X2" else 2
+
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=headless)
         try:
@@ -89,11 +220,16 @@ async def extract_odds(
             result = {
                 "match_url": match_url,
                 "market": market,
+                "market_type": market_type,
                 "snapshot_ts_utc": datetime.now(timezone.utc).isoformat(),
                 "row_count_seen": row_count,
                 "odds": [],
                 "errors": [],
+                "selected_lines": [],
+                "line_frequency": {},
             }
+
+            all_two_way_quotes: list[dict] = []
 
             for i in range(row_count):
                 row = rows.nth(i)
@@ -115,13 +251,13 @@ async def extract_odds(
                 odd_links = row.locator("div[data-testid='odd-container'] a.odds-link")
                 odd_count = await odd_links.count()
                 odd_values = []
-                for j in range(min(odd_count, 3)):
+                for j in range(min(odd_count, expected_outcomes)):
                     txt = (await odd_links.nth(j).inner_text()).strip()
                     value = to_float(txt)
                     if value is not None:
                         odd_values.append(value)
 
-                if len(odd_values) < 3:
+                if len(odd_values) < expected_outcomes:
                     # Fallback: scrape all decimal-looking anchors in row.
                     anchors = row.locator("a.odds-link")
                     ac = await anchors.count()
@@ -131,17 +267,58 @@ async def extract_odds(
                         val = to_float(txt)
                         if val is not None:
                             recovered.append(val)
-                    if len(recovered) >= 3:
-                        odd_values = recovered[:3]
+                    if len(recovered) >= expected_outcomes:
+                        odd_values = recovered[:expected_outcomes]
 
-                if bookmaker_name and len(odd_values) == 3:
-                    raw_text = (await row.inner_text()).strip().replace("\n", " ")
-                    result["odds"].append(
+                raw_text = (await row.inner_text()).strip().replace("\n", " ")
+
+                if market_type == "1X2":
+                    if bookmaker_name and len(odd_values) == 3:
+                        result["odds"].append(
+                            {
+                                "bookmaker": bookmaker_name,
+                                "market_type": "1X2",
+                                "line": None,
+                                "home": odd_values[0],
+                                "draw": odd_values[1],
+                                "away": odd_values[2],
+                                "timestamp": result["snapshot_ts_utc"],
+                                "raw": raw_text[:500],
+                            }
+                        )
+                    else:
+                        result["errors"].append(
+                            {
+                                "row_index": i,
+                                "bookmaker": bookmaker_name,
+                                "reason": "missing_bookmaker_or_3way_odds",
+                            }
+                        )
+                    continue
+
+                # OU/AH two-way
+                if bookmaker_name and len(odd_values) == 2:
+                    line = _extract_line_from_raw(raw_text, odd_values=odd_values, market_type=market_type)
+                    if line is None:
+                        result["errors"].append(
+                            {
+                                "row_index": i,
+                                "bookmaker": bookmaker_name,
+                                "reason": "missing_line_for_two_way_market",
+                            }
+                        )
+                        continue
+
+                    all_two_way_quotes.append(
                         {
                             "bookmaker": bookmaker_name,
+                            "market_type": market_type,
+                            "line": line,
+                            # For OU: home=Over, away=Under; draw is NULL by definition.
+                            # For AH: home=Home handicap side, away=Away handicap side.
                             "home": odd_values[0],
-                            "draw": odd_values[1],
-                            "away": odd_values[2],
+                            "draw": None,
+                            "away": odd_values[1],
                             "timestamp": result["snapshot_ts_utc"],
                             "raw": raw_text[:500],
                         }
@@ -151,9 +328,21 @@ async def extract_odds(
                         {
                             "row_index": i,
                             "bookmaker": bookmaker_name,
-                            "reason": "missing_bookmaker_or_3way_odds",
+                            "reason": "missing_bookmaker_or_2way_odds",
                         }
                     )
+
+            if market_type in {"OU", "AH"}:
+                selected_lines, freq = _select_main_lines(
+                    all_two_way_quotes,
+                    top_lines=top_lines,
+                    preferred_lines=prefer_lines,
+                    fixed_lines=fixed_lines,
+                )
+                selected_set = {round_line(x) for x in selected_lines}
+                result["selected_lines"] = selected_lines
+                result["line_frequency"] = {str(k): v for k, v in sorted(freq.items(), key=lambda kv: (-kv[1], kv[0]))}
+                result["odds"] = [q for q in all_two_way_quotes if round_line(q.get("line")) in selected_set]
 
             await context.close()
             return result
@@ -164,12 +353,23 @@ async def extract_odds(
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Extract one OddsPortal match market odds snapshot")
     parser.add_argument("--match-url", default=DEFAULT_MATCH_URL, help="OddsPortal match URL")
-    parser.add_argument("--market", default=DEFAULT_MARKET, help="Market label to include in output (default: 1X2)")
+    parser.add_argument("--market", default=DEFAULT_MARKET, help="Market label (e.g. 1X2, OU, AH)")
     parser.add_argument("--storage-state", default=str(DEFAULT_STORAGE_STATE_PATH), help="Playwright storage state JSON path")
     parser.add_argument("--output", default=str(DEFAULT_OUTPUT_PATH), help="Output JSON path (use '-' to skip file write)")
     parser.add_argument("--headless", action="store_true", help="Run Chromium in headless mode")
     parser.add_argument("--timeout-ms", type=int, default=120000, help="Navigation timeout in milliseconds")
     parser.add_argument("--settle-ms", type=int, default=2500, help="Post-render settle wait in milliseconds")
+    parser.add_argument("--top-lines", type=int, default=2, help="Top-K lines to keep for OU/AH (default: 2)")
+    parser.add_argument(
+        "--prefer-lines",
+        default="",
+        help="Preferred lines CSV (e.g. '2.5,2.75'). If present, selection is constrained when possible.",
+    )
+    parser.add_argument(
+        "--fixed-lines",
+        default="",
+        help="Fixed lines CSV to enforce (for pinned tracking across snapshots).",
+    )
     parser.add_argument("--indent", type=int, default=2, help="JSON indent for stdout/file output")
     return parser.parse_args()
 
@@ -182,6 +382,9 @@ async def _run_cli(args: argparse.Namespace) -> int:
         headless=args.headless,
         timeout_ms=args.timeout_ms,
         settle_ms=args.settle_ms,
+        top_lines=args.top_lines,
+        prefer_lines=parse_line_csv(args.prefer_lines),
+        fixed_lines=parse_line_csv(args.fixed_lines),
     )
 
     payload = json.dumps(result, ensure_ascii=False, indent=args.indent)
