@@ -1,0 +1,3 @@
+[submodule "OddsHarvester"]
+	path = OddsHarvester
+	url = https://github.com/jordantete/OddsHarvester
