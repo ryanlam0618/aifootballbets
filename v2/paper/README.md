@@ -1,63 +1,61 @@
-# v2/paper - 7-day paper trading pipeline
+# v2/paper - one-day + 7-day paper trading pipeline
 
-Implements a lightweight paper-trading loop for value betting in one combined strategy pool.
+Lightweight stdlib-first paper trading flow for football value betting.
 
-## Scope implemented
+## What it now supports
 
-- League universe (combined pool):
-  - Big-5: EPL, La Liga, Serie A, Bundesliga, Ligue 1
-  - J1, K League 1, A-League Men, CSL
-- Candidate generation per match across markets:
-  - 1X2, Over/Under, Asian Handicap
-- Single best bet per match by consistent metric:
-  - Rank by fractional Kelly expected log-growth (with EV/edge filters)
-- Staking and append logging into `v2/tracking` sqlite (`bet_log`)
-- Settlement via ESPN scoreboard results provider
+- Real fixtures from ESPN Scoreboard for league universe
+- Odds from ESPN Scoreboard when available (1X2, spreads, totals)
+- Optional fallback odds from The Odds API **only if** `ODDS_API_KEY` is configured
+- Results-only mode when no external odds exist:
+  - still uses real ESPN fixtures/results
+  - injects synthetic odds so candidate generation + selection can run
+- Settlement from ESPN final scores with robust mapping by:
+  - stored `match_id` (preferred)
+  - normalized home/away names (fallback)
 - Daily + weekly markdown reports
-- 7-day orchestrator
 
-## Provider interfaces
+## League universe
 
-- `OddsProvider` interface
-  - concrete: `OddsApiEspnPlaceholderProvider`
-  - stub: `Pp88OddsProviderStub` (for future browser automation)
-- `ResultsProvider` interface
-  - concrete: `EspnResultsProvider`
+- EPL, La Liga, Serie A, Bundesliga, Ligue 1
+- J1, K League 1, A-League Men, CSL
 
 ## Daily risk rule
 
-Before placing new bets on a day, the runner checks cumulative same-day PnL in `bet_log`.
-If `day_pnl <= -20% * day_start_bankroll`, no new bets are placed for that day.
+If same-day settled PnL is `<= -20%` of day-start bankroll, stop placing new bets for that day.
 
 ## Commands
 
 Run one day selection+append:
 
 ```bash
-python -m v2.paper.run_day --date 2026-03-15
+python3 -m v2.paper.run_day --date 2026-03-15
 ```
 
 Settle one day using ESPN final scores:
 
 ```bash
-python -m v2.paper.settle --date 2026-03-15
+python3 -m v2.paper.settle --date 2026-03-15
 ```
 
 Generate daily+weekly reports:
 
 ```bash
-python -m v2.paper.report --date 2026-03-15 --sqlite data/v2/tracking/bets.sqlite
+python3 -m v2.paper.report --date 2026-03-15 --sqlite data/v2/tracking/bets.sqlite
 ```
 
 Run full 7-day loop:
 
 ```bash
-python -m v2.paper.run_7d --start-date 2026-03-09
+python3 -m v2.paper.run_7d --start-date 2026-03-09
 ```
 
-## READY checklist
+## One-command end-to-end (recommended)
 
-- [ ] One-day end-to-end run succeeds (`run_day`)
-- [ ] Settlement updates `result/profit/bankroll` (`settle`)
-- [ ] Daily and weekly reports generated under `reports/v2/` (`report`)
-- [ ] 7-day orchestrator completes without crashing (`run_7d`)
+From repo root:
+
+```bash
+python3 scripts/paper_one_day.py --date 2026-03-15 --sqlite data/v2/tracking/bets.sqlite
+```
+
+This runs: `run_day -> settle -> report`.

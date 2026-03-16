@@ -5,6 +5,9 @@ import sqlite3
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
+from v2.config import settings_v2
+from v2.paper.ledger import bankroll_before_day
+
 
 def _to_float(x) -> float:
     try:
@@ -38,16 +41,23 @@ def generate_reports(db_path: Path, day: date, out_dir: Path) -> tuple[Path, Pat
     conn = sqlite3.connect(str(db_path))
     try:
         d = _query_daily(conn, day)
+        bets = int(d[0] or 0)
         stake = _to_float(d[1])
         profit = _to_float(d[2])
         roi = (profit / stake) if stake > 0 else 0.0
 
+        day_start_bankroll = bankroll_before_day(db_path, day, settings_v2.initial_bankroll)
+        bankroll_after = day_start_bankroll + profit
+        stop_loss_triggered = profit <= (-0.20 * day_start_bankroll)
+
         daily_md = (
             f"# Paper Daily Report ({day.isoformat()})\n\n"
-            f"- Bets: {int(d[0] or 0)}\n"
+            f"- Bets: {bets}\n"
             f"- Stake: {stake:.2f}\n"
-            f"- Profit: {profit:.2f}\n"
+            f"- Profit (PnL): {profit:.2f}\n"
             f"- ROI: {roi * 100:.2f}%\n"
+            f"- Bankroll (start -> end): {day_start_bankroll:.2f} -> {bankroll_after:.2f}\n"
+            f"- Stop-loss triggered (20%): {'YES' if stop_loss_triggered else 'NO'}\n"
             f"- W/L/P: {int(d[3] or 0)}/{int(d[4] or 0)}/{int(d[5] or 0)}\n"
         )
         daily_path.write_text(daily_md, encoding="utf-8")
