@@ -71,6 +71,18 @@ class NoOddsProvider(MultiMatchProvider):
         return {}, {}
 
 
+class PartialOddsProvider(MultiMatchProvider):
+    def fetch_market_odds_with_meta(self, day: date, league_keys, matches):
+        _ = (day, league_keys)
+        # Only first match has real odds; others are missing and should be patched
+        # by synthetic fallback when allow_synthetic_odds=True.
+        if not matches:
+            return {}, {}
+        m = matches[0]
+        key = (m.match_id, "1X2", "Home")
+        return {key: 3.6}, {key: {"source": "unit_test_partial", "is_real": True}}
+
+
 class TestSelectionConstraintsAndReports(unittest.TestCase):
     def test_max_stake_fraction_cap_applies(self):
         old_cap = settings_v2.paper_max_stake_fraction_per_bet
@@ -267,6 +279,53 @@ class TestSelectionConstraintsAndReports(unittest.TestCase):
                 text = weekly.read_text(encoding="utf-8")
                 self.assertIn("synthetic_odds", text)
                 self.assertNotIn("real_odds", text)
+        finally:
+            settings_v2.paper_max_bets_per_day = old_day
+            settings_v2.paper_max_bets_per_league_per_day = old_league
+            settings_v2.min_edge = old_edge
+
+    def test_partial_missing_odds_are_patched_by_synthetic_when_enabled(self):
+        old_day = settings_v2.paper_max_bets_per_day
+        old_league = settings_v2.paper_max_bets_per_league_per_day
+        old_edge = settings_v2.min_edge
+        try:
+            settings_v2.paper_max_bets_per_day = 4
+            settings_v2.paper_max_bets_per_league_per_day = 2
+            settings_v2.min_edge = 0.0
+
+            with tempfile.TemporaryDirectory() as td:
+                db_path = Path(td) / "tracking.sqlite"
+                ensure_tracking_schema(db_path)
+
+                res = run_for_day(
+                    day=date(2026, 3, 16),
+                    db_path=db_path,
+                    snapshot_db=Path(td) / "snap.sqlite",
+                    initial_bankroll=2000.0,
+                    run_id="partial_odds_ut",
+                    provider=PartialOddsProvider(),
+                    allow_synthetic_odds=True,
+                )
+
+                self.assertFalse(res["results_only_mode"])
+                self.assertGreaterEqual(res["selected"], 1)
+                self.assertGreaterEqual(res["selected_real_odds"], 1)
+                self.assertGreaterEqual(res["selected_synthetic_odds"], 1)
+                self.assertGreaterEqual(res["synthetic_added_markets"], 1)
+
+                conn = sqlite3.connect(str(db_path))
+                try:
+                    rows = conn.execute(
+                        "SELECT source_quality, COUNT(*) FROM bet_log GROUP BY source_quality"
+                    ).fetchall()
+                finally:
+                    conn.close()
+
+                counts = {str(k): int(v) for k, v in rows}
+                self.assertIn("real_odds", counts)
+                self.assertIn("synthetic_odds", counts)
+                self.assertGreaterEqual(counts["real_odds"], 1)
+                self.assertGreaterEqual(counts["synthetic_odds"], 1)
         finally:
             settings_v2.paper_max_bets_per_day = old_day
             settings_v2.paper_max_bets_per_league_per_day = old_league
