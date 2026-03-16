@@ -37,6 +37,28 @@ class TestPaperRepro7D(unittest.TestCase):
             self.assertIn("baseline_flat", summary)
             self.assertIn("by_market", summary)
 
+    def test_run_7d_respects_cli_bankroll_override(self):
+        with tempfile.TemporaryDirectory() as td:
+            tdp = Path(td)
+            db_path = tdp / "tracking.sqlite"
+            fixture = Path(__file__).parent / "fixtures" / "paper7d_provider.json"
+
+            final = run_7d(
+                start_date=date(2026, 3, 10),
+                db_path=db_path,
+                snapshot_db=tdp / "snap.sqlite",
+                run_prefix="ut7d_bankroll",
+                odds_provider_name="espn",
+                results_provider_name="espn",
+                provider_json=str(fixture),
+                allow_synthetic_odds=False,
+                decision_log_dir=tdp / "decisions",
+                initial_bankroll=1234.0,
+            )
+
+            self.assertEqual(final["initial_bankroll"], 1234.0)
+            self.assertAlmostEqual(final["summary"]["starting_bankroll"], 1234.0, places=6)
+
 
 if __name__ == "__main__":
     unittest.main()

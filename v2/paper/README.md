@@ -64,7 +64,7 @@ python3 scripts/paper_run_7d.py \
 
 Default behavior:
 - runs 7 days ending yesterday in `Asia/Shanghai`
-- starts from bankroll `2000` (or `INITIAL_BANKROLL`)
+- starts from bankroll `2000` by default (override with `--bankroll`)
 - uses real odds only
 
 ### Deterministic replay command
@@ -72,6 +72,7 @@ Default behavior:
 ```bash
 python3 scripts/paper_run_7d.py \
   --start-date 2026-03-10 \
+  --bankroll 2000 \
   --provider-json tests/fixtures/paper7d_provider.json \
   --sqlite data/v2/tracking/bets.sqlite
 ```
@@ -115,3 +116,4 @@ python3 scripts/paper_one_day.py \
 - [ ] Final summary markdown/json present with PnL/ROI/drawdown/winrate.
 - [ ] Decision JSONL contains required fields.
 - [ ] Synthetic odds are disabled unless explicitly requested.
+ed.

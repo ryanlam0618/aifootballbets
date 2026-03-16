@@ -30,6 +30,12 @@ def main() -> None:
     parser.add_argument("--provider-json", default="", help="deterministic fixtures+odds+results JSON")
     parser.add_argument("--allow-synthetic-odds", action="store_true")
     parser.add_argument("--decision-log-dir", default="reports/v2/decisions")
+    parser.add_argument(
+        "--bankroll",
+        type=float,
+        default=2000.0,
+        help="initial bankroll for this run (default: 2000)",
+    )
     args = parser.parse_args()
 
     start = _default_start_date_today_shanghai() if not str(args.start_date).strip() else datetime.strptime(args.start_date, "%Y-%m-%d").date()
@@ -44,6 +50,7 @@ def main() -> None:
         provider_json=str(args.provider_json or "").strip(),
         allow_synthetic_odds=bool(args.allow_synthetic_odds),
         decision_log_dir=Path(args.decision_log_dir) if str(args.decision_log_dir).strip() else None,
+        initial_bankroll=float(args.bankroll),
     )
 
 

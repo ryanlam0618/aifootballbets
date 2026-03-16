@@ -29,8 +29,10 @@ def run_7d(
     provider_json: str = "",
     allow_synthetic_odds: bool = False,
     decision_log_dir: Path | None = None,
+    initial_bankroll: float | None = None,
 ) -> dict:
     day_results: list[dict] = []
+    bankroll0 = float(settings_v2.initial_bankroll if initial_bankroll is None else initial_bankroll)
 
     for i in range(7):
         day = start_date + timedelta(days=i)
@@ -44,7 +46,7 @@ def run_7d(
             day=day,
             db_path=db_path,
             snapshot_db=snapshot_db,
-            initial_bankroll=settings_v2.initial_bankroll,
+            initial_bankroll=bankroll0,
             run_id=run_id,
             provider=_build_odds_provider(odds_provider_name, provider_json=provider_json),
             allow_synthetic_odds=allow_synthetic_odds,
@@ -77,7 +79,7 @@ def run_7d(
         db_path=db_path,
         start=start_date,
         end=end_date,
-        initial_bankroll=float(settings_v2.initial_bankroll),
+        initial_bankroll=bankroll0,
     )
 
     final = {
@@ -88,6 +90,7 @@ def run_7d(
         "results_provider": results_provider_name,
         "provider_json": provider_json,
         "allow_synthetic_odds": allow_synthetic_odds,
+        "initial_bankroll": bankroll0,
         "days": day_results,
         "summary": summary,
     }
@@ -169,6 +172,12 @@ def main() -> None:
         default="espn",
         help="results provider used in settle",
     )
+    parser.add_argument(
+        "--bankroll",
+        type=float,
+        default=float(settings_v2.initial_bankroll),
+        help="initial bankroll for this run (default: INITIAL_BANKROLL env or 2000)",
+    )
     args = parser.parse_args()
 
     if str(args.start_date).strip():
@@ -186,6 +195,7 @@ def main() -> None:
         provider_json=str(args.provider_json or "").strip(),
         allow_synthetic_odds=bool(args.allow_synthetic_odds),
         decision_log_dir=Path(args.decision_log_dir) if str(args.decision_log_dir).strip() else None,
+        initial_bankroll=args.bankroll,
     )
 
 
