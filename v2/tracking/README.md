@@ -94,3 +94,53 @@ Suggested Phase B process:
    - `clv_abs = odds_close - odds_bet`
    - `clv_pct = (odds_close - odds_bet) / odds_bet`
 5. Re-run reports including CLV diagnostics.
+
+---
+
+## OddsPortal 24h Odds Movement Tracker (new)
+
+Added tools:
+
+- `scripts/oddsportal_one_match.py`
+  - now parameterized (`--match-url`, `--market`, `--output`, `--storage-state`, `--headless`)
+- `v2/tracking/schema_odds_tracker.sql`
+  - sqlite schema for tracked matches, snapshots, and bookmaker quotes
+- `v2/tracking/odds_tracker.py`
+  - runner that samples odds every N minutes over a duration (default 24h)
+  - writes to sqlite, optional JSONL append
+  - robust to partial/missing rows and snapshot failures
+- `v2/tracking/report_odds_movement.py`
+  - reports bookmaker movement (first→last + delta) and best available odds over time
+- `v2/tracking/odds_targets.example.json`
+  - sample targets file
+
+### Example: one snapshot
+
+```bash
+xvfb-run -a ./.venv312/bin/python scripts/oddsportal_one_match.py \
+  --match-url "https://www.oddsportal.com/football/england/premier-league/brentford-wolves-0jR7cwU6/#1X2;2" \
+  --market 1X2 \
+  --output /tmp/oddsportal_match.json \
+  --storage-state /tmp/oddsportal_storage.json
+```
+
+### Example: 24h tracking every 10 minutes
+
+```bash
+xvfb-run -a ./.venv312/bin/python -m v2.tracking.odds_tracker \
+  --targets-json v2/tracking/odds_targets.example.json \
+  --sample-every-min 10 \
+  --duration-hours 24 \
+  --between-match-delay-sec 8 \
+  --sqlite data/v2/tracking/odds_tracker.sqlite \
+  --schema v2/tracking/schema_odds_tracker.sql \
+  --jsonl data/v2/tracking/odds_tracker.jsonl \
+  --storage-state /tmp/oddsportal_storage.json
+```
+
+### Report movement
+
+```bash
+./.venv312/bin/python -m v2.tracking.report_odds_movement \
+  --sqlite data/v2/tracking/odds_tracker.sqlite
+```
