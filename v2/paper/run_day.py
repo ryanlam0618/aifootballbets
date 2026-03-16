@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import argparse
+from collections import defaultdict
 from datetime import date, datetime
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 from v2.config import settings_v2
 from v2.paper.constants import LEAGUE_UNIVERSE
@@ -42,21 +43,37 @@ def _synthetic_markets_for_match(match_id: str) -> Dict[Tuple[str, str, str], fl
 def _with_results_only_odds(
     matches: List[MatchInfo],
     odds_map: Dict[Tuple[str, str, str], float],
-) -> tuple[Dict[Tuple[str, str, str], float], bool]:
+    odds_meta: Dict[Tuple[str, str, str], Dict[str, Any]] | None = None,
+) -> tuple[Dict[Tuple[str, str, str], float], Dict[Tuple[str, str, str], Dict[str, Any]], bool]:
     out = dict(odds_map)
+    meta = dict(odds_meta or {})
     if not out:
         # Full results-only mode
         for m in matches:
-            out.update(_synthetic_markets_for_match(m.match_id))
-        return out, True
+            syn = _synthetic_markets_for_match(m.match_id)
+            out.update(syn)
+            for k in syn.keys():
+                meta[k] = {"source": "synthetic", "is_real": False}
+        return out, meta, True
 
     # Partial coverage mode: only patch matches with zero odds
     covered_match_ids = {mid for (mid, _market, _sel) in out.keys()}
     for m in matches:
         if m.match_id not in covered_match_ids:
-            out.update(_synthetic_markets_for_match(m.match_id))
+            syn = _synthetic_markets_for_match(m.match_id)
+            out.update(syn)
+            for k in syn.keys():
+                meta[k] = {"source": "synthetic", "is_real": False}
 
-    return out, False
+    for k in out.keys():
+        meta.setdefault(k, {"source": "unknown", "is_real": True})
+
+    return out, meta, False
+
+
+def _key_for_candidate(c: CandidateBet) -> Tuple[str, str, str]:
+    market_key = c.market if c.market == "1X2" else f"{c.market} {c.line}".strip()
+    return (c.match_id, market_key, c.selection)
 
 
 def run_for_day(
@@ -80,8 +97,14 @@ def run_for_day(
             "results_only_mode": False,
         }
 
-    odds_map_raw = provider.fetch_market_odds(day=day, league_keys=LEAGUE_UNIVERSE, matches=matches)
-    odds_map, results_only_mode = _with_results_only_odds(matches, odds_map_raw)
+    odds_with_meta = getattr(provider, "fetch_market_odds_with_meta", None)
+    if callable(odds_with_meta):
+        odds_map_raw, odds_meta_raw = odds_with_meta(day=day, league_keys=LEAGUE_UNIVERSE, matches=matches)
+    else:
+        odds_map_raw = provider.fetch_market_odds(day=day, league_keys=LEAGUE_UNIVERSE, matches=matches)
+        odds_meta_raw = {k: {"source": "unknown", "is_real": True} for k in odds_map_raw.keys()}
+
+    odds_map, odds_meta, results_only_mode = _with_results_only_odds(matches, odds_map_raw, odds_meta_raw)
 
     all_candidates: List[CandidateBet] = []
     for m in matches:
@@ -133,16 +156,40 @@ def run_for_day(
 
     selected = []
     bankroll_cursor = day_start
+    league_counts: Dict[str, int] = defaultdict(int)
+    max_bets_day = max(0, int(settings_v2.paper_max_bets_per_day))
+    max_bets_league = max(0, int(settings_v2.paper_max_bets_per_league_per_day))
+
     for c in ranked:
         if not risk.can_place():
             break
-        bet = make_selected_bet(c, sim_date=day, bankroll_before=bankroll_cursor, run_id=run_id)
+        if max_bets_day and len(selected) >= max_bets_day:
+            break
+        if max_bets_league and league_counts[c.league_key] >= max_bets_league:
+            continue
+
+        meta = odds_meta.get(_key_for_candidate(c), {"source": "unknown", "is_real": True})
+        source_quality = "real_odds" if bool(meta.get("is_real", True)) else "synthetic_odds"
+        odds_source = str(meta.get("source", "unknown"))
+
+        bet = make_selected_bet(
+            c,
+            sim_date=day,
+            bankroll_before=bankroll_cursor,
+            run_id=run_id,
+            source_quality=source_quality,
+            odds_source=odds_source,
+        )
         if bet.stake <= 0:
             continue
         selected.append(bet)
+        league_counts[c.league_key] += 1
         bankroll_cursor -= bet.stake
 
     inserted = append_selected_bets(db_path=db_path, bets=selected, source_book="paper_sim")
+
+    real_selected = sum(1 for b in selected if b.source_quality == "real_odds")
+    synthetic_selected = sum(1 for b in selected if b.source_quality == "synthetic_odds")
 
     return {
         "matches": len(matches),
@@ -152,6 +199,10 @@ def run_for_day(
         "risk_stop": risk.state.stop_triggered,
         "day_start_bankroll": day_start,
         "results_only_mode": results_only_mode,
+        "selected_real_odds": real_selected,
+        "selected_synthetic_odds": synthetic_selected,
+        "max_bets_per_day": max_bets_day,
+        "max_bets_per_league_per_day": max_bets_league,
     }
 
 
@@ -189,7 +240,7 @@ def main() -> None:
         "--odds-provider",
         choices=["espn", "sofascore"],
         default="espn",
-        help="fixtures/odds provider (default: espn)",
+        help="fixtures/odds provider (default: espn; fallback chain inside espn: ESPN -> SofaScore -> Odds API)",
     )
     args = parser.parse_args()
 

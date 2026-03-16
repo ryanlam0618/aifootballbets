@@ -28,6 +28,7 @@ def append_selected_bets(db_path: Path, bets: Iterable[SelectedBet], source_book
             odds_bet, model_prob, ev, kelly_pct, stake,
             result, profit, bankroll,
             notes, source_book, source_file, run_id,
+            source_quality, odds_source,
             odds_close, clv_abs, clv_pct
         ) VALUES (
             :bet_id, :bet_time_hkt, :kickoff_time_hkt, :closing_time_hkt,
@@ -36,6 +37,7 @@ def append_selected_bets(db_path: Path, bets: Iterable[SelectedBet], source_book
             :odds_bet, :model_prob, :ev, :kelly_pct, :stake,
             :result, :profit, :bankroll,
             :notes, :source_book, :source_file, :run_id,
+            :source_quality, :odds_source,
             :odds_close, :clv_abs, :clv_pct
         )
         """
@@ -71,6 +73,8 @@ def append_selected_bets(db_path: Path, bets: Iterable[SelectedBet], source_book
                     "source_book": source_book,
                     "source_file": "v2/paper/ledger.py",
                     "run_id": b.run_id,
+                    "source_quality": b.source_quality,
+                    "odds_source": b.odds_source,
                     "odds_close": None,
                     "clv_abs": None,
                     "clv_pct": None,
@@ -106,17 +110,35 @@ def open_unsettled_bets_for_day(db_path: Path, day: date) -> List[sqlite3.Row]:
         conn.close()
 
 
-def settle_bet(db_path: Path, bet_id: str, result: str, profit: float, bankroll_after: float) -> None:
+def settle_bet(
+    db_path: Path,
+    bet_id: str,
+    result: str,
+    profit: float,
+    bankroll_after: float,
+    odds_close: float | None = None,
+    clv_abs: float | None = None,
+    clv_pct: float | None = None,
+) -> None:
     ensure_tracking_schema(db_path)
     conn = sqlite3.connect(str(db_path))
     try:
         conn.execute(
             """
             UPDATE bet_log
-            SET result = ?, profit = ?, bankroll = ?
+            SET result = ?, profit = ?, bankroll = ?,
+                odds_close = ?, clv_abs = ?, clv_pct = ?
             WHERE bet_id = ?
             """,
-            (result, float(profit), float(bankroll_after), bet_id),
+            (
+                result,
+                float(profit),
+                float(bankroll_after),
+                (float(odds_close) if odds_close is not None else None),
+                (float(clv_abs) if clv_abs is not None else None),
+                (float(clv_pct) if clv_pct is not None else None),
+                bet_id,
+            ),
         )
         conn.commit()
     finally:

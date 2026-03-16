@@ -83,6 +83,10 @@ class V2Settings:
     # token saving: limit leagues fetched from The Odds API per run
     odds_api_max_leagues_per_run: int = int(os.getenv("ODDS_API_MAX_LEAGUES_PER_RUN", "4"))
 
+    # Paper trading selection constraints
+    paper_max_bets_per_day: int = int(os.getenv("PAPER_MAX_BETS_PER_DAY", "8"))
+    paper_max_bets_per_league_per_day: int = int(os.getenv("PAPER_MAX_BETS_PER_LEAGUE_PER_DAY", "2"))
+
     # Optional tracking export hook (off by default)
     tracking_export_enabled: bool = os.getenv("TRACKING_EXPORT_ENABLED", "0").strip().lower() in {"1", "true", "yes", "on"}
     tracking_sqlite_path: str = os.getenv("TRACKING_SQLITE_PATH", str(BASE_DIR / "data" / "v2" / "tracking" / "bets.sqlite"))

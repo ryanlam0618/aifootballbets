@@ -49,6 +49,8 @@ def make_selected_bet(
     bankroll_before: float,
     run_id: str,
     kelly_fraction: Optional[float] = None,
+    source_quality: str = "real_odds",
+    odds_source: str = "unknown",
 ) -> SelectedBet:
     k_frac = settings_v2.kelly_fraction if kelly_fraction is None else kelly_fraction
     k_full = kelly_full(candidate.model_probability, candidate.odds)
@@ -92,6 +94,8 @@ def make_selected_bet(
         stake=stake,
         bankroll_before=bankroll_before,
         run_id=run_id,
+        source_quality=source_quality,
+        odds_source=odds_source,
     )
 
 

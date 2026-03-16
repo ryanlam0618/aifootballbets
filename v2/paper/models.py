@@ -57,6 +57,8 @@ class SelectedBet:
     stake: float
     bankroll_before: float
     run_id: str
+    source_quality: str = "real_odds"
+    odds_source: str = "unknown"
 
 
 @dataclass

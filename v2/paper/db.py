@@ -35,6 +35,8 @@ def ensure_tracking_schema(db_path: Path) -> None:
                 source_book TEXT NOT NULL DEFAULT 'paper_sim',
                 source_file TEXT,
                 run_id TEXT,
+                source_quality TEXT NOT NULL DEFAULT 'synthetic_odds',
+                odds_source TEXT,
                 odds_close REAL,
                 clv_abs REAL,
                 clv_pct REAL,
@@ -52,6 +54,14 @@ def ensure_tracking_schema(db_path: Path) -> None:
             );
             """
         )
+
+        # Lightweight schema migration for existing DBs.
+        cols = {str(r[1]) for r in conn.execute("PRAGMA table_info(bet_log)").fetchall()}
+        if "source_quality" not in cols:
+            conn.execute("ALTER TABLE bet_log ADD COLUMN source_quality TEXT NOT NULL DEFAULT 'synthetic_odds'")
+        if "odds_source" not in cols:
+            conn.execute("ALTER TABLE bet_log ADD COLUMN odds_source TEXT")
+
         conn.commit()
     finally:
         conn.close()

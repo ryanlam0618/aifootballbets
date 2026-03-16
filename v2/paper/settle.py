@@ -8,7 +8,14 @@ from typing import List, Tuple
 from v2.config import settings_v2
 from v2.paper.constants import LEAGUE_UNIVERSE
 from v2.paper.ledger import bankroll_before_day, open_unsettled_bets_for_day, settle_bet
-from v2.paper.providers import EspnResultsProvider, ResultsProvider, SofaScoreFixturesResultsProvider, match_key
+from v2.paper.models import MatchInfo
+from v2.paper.providers import (
+    EspnOddsFixturesProvider,
+    EspnResultsProvider,
+    ResultsProvider,
+    SofaScoreFixturesResultsProvider,
+    match_key,
+)
 
 _EPS = 1e-9
 
@@ -145,6 +152,54 @@ def _scores_with_ids(provider: ResultsProvider, day: date, league_keys: List[str
     return names, {}
 
 
+def _build_match_from_row(row) -> MatchInfo | None:
+    notes = str(row["notes"] or "")
+    match_id = ""
+    if "match_id=" in notes:
+        try:
+            fragment = notes.split("match_id=", 1)[1]
+            match_id = fragment.split()[0].strip().strip(",")
+        except Exception:
+            match_id = ""
+
+    home = str(row["home"] or "").strip()
+    away = str(row["away"] or "").strip()
+    kickoff = str(row["kickoff_time_hkt"] or "").strip()
+    if not (match_id and home and away):
+        return None
+
+    lk = match_id.split(":", 1)[0] if ":" in match_id else ""
+    return MatchInfo(
+        match_id=match_id,
+        league_key=lk,
+        league_name=str(row["league"] or lk),
+        kickoff_utc=kickoff,
+        home_team=home,
+        away_team=away,
+    )
+
+
+def _fetch_closing_odds_map(day: date, unsettled_rows: list, league_keys: List[str]) -> dict:
+    matches = []
+    seen = set()
+    for row in unsettled_rows:
+        m = _build_match_from_row(row)
+        if not m or m.match_id in seen:
+            continue
+        matches.append(m)
+        seen.add(m.match_id)
+
+    if not matches:
+        return {}
+
+    odds_provider = EspnOddsFixturesProvider()
+    fetch_meta = getattr(odds_provider, "fetch_market_odds_with_meta", None)
+    if not callable(fetch_meta):
+        return {}
+    odds_map, _meta = fetch_meta(day=day, league_keys=league_keys, matches=matches)
+    return odds_map or {}
+
+
 def run_settlement(db_path: Path, day: date, provider: ResultsProvider | None = None) -> int:
     provider = provider or EspnResultsProvider()
     score_map, score_map_ids = _scores_with_ids(provider=provider, day=day, league_keys=LEAGUE_UNIVERSE)
@@ -152,6 +207,8 @@ def run_settlement(db_path: Path, day: date, provider: ResultsProvider | None = 
     unsettled = open_unsettled_bets_for_day(db_path, day)
     if not unsettled:
         return 0
+
+    close_odds_map = _fetch_closing_odds_map(day=day, unsettled_rows=unsettled, league_keys=LEAGUE_UNIVERSE)
 
     bankroll = bankroll_before_day(db_path, day, settings_v2.initial_bankroll)
     settled_count = 0
@@ -163,6 +220,7 @@ def run_settlement(db_path: Path, day: date, provider: ResultsProvider | None = 
 
         row_match_id = str(row["notes"] or "")
         score = None
+        candidate_id = ""
 
         # Preferred: by match_id stored in notes (if present with match_id=...)
         if "match_id=" in row_match_id:
@@ -183,7 +241,39 @@ def run_settlement(db_path: Path, day: date, provider: ResultsProvider | None = 
 
         result, profit = _resolve_profit(row, score)
         bankroll = bankroll + float(profit)
-        settle_bet(db_path, str(row["bet_id"]), result, float(profit), bankroll)
+
+        odds_close = None
+        clv_abs = None
+        clv_pct = None
+        if candidate_id:
+            market = str(row["market"] or "")
+            line = str(row["line"] or "").strip()
+            selection = str(row["selection"] or "")
+            market_key = market if market == "1X2" else f"{market} {line}".strip()
+            k_close = (candidate_id, market_key, selection)
+            oc = close_odds_map.get(k_close)
+            if oc is not None:
+                try:
+                    odds_close = float(oc)
+                    odds_bet = float(row["odds_bet"] or 0.0)
+                    if odds_bet > 0:
+                        clv_abs = odds_close - odds_bet
+                        clv_pct = (clv_abs / odds_bet) * 100.0
+                except Exception:
+                    odds_close = None
+                    clv_abs = None
+                    clv_pct = None
+
+        settle_bet(
+            db_path,
+            str(row["bet_id"]),
+            result,
+            float(profit),
+            bankroll,
+            odds_close=odds_close,
+            clv_abs=clv_abs,
+            clv_pct=clv_pct,
+        )
         settled_count += 1
 
     return settled_count

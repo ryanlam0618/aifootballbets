@@ -4,7 +4,7 @@ import json
 from abc import ABC, abstractmethod
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -26,6 +26,18 @@ class OddsProvider(ABC):
         matches: List[MatchInfo],
     ) -> Dict[Tuple[str, str, str], float]:
         raise NotImplementedError
+
+    def fetch_market_odds_with_meta(
+        self,
+        day: date,
+        league_keys: List[str],
+        matches: List[MatchInfo],
+    ) -> Tuple[Dict[Tuple[str, str, str], float], Dict[Tuple[str, str, str], Dict[str, Any]]]:
+        odds = self.fetch_market_odds(day=day, league_keys=league_keys, matches=matches)
+        meta: Dict[Tuple[str, str, str], Dict[str, Any]] = {
+            k: {"source": "unknown", "is_real": True} for k in odds.keys()
+        }
+        return odds, meta
 
 
 class ResultsProvider(ABC):
@@ -103,6 +115,56 @@ def _extract_close_odds(node) -> float | None:
     return _american_to_decimal(v)
 
 
+def _frac_to_decimal(v: Any) -> float | None:
+    if v is None:
+        return None
+    s = str(v).strip()
+    if not s:
+        return None
+    if "/" in s:
+        try:
+            a, b = s.split("/", 1)
+            return 1.0 + (float(a) / float(b))
+        except Exception:
+            return None
+    try:
+        x = float(s)
+        return x if x > 1.0 else None
+    except Exception:
+        return None
+
+
+def _parse_ah_choice(name: str, home: str, away: str) -> tuple[str, str] | None:
+    s = str(name or "").strip()
+    if not s:
+        return None
+
+    import re
+
+    m = re.search(r"([+-]?\d+(?:\.\d+)?)\s*$", s)
+    if not m:
+        return None
+    line = m.group(1)
+
+    low = normalize_team(s)
+    home_n = normalize_team(home)
+    away_n = normalize_team(away)
+
+    sel = None
+    if home_n and home_n in low:
+        sel = "Home"
+    elif away_n and away_n in low:
+        sel = "Away"
+    elif low.startswith("home") or low.startswith("1"):
+        sel = "Home"
+    elif low.startswith("away") or low.startswith("2"):
+        sel = "Away"
+
+    if not sel:
+        return None
+    return line, sel
+
+
 class EspnOddsFixturesProvider(OddsProvider):
     """
     Primary stdlib-only provider:
@@ -114,6 +176,7 @@ class EspnOddsFixturesProvider(OddsProvider):
     def __init__(self, timeout: int = 25) -> None:
         self.timeout = timeout
         self._event_cache: Dict[Tuple[str, str], List[dict]] = {}
+        self._last_meta: Dict[Tuple[str, str, str], Dict[str, Any]] = {}
 
     def _fetch_league_events(self, day: date, league_key: str) -> List[dict]:
         sport_league = ESPN_LEAGUE_MAP.get(league_key)
@@ -321,13 +384,86 @@ class EspnOddsFixturesProvider(OddsProvider):
 
         return out
 
-    def fetch_market_odds(
+    def _sofascore_events_for_day(self, day: date) -> List[dict]:
+        out: List[dict] = []
+        for d in (day - timedelta(days=1), day, day + timedelta(days=1)):
+            url = f"https://www.sofascore.com/api/v1/sport/football/scheduled-events/{d.isoformat()}"
+            try:
+                data = _http_get_json(url, timeout=self.timeout)
+            except Exception:
+                data = None
+            events = (data or {}).get("events") or [] if isinstance(data, dict) else []
+            out.extend(events)
+        return out
+
+    def _sofascore_odds_event(self, event_id: str, provider_id: int = 1) -> dict:
+        url = f"https://www.sofascore.com/api/v1/event/{event_id}/odds/{provider_id}/all"
+        try:
+            data = _http_get_json(url, timeout=self.timeout)
+            return data if isinstance(data, dict) else {}
+        except Exception:
+            return {}
+
+    def _sofascore_map_odds_for_match(self, match: MatchInfo, event_id: str) -> Dict[Tuple[str, str, str], float]:
+        payload = self._sofascore_odds_event(event_id, provider_id=1)
+        markets = payload.get("markets") or []
+        out: Dict[Tuple[str, str, str], float] = {}
+
+        for m in markets:
+            name = str(m.get("marketName") or "").strip()
+            choices = m.get("choices") or []
+
+            if name == "Full time":
+                for c in choices:
+                    nm = str(c.get("name") or "").strip()
+                    if nm == "1":
+                        sel = "Home"
+                    elif nm in {"X", "x"}:
+                        sel = "Draw"
+                    elif nm == "2":
+                        sel = "Away"
+                    else:
+                        continue
+                    odd = _frac_to_decimal(c.get("fractionalValue"))
+                    if odd and odd > 1.0:
+                        out[(match.match_id, "1X2", sel)] = float(odd)
+
+            elif name == "Match goals":
+                line = _parse_number(m.get("choiceGroup"))
+                if line is None:
+                    continue
+                for c in choices:
+                    sel_raw = str(c.get("name") or "").strip().lower()
+                    if sel_raw == "over":
+                        sel = "Over"
+                    elif sel_raw == "under":
+                        sel = "Under"
+                    else:
+                        continue
+                    odd = _frac_to_decimal(c.get("fractionalValue"))
+                    if odd and odd > 1.0:
+                        out[(match.match_id, f"Over/Under {line}", sel)] = float(odd)
+
+            elif name == "Asian handicap":
+                for c in choices:
+                    parsed = _parse_ah_choice(str(c.get("name") or ""), match.home_team, match.away_team)
+                    if not parsed:
+                        continue
+                    line_s, sel = parsed
+                    odd = _frac_to_decimal(c.get("fractionalValue"))
+                    if odd and odd > 1.0:
+                        out[(match.match_id, f"Asian Handicap {line_s}", sel)] = float(odd)
+
+        return out
+
+    def fetch_market_odds_with_meta(
         self,
         day: date,
         league_keys: List[str],
         matches: List[MatchInfo],
-    ) -> Dict[Tuple[str, str, str], float]:
+    ) -> Tuple[Dict[Tuple[str, str, str], float], Dict[Tuple[str, str, str], Dict[str, Any]]]:
         out: Dict[Tuple[str, str, str], float] = {}
+        meta: Dict[Tuple[str, str, str], Dict[str, Any]] = {}
         match_by_key = {match_key(m.home_team, m.away_team): m for m in matches}
 
         # ESPN first
@@ -340,9 +476,35 @@ class EspnOddsFixturesProvider(OddsProvider):
                 real_match = match_by_key.get(match_key(m.home_team, m.away_team))
                 if not real_match:
                     continue
-                out.update(self._extract_espn_market_odds(real_match, ev))
+                mapped = self._extract_espn_market_odds(real_match, ev)
+                for k, v in mapped.items():
+                    out[k] = v
+                    meta[k] = {"source": "espn", "is_real": True}
 
-        # The Odds API fallback for missing tuples (only if key exists)
+        # SofaScore real-odds fallback for missing tuples
+        sofa_events = self._sofascore_events_for_day(day)
+        sofa_match_to_event: Dict[str, str] = {}
+        for ev in sofa_events:
+            event_id = str(ev.get("id", "")).strip()
+            if not event_id:
+                continue
+            home = str((ev.get("homeTeam") or {}).get("name") or "")
+            away = str((ev.get("awayTeam") or {}).get("name") or "")
+            k = match_key(home, away)
+            if k and (k not in sofa_match_to_event):
+                sofa_match_to_event[k] = event_id
+
+        for m in matches:
+            event_id = sofa_match_to_event.get(match_key(m.home_team, m.away_team))
+            if not event_id:
+                continue
+            mapped = self._sofascore_map_odds_for_match(m, event_id)
+            for k, v in mapped.items():
+                if k not in out:
+                    out[k] = v
+                    meta[k] = {"source": "sofascore", "is_real": True}
+
+        # The Odds API fallback for still-missing tuples (only if key exists)
         if settings_v2.odds_api_key:
             for lk in league_keys:
                 events = self._oddsapi_events(lk)
@@ -354,8 +516,20 @@ class EspnOddsFixturesProvider(OddsProvider):
                         continue
                     mapped = self._map_oddsapi_for_match(m, ev)
                     for k, v in mapped.items():
-                        out.setdefault(k, v)
+                        if k not in out:
+                            out[k] = v
+                            meta[k] = {"source": "odds_api", "is_real": True}
 
+        self._last_meta = meta
+        return out, meta
+
+    def fetch_market_odds(
+        self,
+        day: date,
+        league_keys: List[str],
+        matches: List[MatchInfo],
+    ) -> Dict[Tuple[str, str, str], float]:
+        out, _meta = self.fetch_market_odds_with_meta(day=day, league_keys=league_keys, matches=matches)
         return out
 
 
@@ -522,6 +696,18 @@ class SofaScoreFixturesResultsProvider(OddsProvider, ResultsProvider):
         _ = (day, league_keys, matches)
         return {}
 
+    def fetch_market_odds_with_meta(
+        self,
+        day: date,
+        league_keys: List[str],
+        matches: List[MatchInfo],
+    ) -> Tuple[Dict[Tuple[str, str, str], float], Dict[Tuple[str, str, str], Dict[str, Any]]]:
+        odds = self.fetch_market_odds(day=day, league_keys=league_keys, matches=matches)
+        meta: Dict[Tuple[str, str, str], Dict[str, Any]] = {
+            k: {"source": "sofascore", "is_real": True} for k in odds.keys()
+        }
+        return odds, meta
+
     def fetch_ft_scores_with_ids(
         self,
         day: date,
@@ -604,14 +790,16 @@ class JsonFileOddsProvider(OddsProvider):
             )
         return [m for m in out if m.match_id and m.home_team and m.away_team]
 
-    def fetch_market_odds(
+    def fetch_market_odds_with_meta(
         self,
         day: date,
         league_keys: List[str],
         matches: List[MatchInfo],
-    ) -> Dict[Tuple[str, str, str], float]:
+    ) -> Tuple[Dict[Tuple[str, str, str], float], Dict[Tuple[str, str, str], Dict[str, Any]]]:
+        _ = (day, league_keys, matches)
         obj = self._load()
         out: Dict[Tuple[str, str, str], float] = {}
+        meta: Dict[Tuple[str, str, str], Dict[str, Any]] = {}
         for row in (obj.get("odds") or []):
             try:
                 odd = float(row.get("odds"))
@@ -623,6 +811,20 @@ class JsonFileOddsProvider(OddsProvider):
                 str(row.get("selection", "")),
             )
             out[key] = odd
+            is_real = str(row.get("source_quality", "real_odds")).strip().lower() == "real_odds"
+            meta[key] = {
+                "source": str(row.get("source", "json_fixture")),
+                "is_real": is_real,
+            }
+        return out, meta
+
+    def fetch_market_odds(
+        self,
+        day: date,
+        league_keys: List[str],
+        matches: List[MatchInfo],
+    ) -> Dict[Tuple[str, str, str], float]:
+        out, _meta = self.fetch_market_odds_with_meta(day=day, league_keys=league_keys, matches=matches)
         return out
 
 
