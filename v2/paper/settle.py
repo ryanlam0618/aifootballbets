@@ -8,7 +8,7 @@ from typing import List, Tuple
 from v2.config import settings_v2
 from v2.paper.constants import LEAGUE_UNIVERSE
 from v2.paper.ledger import bankroll_before_day, open_unsettled_bets_for_day, settle_bet
-from v2.paper.providers import EspnResultsProvider, match_key
+from v2.paper.providers import EspnResultsProvider, ResultsProvider, SofaScoreFixturesResultsProvider, match_key
 
 _EPS = 1e-9
 
@@ -132,9 +132,22 @@ def _resolve_profit(row, score: Tuple[int, int]) -> Tuple[str, float]:
     return "void", 0.0
 
 
-def run_settlement(db_path: Path, day: date, provider: EspnResultsProvider | None = None) -> int:
+def _scores_with_ids(provider: ResultsProvider, day: date, league_keys: List[str]) -> Tuple[dict, dict]:
+    fetch_with_ids = getattr(provider, "fetch_ft_scores_with_ids", None)
+    if callable(fetch_with_ids):
+        try:
+            names, ids = fetch_with_ids(day=day, league_keys=league_keys)
+            if isinstance(names, dict) and isinstance(ids, dict):
+                return names, ids
+        except Exception:
+            pass
+    names = provider.fetch_ft_scores(day=day, league_keys=league_keys) or {}
+    return names, {}
+
+
+def run_settlement(db_path: Path, day: date, provider: ResultsProvider | None = None) -> int:
     provider = provider or EspnResultsProvider()
-    score_map, score_map_ids = provider.fetch_ft_scores_with_ids(day=day, league_keys=LEAGUE_UNIVERSE)
+    score_map, score_map_ids = _scores_with_ids(provider=provider, day=day, league_keys=LEAGUE_UNIVERSE)
 
     unsettled = open_unsettled_bets_for_day(db_path, day)
     if not unsettled:
@@ -176,19 +189,33 @@ def run_settlement(db_path: Path, day: date, provider: EspnResultsProvider | Non
     return settled_count
 
 
+def _build_results_provider(name: str | None) -> ResultsProvider:
+    provider_name = str(name or "espn").strip().lower()
+    if provider_name == "sofascore":
+        return SofaScoreFixturesResultsProvider()
+    return EspnResultsProvider()
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Settle paper bets for a day using ESPN results")
+    parser = argparse.ArgumentParser(description="Settle paper bets for a day using results provider")
     parser.add_argument("--date", required=True, help="YYYY-MM-DD")
     parser.add_argument(
         "--sqlite",
         default=str(Path(settings_v2.tracking_sqlite_path)),
         help="tracking sqlite path",
     )
+    parser.add_argument(
+        "--results-provider",
+        choices=["espn", "sofascore"],
+        default="espn",
+        help="results provider to use (default: espn)",
+    )
     args = parser.parse_args()
 
     day = datetime.strptime(args.date, "%Y-%m-%d").date()
-    n = run_settlement(Path(args.sqlite), day)
-    print(f"[OK] settled rows: {n}")
+    provider = _build_results_provider(args.results_provider)
+    n = run_settlement(Path(args.sqlite), day, provider=provider)
+    print(f"[OK] settled rows: {n} (provider={args.results_provider})")
 
 
 if __name__ == "__main__":

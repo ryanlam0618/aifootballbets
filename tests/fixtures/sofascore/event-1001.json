@@ -1,0 +1,10 @@
+{
+  "event": {
+    "id": 1001,
+    "status": {"type": "finished"},
+    "homeTeam": {"name": "Arsenal"},
+    "awayTeam": {"name": "Chelsea"},
+    "homeScore": {"current": 2},
+    "awayScore": {"current": 1}
+  }
+}

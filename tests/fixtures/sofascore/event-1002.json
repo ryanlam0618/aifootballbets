@@ -1,0 +1,10 @@
+{
+  "event": {
+    "id": 1002,
+    "status": {"type": "notstarted"},
+    "homeTeam": {"name": "Barcelona"},
+    "awayTeam": {"name": "Sevilla"},
+    "homeScore": {"current": null},
+    "awayScore": {"current": null}
+  }
+}

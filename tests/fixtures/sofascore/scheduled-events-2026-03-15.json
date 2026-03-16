@@ -1,0 +1,26 @@
+{
+  "events": [
+    {
+      "id": 1001,
+      "startTimestamp": 1773626400,
+      "homeTeam": {"name": "Arsenal"},
+      "awayTeam": {"name": "Chelsea"},
+      "tournament": {
+        "name": "Premier League",
+        "category": {"name": "England"},
+        "uniqueTournament": {"id": 17}
+      }
+    },
+    {
+      "id": 1003,
+      "startTimestamp": 1773617400,
+      "homeTeam": {"name": "Shanghai Port"},
+      "awayTeam": {"name": "Shandong Taishan"},
+      "tournament": {
+        "name": "Chinese Super League",
+        "category": {"name": "China"},
+        "uniqueTournament": {"id": 649}
+      }
+    }
+  ]
+}

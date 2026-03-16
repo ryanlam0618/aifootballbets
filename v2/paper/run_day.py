@@ -9,7 +9,12 @@ from v2.config import settings_v2
 from v2.paper.constants import LEAGUE_UNIVERSE
 from v2.paper.ledger import append_selected_bets, bankroll_before_day
 from v2.paper.models import CandidateBet, MatchInfo
-from v2.paper.providers import JsonFileOddsProvider, OddsApiEspnPlaceholderProvider, OddsProvider
+from v2.paper.providers import (
+    JsonFileOddsProvider,
+    OddsApiEspnPlaceholderProvider,
+    OddsProvider,
+    SofaScoreFixturesResultsProvider,
+)
 from v2.paper.staking import DailyRiskManager, make_selected_bet
 from v2.paper.strategy import generate_candidates_for_match, select_best_per_match
 
@@ -150,6 +155,17 @@ def run_for_day(
     }
 
 
+def _build_odds_provider(name: str | None, provider_json: str | None) -> OddsProvider | None:
+    pjson = str(provider_json or "").strip()
+    if pjson:
+        return JsonFileOddsProvider(Path(pjson))
+
+    pname = str(name or "espn").strip().lower()
+    if pname == "sofascore":
+        return SofaScoreFixturesResultsProvider()
+    return None
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run one-day paper bet selection and append to tracking sqlite")
     parser.add_argument("--date", required=True, help="YYYY-MM-DD")
@@ -169,14 +185,18 @@ def main() -> None:
         default="",
         help="optional local JSON fixture for deterministic mock provider",
     )
+    parser.add_argument(
+        "--odds-provider",
+        choices=["espn", "sofascore"],
+        default="espn",
+        help="fixtures/odds provider (default: espn)",
+    )
     args = parser.parse_args()
 
     day = datetime.strptime(args.date, "%Y-%m-%d").date()
     run_id = args.run_id or f"paper_day_{day.isoformat()}"
 
-    provider: OddsProvider | None = None
-    if str(args.provider_json or "").strip():
-        provider = JsonFileOddsProvider(Path(args.provider_json))
+    provider = _build_odds_provider(args.odds_provider, args.provider_json)
 
     res = run_for_day(
         day=day,
@@ -186,7 +206,7 @@ def main() -> None:
         run_id=run_id,
         provider=provider,
     )
-    print(f"[OK] day={day.isoformat()} -> {res}")
+    print(f"[OK] day={day.isoformat()} provider={args.odds_provider} -> {res}")
 
 
 if __name__ == "__main__":

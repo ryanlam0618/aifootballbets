@@ -1,0 +1,70 @@
+{
+  "events": [
+    {
+      "id": 1002,
+      "startTimestamp": 1773662400,
+      "homeTeam": {"name": "Barcelona"},
+      "awayTeam": {"name": "Sevilla"},
+      "tournament": {
+        "name": "LaLiga",
+        "category": {"name": "Spain"},
+        "uniqueTournament": {"id": 8}
+      }
+    },
+    {
+      "id": 1005,
+      "startTimestamp": 1773703800,
+      "homeTeam": {"name": "Kawasaki Frontale"},
+      "awayTeam": {"name": "Yokohama F. Marinos"},
+      "tournament": {
+        "name": "J1 League",
+        "category": {"name": "Japan"},
+        "uniqueTournament": {"id": 196}
+      }
+    },
+    {
+      "id": 1006,
+      "startTimestamp": 1773707400,
+      "homeTeam": {"name": "Jeonbuk"},
+      "awayTeam": {"name": "Ulsan"},
+      "tournament": {
+        "name": "K League 1",
+        "category": {"name": "Republic of Korea"},
+        "uniqueTournament": {"id": 292}
+      }
+    },
+    {
+      "id": 1007,
+      "startTimestamp": 1773711000,
+      "homeTeam": {"name": "Sydney FC"},
+      "awayTeam": {"name": "Melbourne City"},
+      "tournament": {
+        "name": "A-League Men",
+        "category": {"name": "Australia"},
+        "uniqueTournament": {"id": 283}
+      }
+    },
+    {
+      "id": 1010,
+      "startTimestamp": 1773662400,
+      "homeTeam": {"name": "Adelaide United"},
+      "awayTeam": {"name": "Perth Glory"},
+      "tournament": {
+        "name": "A-League Men",
+        "category": {"name": "Australia"},
+        "uniqueTournament": {}
+      }
+    },
+    {
+      "id": 1011,
+      "startTimestamp": 1773662400,
+      "homeTeam": {"name": "Team A"},
+      "awayTeam": {"name": "Team B"},
+      "tournament": {
+        "name": "Unknown League",
+        "category": {"name": "Nowhere"},
+        "uniqueTournament": {"id": 999999}
+      }
+    }
+  ]
+}

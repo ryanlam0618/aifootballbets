@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import json
 from abc import ABC, abstractmethod
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, List, Tuple
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from v2.config import settings_v2
-from v2.paper.constants import ESPN_LEAGUE_MAP, LEAGUE_UNIVERSE
+from v2.paper.constants import ESPN_LEAGUE_MAP, LEAGUE_UNIVERSE, SOFASCORE_LEAGUE_MAP
 from v2.paper.models import MatchInfo
 
 
@@ -361,6 +361,219 @@ class EspnOddsFixturesProvider(OddsProvider):
 
 class OddsApiEspnPlaceholderProvider(EspnOddsFixturesProvider):
     """Backward-compatible alias for older call sites."""
+
+
+class SofaScoreFixturesResultsProvider(OddsProvider, ResultsProvider):
+    """
+    SofaScore fixtures + results provider (stdlib-only urllib JSON fetches).
+
+    Endpoints:
+    - /sport/football/scheduled-events/{date}
+    - /event/{event_id}
+
+    Notes:
+    - date input is interpreted in Asia/Shanghai day context.
+    - 09:00->09:00 Asia/Shanghai window is enforced by fetching adjacent dates and filtering by timestamp.
+    - Market odds endpoint is intentionally not used for paper selection yet; this provider returns {} for odds,
+      allowing run_day results-only synthetic fallback when external odds are absent.
+    """
+
+    BASE_URL = "https://www.sofascore.com/api/v1"
+
+    def __init__(self, timeout: int = 25) -> None:
+        self.timeout = timeout
+        self._scheduled_cache: Dict[str, List[dict]] = {}
+        self._event_cache: Dict[str, dict] = {}
+        self._tz_cst = timezone(timedelta(hours=8))
+
+    @staticmethod
+    def _norm(s: str) -> str:
+        return " ".join((s or "").strip().lower().split())
+
+    def _fetch_scheduled_events_for_date(self, day_iso: str) -> List[dict]:
+        if day_iso in self._scheduled_cache:
+            return self._scheduled_cache[day_iso]
+        url = f"{self.BASE_URL}/sport/football/scheduled-events/{day_iso}"
+        try:
+            data = _http_get_json(url, timeout=self.timeout)
+        except Exception:
+            data = None
+        events = (data or {}).get("events") or [] if isinstance(data, dict) else []
+        self._scheduled_cache[day_iso] = events
+        return events
+
+    def _fetch_event(self, event_id: str) -> dict:
+        if event_id in self._event_cache:
+            return self._event_cache[event_id]
+        url = f"{self.BASE_URL}/event/{event_id}"
+        try:
+            data = _http_get_json(url, timeout=self.timeout)
+        except Exception:
+            data = None
+        event_obj = (data or {}).get("event") or {} if isinstance(data, dict) else {}
+        self._event_cache[event_id] = event_obj
+        return event_obj
+
+    def _league_key_for_event(self, event: dict, league_keys: List[str]) -> str | None:
+        uniq = (((event.get("tournament") or {}).get("uniqueTournament") or {}).get("id"))
+        try:
+            uniq_id = int(uniq) if uniq is not None else None
+        except Exception:
+            uniq_id = None
+
+        tname = self._norm(str((event.get("tournament") or {}).get("name") or ""))
+        cname = self._norm(str(((event.get("tournament") or {}).get("category") or {}).get("name") or ""))
+
+        for lk in league_keys:
+            cfg = SOFASCORE_LEAGUE_MAP.get(lk) or {}
+            tids = cfg.get("tournament_ids") or []
+            if uniq_id is not None and uniq_id in tids:
+                return lk
+
+        for lk in league_keys:
+            cfg = SOFASCORE_LEAGUE_MAP.get(lk) or {}
+            c_alias = {self._norm(str(x)) for x in (cfg.get("category_aliases") or [])}
+            t_alias = {self._norm(str(x)) for x in (cfg.get("tournament_aliases") or [])}
+            if tname in t_alias and (not c_alias or cname in c_alias):
+                return lk
+
+        return None
+
+    def _window_bounds_utc(self, day: date) -> Tuple[datetime, datetime]:
+        start_local = datetime(day.year, day.month, day.day, 9, 0, 0, tzinfo=self._tz_cst)
+        end_local = start_local + timedelta(days=1)
+        return start_local.astimezone(timezone.utc), end_local.astimezone(timezone.utc)
+
+    def _candidate_fetch_dates(self, day: date) -> List[str]:
+        # Fetch adjacent dates to avoid missing matches around timezone boundaries.
+        return [
+            (day - timedelta(days=1)).isoformat(),
+            day.isoformat(),
+            (day + timedelta(days=1)).isoformat(),
+        ]
+
+    def _event_start_utc(self, event: dict) -> datetime | None:
+        ts = event.get("startTimestamp")
+        try:
+            return datetime.fromtimestamp(int(ts), tz=timezone.utc)
+        except Exception:
+            return None
+
+    @staticmethod
+    def _event_to_match(league_key: str, event: dict) -> MatchInfo | None:
+        event_id = str(event.get("id", "")).strip()
+        home = str((event.get("homeTeam") or {}).get("name") or "").strip()
+        away = str((event.get("awayTeam") or {}).get("name") or "").strip()
+        if not (event_id and home and away):
+            return None
+
+        start_ts = event.get("startTimestamp")
+        kickoff = ""
+        try:
+            kickoff = datetime.fromtimestamp(int(start_ts), tz=timezone.utc).replace(microsecond=0).isoformat()
+        except Exception:
+            kickoff = ""
+
+        league_name = str((event.get("tournament") or {}).get("name") or league_key)
+        return MatchInfo(
+            match_id=f"{league_key}:{event_id}",
+            league_key=league_key,
+            league_name=league_name,
+            kickoff_utc=kickoff,
+            home_team=home,
+            away_team=away,
+        )
+
+    def fetch_matches(self, day: date, league_keys: List[str]) -> List[MatchInfo]:
+        start_utc, end_utc = self._window_bounds_utc(day)
+        out: List[MatchInfo] = []
+        seen_ids = set()
+
+        for day_iso in self._candidate_fetch_dates(day):
+            events = self._fetch_scheduled_events_for_date(day_iso)
+            for ev in events:
+                event_id = str(ev.get("id", "")).strip()
+                if not event_id or event_id in seen_ids:
+                    continue
+
+                start = self._event_start_utc(ev)
+                if start is None or not (start_utc <= start < end_utc):
+                    continue
+
+                lk = self._league_key_for_event(ev, league_keys)
+                if not lk:
+                    continue
+
+                m = self._event_to_match(lk, ev)
+                if not m:
+                    continue
+                out.append(m)
+                seen_ids.add(event_id)
+
+        return out
+
+    def fetch_market_odds(
+        self,
+        day: date,
+        league_keys: List[str],
+        matches: List[MatchInfo],
+    ) -> Dict[Tuple[str, str, str], float]:
+        # Keep run_day compatible; synthetic fallback will patch markets when this is empty.
+        _ = (day, league_keys, matches)
+        return {}
+
+    def fetch_ft_scores_with_ids(
+        self,
+        day: date,
+        league_keys: List[str],
+    ) -> Tuple[Dict[str, Tuple[int, int]], Dict[str, Tuple[int, int]]]:
+        by_names: Dict[str, Tuple[int, int]] = {}
+        by_ids: Dict[str, Tuple[int, int]] = {}
+        start_utc, end_utc = self._window_bounds_utc(day)
+
+        for day_iso in self._candidate_fetch_dates(day):
+            events = self._fetch_scheduled_events_for_date(day_iso)
+            for ev in events:
+                event_id = str(ev.get("id", "")).strip()
+                if not event_id:
+                    continue
+
+                lk = self._league_key_for_event(ev, league_keys)
+                if not lk:
+                    continue
+
+                start = self._event_start_utc(ev)
+                if start is None or not (start_utc <= start < end_utc):
+                    continue
+
+                detail = self._fetch_event(event_id)
+                status_type = ((detail.get("status") or {}).get("type") or "")
+                if str(status_type).lower() != "finished":
+                    continue
+
+                home_score = ((detail.get("homeScore") or {}).get("current"))
+                away_score = ((detail.get("awayScore") or {}).get("current"))
+                try:
+                    h = int(home_score)
+                    a = int(away_score)
+                except Exception:
+                    continue
+
+                home_name = str((detail.get("homeTeam") or {}).get("name") or (ev.get("homeTeam") or {}).get("name") or "")
+                away_name = str((detail.get("awayTeam") or {}).get("name") or (ev.get("awayTeam") or {}).get("name") or "")
+                if not (home_name and away_name):
+                    continue
+
+                score = (h, a)
+                by_names[match_key(home_name, away_name)] = score
+                by_ids[event_id] = score
+                by_ids[f"{lk}:{event_id}"] = score
+
+        return by_names, by_ids
+
+    def fetch_ft_scores(self, day: date, league_keys: List[str]) -> Dict[str, Tuple[int, int]]:
+        names, _ = self.fetch_ft_scores_with_ids(day=day, league_keys=league_keys)
+        return names
 
 
 class JsonFileOddsProvider(OddsProvider):

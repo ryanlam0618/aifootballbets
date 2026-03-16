@@ -1,0 +1,15 @@
+{
+  "events": [
+    {
+      "id": 1008,
+      "startTimestamp": 1773709200,
+      "homeTeam": {"name": "Liverpool"},
+      "awayTeam": {"name": "Everton"},
+      "tournament": {
+        "name": "Premier League",
+        "category": {"name": "England"},
+        "uniqueTournament": {"id": 17}
+      }
+    }
+  ]
+}

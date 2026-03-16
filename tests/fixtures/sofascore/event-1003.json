@@ -1,0 +1,10 @@
+{
+  "event": {
+    "id": 1003,
+    "status": {"type": "finished"},
+    "homeTeam": {"name": "Shanghai Port"},
+    "awayTeam": {"name": "Shandong Taishan"},
+    "homeScore": {"current": 1},
+    "awayScore": {"current": 1}
+  }
+}
