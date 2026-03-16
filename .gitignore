@@ -73,6 +73,7 @@ data/*.json
 # v2 pipeline outputs / large backfill outputs
 /data/v2/
 /data/backfill_sofascore_10y/
+/tests/fixtures/sofascore_*.json
 # lineup 為執行期產物，預設不追蹤；保留 .gitkeep 維持資料夾
 /data/lineup/*
 !/data/lineup/.gitkeep
