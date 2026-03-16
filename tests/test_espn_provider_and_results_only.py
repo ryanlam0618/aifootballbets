@@ -51,6 +51,7 @@ class TestEspnProviderAndResultsOnly(unittest.TestCase):
                 initial_bankroll=2000.0,
                 run_id="results_only_ut",
                 provider=EmptyOddsRealFixtureProvider(),
+                allow_synthetic_odds=True,
             )
 
             self.assertEqual(res["matches"], 1)
@@ -74,6 +75,7 @@ class TestEspnProviderAndResultsOnly(unittest.TestCase):
                 initial_bankroll=2000.0,
                 run_id="settle_by_id_ut",
                 provider=EmptyOddsRealFixtureProvider(),
+                allow_synthetic_odds=True,
             )
 
             settled = run_settlement(

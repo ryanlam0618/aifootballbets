@@ -73,8 +73,16 @@ python -m v2.paper.settle --date 2026-03-15
 python -m v2.paper.report --date 2026-03-15 --sqlite data/v2/tracking/bets.sqlite
 
 # 7 日流程（每天：選注 -> 結算 -> 出報告）
-python -m v2.paper.run_7d --start-date 2026-03-09
+python scripts/paper_run_7d.py --sqlite data/v2/tracking/bets.sqlite
+
+# 可重播（deterministic）模式
+python scripts/paper_run_7d.py \
+  --start-date 2026-03-10 \
+  --provider-json tests/fixtures/paper7d_provider.json \
+  --sqlite data/v2/tracking/bets.sqlite
 ```
+
+最終會輸出 7 天總結（含 final PnL / ROI / max drawdown / winrate / avg edge / by market / flat-stake baseline）。
 
 READY 檢查清單請見：`v2/paper/README.md`
 

@@ -1,0 +1,48 @@
+{
+  "matches": [
+    {
+      "match_id": "soccer_epl:1001",
+      "league_key": "soccer_epl",
+      "league_name": "EPL",
+      "kickoff_utc": "2026-03-16T12:00:00+00:00",
+      "home_team": "Alpha FC",
+      "away_team": "Beta FC"
+    }
+  ],
+  "odds": [
+    {
+      "match_id": "soccer_epl:1001",
+      "market": "1X2",
+      "selection": "Home",
+      "odds": 2.2,
+      "source": "fixture",
+      "source_quality": "real_odds"
+    },
+    {
+      "match_id": "soccer_epl:1001",
+      "market": "1X2",
+      "selection": "Draw",
+      "odds": 3.4,
+      "source": "fixture",
+      "source_quality": "real_odds"
+    },
+    {
+      "match_id": "soccer_epl:1001",
+      "market": "1X2",
+      "selection": "Away",
+      "odds": 3.1,
+      "source": "fixture",
+      "source_quality": "real_odds"
+    }
+  ],
+  "results": [
+    {
+      "match_id": "soccer_epl:1001",
+      "league_key": "soccer_epl",
+      "home_team": "Alpha FC",
+      "away_team": "Beta FC",
+      "home_goals": 2,
+      "away_goals": 0
+    }
+  ]
+}

@@ -72,6 +72,44 @@ class NoOddsProvider(MultiMatchProvider):
 
 
 class TestSelectionConstraintsAndReports(unittest.TestCase):
+    def test_max_stake_fraction_cap_applies(self):
+        old_cap = settings_v2.paper_max_stake_fraction_per_bet
+        old_edge = settings_v2.min_edge
+        old_day = settings_v2.paper_max_bets_per_day
+        old_league = settings_v2.paper_max_bets_per_league_per_day
+        try:
+            settings_v2.paper_max_stake_fraction_per_bet = 0.01
+            settings_v2.min_edge = 0.0
+            settings_v2.paper_max_bets_per_day = 1
+            settings_v2.paper_max_bets_per_league_per_day = 1
+
+            with tempfile.TemporaryDirectory() as td:
+                db_path = Path(td) / "tracking.sqlite"
+                ensure_tracking_schema(db_path)
+
+                run_for_day(
+                    day=date(2026, 3, 16),
+                    db_path=db_path,
+                    snapshot_db=Path(td) / "snap.sqlite",
+                    initial_bankroll=2000.0,
+                    run_id="stake_cap_ut",
+                    provider=MultiMatchProvider(),
+                )
+
+                conn = sqlite3.connect(str(db_path))
+                try:
+                    row = conn.execute("SELECT stake FROM bet_log LIMIT 1").fetchone()
+                finally:
+                    conn.close()
+
+                self.assertIsNotNone(row)
+                self.assertLessEqual(float(row[0]), 20.0 + 1e-6)
+        finally:
+            settings_v2.paper_max_stake_fraction_per_bet = old_cap
+            settings_v2.min_edge = old_edge
+            settings_v2.paper_max_bets_per_day = old_day
+            settings_v2.paper_max_bets_per_league_per_day = old_league
+
     def test_selection_constraints_day_and_league_caps(self):
         old_day = settings_v2.paper_max_bets_per_day
         old_league = settings_v2.paper_max_bets_per_league_per_day
@@ -216,6 +254,7 @@ class TestSelectionConstraintsAndReports(unittest.TestCase):
                     initial_bankroll=2000.0,
                     run_id="results_only_ut",
                     provider=NoOddsProvider(),
+                    allow_synthetic_odds=True,
                 )
 
                 self.assertTrue(res["results_only_mode"])
