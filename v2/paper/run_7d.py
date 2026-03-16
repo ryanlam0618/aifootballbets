@@ -53,7 +53,7 @@ def main() -> None:
         "--odds-provider",
         choices=["espn", "sofascore"],
         default="espn",
-        help="fixtures/odds provider used in run_day",
+        help="fixtures/odds provider used in run_day (espn includes fallback chain ESPN -> SofaScore -> Odds API)",
     )
     parser.add_argument(
         "--results-provider",
