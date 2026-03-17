@@ -5,6 +5,7 @@ from typing import Dict, List, Optional, Tuple
 
 from v2.config import settings_v2
 from v2.paper.models import CandidateBet, MatchInfo
+from v2.paper.pricing import implied_probability_raw
 
 
 Matrix = List[List[float]]
@@ -68,10 +69,6 @@ def _prob_home_ah(mat: Matrix, line: float) -> float:
     return p
 
 
-def _implied(odds: float) -> float:
-    return 1.0 / odds if odds > 1 else math.nan
-
-
 def _ev(prob: float, odds: float) -> float:
     if odds <= 1:
         return -1.0
@@ -110,6 +107,7 @@ def _parse_market_key(market_key: str) -> Tuple[str, str]:
 def generate_candidates_for_match(
     match: MatchInfo,
     odds_map: Dict[Tuple[str, str, str], float],
+    implied_map: Dict[Tuple[str, str, str], float] | None = None,
     mu_home: float = 1.25,
     mu_away: float = 1.10,
     kelly_fraction: Optional[float] = None,
@@ -126,7 +124,8 @@ def generate_candidates_for_match(
         if not odd:
             continue
         p = probs_1x2[sel]
-        ip = _implied(float(odd))
+        key = (match.match_id, "1X2", sel)
+        ip = (implied_map or {}).get(key, implied_probability_raw(float(odd)))
         ev = _ev(p, float(odd))
         edge = p - ip
         k = kelly_full(p, float(odd)) * k_frac
@@ -172,7 +171,8 @@ def generate_candidates_for_match(
         else:
             continue
 
-        ip = _implied(float(odd))
+        key = (match.match_id, market_key, sel)
+        ip = (implied_map or {}).get(key, implied_probability_raw(float(odd)))
         ev = _ev(p, float(odd))
         edge = p - ip
         k = kelly_full(p, float(odd)) * k_frac

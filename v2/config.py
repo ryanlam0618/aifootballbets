@@ -98,6 +98,8 @@ class V2Settings:
         "on",
     }
     paper_flat_stake_fraction: float = float(os.getenv("PAPER_FLAT_STAKE_FRACTION", "0.02"))
+    paper_devig_enabled: bool = os.getenv("PAPER_DEVIG_ENABLED", "1").strip().lower() in {"1", "true", "yes", "on"}
+    paper_closing_odds_tracker_sqlite: str = os.getenv("PAPER_CLOSING_ODDS_TRACKER_SQLITE", "")
 
     # Optional tracking export hook (off by default)
     tracking_export_enabled: bool = os.getenv("TRACKING_EXPORT_ENABLED", "0").strip().lower() in {"1", "true", "yes", "on"}

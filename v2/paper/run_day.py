@@ -18,6 +18,7 @@ from v2.paper.providers import (
     SofaScoreFixturesResultsProvider,
 )
 from v2.paper.staking import DailyRiskManager, make_selected_bet
+from v2.paper.pricing import build_devig_implied_map
 from v2.paper.strategy import generate_candidates_for_match, select_best_per_match
 
 
@@ -142,9 +143,11 @@ def run_for_day(
         allow_synthetic=allow_synthetic,
     )
 
+    implied_map = build_devig_implied_map(odds_map) if settings_v2.paper_devig_enabled else {}
+
     all_candidates: List[CandidateBet] = []
     for m in matches:
-        all_candidates.extend(generate_candidates_for_match(m, odds_map=odds_map))
+        all_candidates.extend(generate_candidates_for_match(m, odds_map=odds_map, implied_map=implied_map))
 
     best_by_match = select_best_per_match(all_candidates)
 
@@ -301,6 +304,7 @@ def run_for_day(
         "max_league_exposure_fraction_per_day": max_league_exposure_frac,
         "max_stake_fraction_per_bet": float(settings_v2.paper_max_stake_fraction_per_bet),
         "paper_daily_stop_loss_pct": day_stop_loss_pct,
+        "paper_devig_enabled": bool(settings_v2.paper_devig_enabled),
         "decision_log_path": str(decision_log_path) if decision_log_path else "",
     }
 
