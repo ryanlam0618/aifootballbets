@@ -167,7 +167,10 @@ def run_for_day(
     )
 
     day_start = bankroll_before_day(db_path, day, initial_bankroll)
-    risk = DailyRiskManager(day_start_bankroll=day_start, stop_loss_pct=0.20)
+    risk = DailyRiskManager(
+        day_start_bankroll=day_start,
+        stop_loss_pct=max(0.0, float(settings_v2.paper_daily_stop_loss_pct)),
+    )
 
     # guard using already-settled same-day pnl if rerun mid-day
     import sqlite3
@@ -186,7 +189,8 @@ def run_for_day(
     finally:
         conn.close()
 
-    if day_pnl_now <= (-0.20 * day_start):
+    day_stop_loss_pct = max(0.0, float(settings_v2.paper_daily_stop_loss_pct))
+    if day_pnl_now <= (-day_stop_loss_pct * day_start):
         risk.state.stop_triggered = True
 
     selected = []
@@ -296,6 +300,7 @@ def run_for_day(
         "max_bets_per_league_per_day": max_bets_league,
         "max_league_exposure_fraction_per_day": max_league_exposure_frac,
         "max_stake_fraction_per_bet": float(settings_v2.paper_max_stake_fraction_per_bet),
+        "paper_daily_stop_loss_pct": day_stop_loss_pct,
         "decision_log_path": str(decision_log_path) if decision_log_path else "",
     }
 

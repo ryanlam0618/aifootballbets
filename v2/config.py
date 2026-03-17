@@ -90,6 +90,7 @@ class V2Settings:
     paper_max_league_exposure_fraction_per_day: float = float(
         os.getenv("PAPER_MAX_LEAGUE_EXPOSURE_FRACTION_PER_DAY", "0.20")
     )
+    paper_daily_stop_loss_pct: float = float(os.getenv("PAPER_DAILY_STOP_LOSS_PCT", "0.20"))
     paper_allow_synthetic_odds: bool = os.getenv("PAPER_ALLOW_SYNTHETIC_ODDS", "0").strip().lower() in {
         "1",
         "true",

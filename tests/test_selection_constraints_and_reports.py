@@ -84,6 +84,79 @@ class PartialOddsProvider(MultiMatchProvider):
 
 
 class TestSelectionConstraintsAndReports(unittest.TestCase):
+    def test_daily_stop_loss_pct_is_configurable(self):
+        old_day = settings_v2.paper_max_bets_per_day
+        old_league = settings_v2.paper_max_bets_per_league_per_day
+        old_edge = settings_v2.min_edge
+        old_stop = settings_v2.paper_daily_stop_loss_pct
+        try:
+            settings_v2.paper_max_bets_per_day = 4
+            settings_v2.paper_max_bets_per_league_per_day = 2
+            settings_v2.min_edge = 0.0
+            settings_v2.paper_daily_stop_loss_pct = 0.05
+
+            with tempfile.TemporaryDirectory() as td:
+                db_path = Path(td) / "tracking.sqlite"
+                ensure_tracking_schema(db_path)
+
+                conn = sqlite3.connect(str(db_path))
+                try:
+                    conn.execute(
+                        """
+                        INSERT INTO bet_log (
+                          bet_id, kickoff_time_hkt, league, home, away, market, market_type, line, selection,
+                          odds_bet, model_prob, ev, kelly_pct, stake, result, profit, bankroll,
+                          source_book, source_file, run_id, source_quality, odds_source
+                        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                        """,
+                        (
+                            "preloss_ut",
+                            "2026-03-16T09:00:00+08:00",
+                            "EPL",
+                            "PX",
+                            "PY",
+                            "1X2",
+                            "1X2",
+                            "",
+                            "Home",
+                            2.0,
+                            0.50,
+                            0.0,
+                            0.01,
+                            100.0,
+                            "loss",
+                            -120.0,
+                            1880.0,
+                            "paper_sim",
+                            "ut",
+                            "ut",
+                            "real_odds",
+                            "espn",
+                        ),
+                    )
+                    conn.commit()
+                finally:
+                    conn.close()
+
+                res = run_for_day(
+                    day=date(2026, 3, 16),
+                    db_path=db_path,
+                    snapshot_db=Path(td) / "snap.sqlite",
+                    initial_bankroll=2000.0,
+                    run_id="daily_stop_loss_ut",
+                    provider=MultiMatchProvider(),
+                )
+
+                self.assertTrue(res["risk_stop"])
+                self.assertEqual(res["paper_daily_stop_loss_pct"], 0.05)
+                self.assertEqual(res["selected"], 0)
+                self.assertEqual(res["inserted"], 0)
+        finally:
+            settings_v2.paper_max_bets_per_day = old_day
+            settings_v2.paper_max_bets_per_league_per_day = old_league
+            settings_v2.min_edge = old_edge
+            settings_v2.paper_daily_stop_loss_pct = old_stop
+
     def test_max_stake_fraction_cap_applies(self):
         old_cap = settings_v2.paper_max_stake_fraction_per_bet
         old_edge = settings_v2.min_edge
@@ -126,10 +199,12 @@ class TestSelectionConstraintsAndReports(unittest.TestCase):
         old_day = settings_v2.paper_max_bets_per_day
         old_league = settings_v2.paper_max_bets_per_league_per_day
         old_edge = settings_v2.min_edge
+        old_stop = settings_v2.paper_daily_stop_loss_pct
         try:
             settings_v2.paper_max_bets_per_day = 2
             settings_v2.paper_max_bets_per_league_per_day = 1
             settings_v2.min_edge = 0.0
+            settings_v2.paper_daily_stop_loss_pct = 0.20
 
             with tempfile.TemporaryDirectory() as td:
                 db_path = Path(td) / "tracking.sqlite"
@@ -161,6 +236,7 @@ class TestSelectionConstraintsAndReports(unittest.TestCase):
             settings_v2.paper_max_bets_per_day = old_day
             settings_v2.paper_max_bets_per_league_per_day = old_league
             settings_v2.min_edge = old_edge
+            settings_v2.paper_daily_stop_loss_pct = old_stop
 
     def test_report_separates_source_quality(self):
         with tempfile.TemporaryDirectory() as td:
