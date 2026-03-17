@@ -75,7 +75,10 @@ python -m v2.paper.report --date 2026-03-15 --sqlite data/v2/tracking/bets.sqlit
 # 7 日流程（每天：選注 -> 結算 -> 出報告）
 python scripts/paper_run_7d.py --bankroll 2000 --sqlite data/v2/tracking/bets.sqlite
 
-# 可重播（deterministic）模式
+# 一鍵可重現 7-day（預設 bankroll=2000，直接輸出 final PnL/ROI/maxDD）
+python scripts/paper_run_7d_repro.py
+
+# 可重播（deterministic）模式（自訂路徑）
 python scripts/paper_run_7d.py \
   --start-date 2026-03-10 \
   --provider-json tests/fixtures/paper7d_provider.json \
