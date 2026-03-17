@@ -62,6 +62,17 @@ class TestQuarterLineSettlement(unittest.TestCase):
         self.assertEqual(result, "half_loss")
         self.assertAlmostEqual(profit, -50.0, places=6)
 
+    def test_market_aliases_with_hyphen_or_underscore_are_supported(self):
+        row_ou = _row("over-under", "O", 2.25)
+        result_ou, profit_ou = _resolve_profit(row_ou, (1, 1))
+        self.assertEqual(result_ou, "half_loss")
+        self.assertAlmostEqual(profit_ou, -50.0, places=6)
+
+        row_ah = _row("asian_handicap", "A", 0.25)
+        result_ah, profit_ah = _resolve_profit(row_ah, (1, 1))
+        self.assertEqual(result_ah, "half_win")
+        self.assertAlmostEqual(profit_ah, 50.0, places=6)
+
     def test_1x2_selection_alias_x_maps_to_draw(self):
         row = _row("1X2", "X", None)
         result, profit = _resolve_profit(row, (2, 2))

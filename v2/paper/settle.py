@@ -93,17 +93,21 @@ def _aggregate_half_results(results: List[Tuple[str, float]]) -> Tuple[str, floa
 
 
 def _normalize_market(market: str) -> str:
-    m = str(market or "").strip().lower()
-    if m in {"ou", "o/u", "over_under", "over-under"}:
+    raw = str(market or "").strip().lower()
+    compact = "".join(ch for ch in raw if ch.isalnum())
+
+    if raw in {"ou", "o/u", "over_under", "over-under"} or compact in {"ou", "overunder"}:
         return "Over/Under"
-    if m in {"ah", "asian", "asian handicap", "asian_handicap"}:
+    if raw in {"ah", "asian", "asian handicap", "asian_handicap"} or compact in {"ah", "asianhandicap"}:
         return "Asian Handicap"
-    if m in {"1x2", "hda", "moneyline"}:
+    if raw in {"1x2", "hda", "moneyline"} or compact in {"1x2", "hda", "moneyline"}:
         return "1X2"
-    if m.startswith("over/under"):
+
+    if compact.startswith("overunder"):
         return "Over/Under"
-    if m.startswith("asian handicap"):
+    if compact.startswith("asianhandicap"):
         return "Asian Handicap"
+
     return str(market or "")
 
 
