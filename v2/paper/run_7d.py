@@ -30,17 +30,20 @@ def run_7d(
     allow_synthetic_odds: bool = False,
     decision_log_dir: Path | None = None,
     initial_bankroll: float | None = None,
+    out_dir: Path | None = None,
 ) -> dict:
     day_results: list[dict] = []
     bankroll0 = float(settings_v2.initial_bankroll if initial_bankroll is None else initial_bankroll)
+    output_dir = Path("reports/v2") if out_dir is None else Path(out_dir)
+    decision_output_dir = output_dir / "decisions" if decision_log_dir is None else Path(decision_log_dir)
 
     for i in range(7):
         day = start_date + timedelta(days=i)
         run_id = f"{run_prefix}_{day.isoformat()}"
         decision_log_path = None
-        if decision_log_dir:
-            decision_log_dir.mkdir(parents=True, exist_ok=True)
-            decision_log_path = decision_log_dir / f"decisions_{day.isoformat()}.jsonl"
+        if decision_output_dir:
+            decision_output_dir.mkdir(parents=True, exist_ok=True)
+            decision_log_path = decision_output_dir / f"decisions_{day.isoformat()}.jsonl"
 
         selected = run_for_day(
             day=day,
@@ -61,7 +64,7 @@ def run_7d(
         )
         print(f"[DAY {day.isoformat()}] settled({results_provider_name}) -> {settled}")
 
-        daily, weekly = generate_reports(db_path=db_path, day=day, out_dir=Path("reports/v2"))
+        daily, weekly = generate_reports(db_path=db_path, day=day, out_dir=output_dir)
         print(f"[DAY {day.isoformat()}] reports -> {daily.name}, {weekly.name}")
 
         day_results.append(
@@ -95,10 +98,9 @@ def run_7d(
         "summary": summary,
     }
 
-    out_dir = Path("reports/v2")
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_json = out_dir / f"paper_7d_summary_{end_date.isoformat()}.json"
-    out_md = out_dir / f"paper_7d_summary_{end_date.isoformat()}.md"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    out_json = output_dir / f"paper_7d_summary_{end_date.isoformat()}.json"
+    out_md = output_dir / f"paper_7d_summary_{end_date.isoformat()}.md"
 
     out_json.write_text(json.dumps(final, indent=2, ensure_ascii=False), encoding="utf-8")
 
@@ -157,8 +159,13 @@ def main() -> None:
     )
     parser.add_argument(
         "--decision-log-dir",
-        default="reports/v2/decisions",
-        help="directory for per-day decision JSONL logs",
+        default="",
+        help="directory for per-day decision JSONL logs (default: <out-dir>/decisions)",
+    )
+    parser.add_argument(
+        "--out-dir",
+        default="reports/v2",
+        help="output directory for reports and final 7D summary",
     )
     parser.add_argument(
         "--odds-provider",
@@ -196,6 +203,7 @@ def main() -> None:
         allow_synthetic_odds=bool(args.allow_synthetic_odds),
         decision_log_dir=Path(args.decision_log_dir) if str(args.decision_log_dir).strip() else None,
         initial_bankroll=args.bankroll,
+        out_dir=Path(args.out_dir),
     )
 
 

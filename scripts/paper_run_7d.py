@@ -29,7 +29,16 @@ def main() -> None:
     parser.add_argument("--results-provider", choices=["espn", "sofascore"], default="espn")
     parser.add_argument("--provider-json", default="", help="deterministic fixtures+odds+results JSON")
     parser.add_argument("--allow-synthetic-odds", action="store_true")
-    parser.add_argument("--decision-log-dir", default="reports/v2/decisions")
+    parser.add_argument(
+        "--decision-log-dir",
+        default="",
+        help="directory for per-day decision JSONL logs (default: <out-dir>/decisions)",
+    )
+    parser.add_argument(
+        "--out-dir",
+        default="reports/v2",
+        help="output directory for reports and final 7D summary",
+    )
     parser.add_argument(
         "--bankroll",
         type=float,
@@ -51,6 +60,7 @@ def main() -> None:
         allow_synthetic_odds=bool(args.allow_synthetic_odds),
         decision_log_dir=Path(args.decision_log_dir) if str(args.decision_log_dir).strip() else None,
         initial_bankroll=float(args.bankroll),
+        out_dir=Path(args.out_dir),
     )
 
 

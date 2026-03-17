@@ -14,6 +14,7 @@ class TestPaperRepro7D(unittest.TestCase):
             db_path = tdp / "tracking.sqlite"
             fixture = Path(__file__).parent / "fixtures" / "paper7d_provider.json"
 
+            out_dir = tdp / "reports"
             run_7d(
                 start_date=date(2026, 3, 10),
                 db_path=db_path,
@@ -24,7 +25,11 @@ class TestPaperRepro7D(unittest.TestCase):
                 provider_json=str(fixture),
                 allow_synthetic_odds=False,
                 decision_log_dir=tdp / "decisions",
+                out_dir=out_dir,
             )
+
+            self.assertTrue((out_dir / "paper_7d_summary_2026-03-16.json").exists())
+            self.assertTrue((out_dir / "paper_7d_summary_2026-03-16.md").exists())
 
             summary = summarize_window_metrics(
                 db_path=db_path,
@@ -54,6 +59,7 @@ class TestPaperRepro7D(unittest.TestCase):
                 allow_synthetic_odds=False,
                 decision_log_dir=tdp / "decisions",
                 initial_bankroll=1234.0,
+                out_dir=tdp / "reports_bankroll",
             )
 
             self.assertEqual(final["initial_bankroll"], 1234.0)
