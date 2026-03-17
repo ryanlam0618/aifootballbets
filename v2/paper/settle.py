@@ -92,10 +92,51 @@ def _aggregate_half_results(results: List[Tuple[str, float]]) -> Tuple[str, floa
     return "void", profit
 
 
+def _normalize_market(market: str) -> str:
+    m = str(market or "").strip().lower()
+    if m in {"ou", "o/u", "over_under", "over-under"}:
+        return "Over/Under"
+    if m in {"ah", "asian", "asian handicap", "asian_handicap"}:
+        return "Asian Handicap"
+    if m in {"1x2", "hda", "moneyline"}:
+        return "1X2"
+    if m.startswith("over/under"):
+        return "Over/Under"
+    if m.startswith("asian handicap"):
+        return "Asian Handicap"
+    return str(market or "")
+
+
+def _normalize_selection(market: str, selection: str) -> str:
+    s = str(selection or "").strip().lower()
+    m = _normalize_market(market)
+    if m == "1X2":
+        if s in {"h", "home", "1"}:
+            return "Home"
+        if s in {"a", "away", "2"}:
+            return "Away"
+        if s in {"d", "draw", "x"}:
+            return "Draw"
+        return str(selection or "")
+    if m == "Over/Under":
+        if s in {"o", "over"}:
+            return "Over"
+        if s in {"u", "under"}:
+            return "Under"
+        return str(selection or "")
+    if m == "Asian Handicap":
+        if s in {"h", "home", "1"}:
+            return "Home"
+        if s in {"a", "away", "2"}:
+            return "Away"
+        return str(selection or "")
+    return str(selection or "")
+
+
 def _resolve_profit(row, score: Tuple[int, int]) -> Tuple[str, float]:
     home_goals, away_goals = score
-    market = str(row["market"] or "")
-    selection = str(row["selection"] or "")
+    market = _normalize_market(str(row["market"] or ""))
+    selection = _normalize_selection(market, str(row["selection"] or ""))
     odds = float(row["odds_bet"] or 0)
     stake = float(row["stake"] or 0)
     line_raw = row["line"]

@@ -50,6 +50,24 @@ class TestQuarterLineSettlement(unittest.TestCase):
         self.assertEqual(result, "half_win")
         self.assertAlmostEqual(profit, 50.0, places=6)
 
+    def test_ou_alias_market_and_selection_are_supported(self):
+        row = _row("OU", "O", 2.25)
+        result, profit = _resolve_profit(row, (1, 1))
+        self.assertEqual(result, "half_loss")
+        self.assertAlmostEqual(profit, -50.0, places=6)
+
+    def test_ah_alias_market_and_selection_are_supported(self):
+        row = _row("AH", "H", -0.25)
+        result, profit = _resolve_profit(row, (1, 1))
+        self.assertEqual(result, "half_loss")
+        self.assertAlmostEqual(profit, -50.0, places=6)
+
+    def test_1x2_selection_alias_x_maps_to_draw(self):
+        row = _row("1X2", "X", None)
+        result, profit = _resolve_profit(row, (2, 2))
+        self.assertEqual(result, "win")
+        self.assertAlmostEqual(profit, 100.0, places=6)
+
 
 if __name__ == "__main__":
     unittest.main()
