@@ -115,23 +115,23 @@ def _normalize_selection(market: str, selection: str) -> str:
     s = str(selection or "").strip().lower()
     m = _normalize_market(market)
     if m == "1X2":
-        if s in {"h", "home", "1"}:
+        if s in {"h", "home", "1"} or s.startswith("home"):
             return "Home"
-        if s in {"a", "away", "2"}:
+        if s in {"a", "away", "2"} or s.startswith("away"):
             return "Away"
-        if s in {"d", "draw", "x"}:
+        if s in {"d", "draw", "x"} or s.startswith("draw"):
             return "Draw"
         return str(selection or "")
     if m == "Over/Under":
-        if s in {"o", "over"}:
+        if s in {"o", "over"} or s.startswith("over"):
             return "Over"
-        if s in {"u", "under"}:
+        if s in {"u", "under"} or s.startswith("under"):
             return "Under"
         return str(selection or "")
     if m == "Asian Handicap":
-        if s in {"h", "home", "1"}:
+        if s in {"h", "home", "1"} or s.startswith("home"):
             return "Home"
-        if s in {"a", "away", "2"}:
+        if s in {"a", "away", "2"} or s.startswith("away"):
             return "Away"
         return str(selection or "")
     return str(selection or "")

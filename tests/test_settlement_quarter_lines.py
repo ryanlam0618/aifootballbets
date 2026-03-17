@@ -79,6 +79,22 @@ class TestQuarterLineSettlement(unittest.TestCase):
         self.assertEqual(result, "win")
         self.assertAlmostEqual(profit, 100.0, places=6)
 
+    def test_verbose_selection_aliases_are_supported(self):
+        row_ou = _row("ou", "Over 2.5", 2.25)
+        result_ou, profit_ou = _resolve_profit(row_ou, (1, 1))
+        self.assertEqual(result_ou, "half_loss")
+        self.assertAlmostEqual(profit_ou, -50.0, places=6)
+
+        row_ah = _row("asian handicap", "Away +0.25", 0.25)
+        result_ah, profit_ah = _resolve_profit(row_ah, (1, 1))
+        self.assertEqual(result_ah, "half_win")
+        self.assertAlmostEqual(profit_ah, 50.0, places=6)
+
+        row_1x2 = _row("moneyline", "Draw FT", None)
+        result_1x2, profit_1x2 = _resolve_profit(row_1x2, (0, 0))
+        self.assertEqual(result_1x2, "win")
+        self.assertAlmostEqual(profit_1x2, 100.0, places=6)
+
 
 if __name__ == "__main__":
     unittest.main()
