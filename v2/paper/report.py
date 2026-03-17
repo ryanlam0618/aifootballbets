@@ -213,7 +213,8 @@ def generate_reports(db_path: Path, day: date, out_dir: Path) -> tuple[Path, Pat
 
         day_start_bankroll = bankroll_before_day(db_path, day, settings_v2.initial_bankroll)
         bankroll_after = day_start_bankroll + profit
-        stop_loss_triggered = profit <= (-0.20 * day_start_bankroll)
+        stop_loss_pct = max(0.0, float(settings_v2.paper_daily_stop_loss_pct))
+        stop_loss_triggered = profit <= (-stop_loss_pct * day_start_bankroll)
 
         source_rows_daily = _query_source_split(conn, day, day)
         source_lines_daily = []
@@ -237,7 +238,7 @@ def generate_reports(db_path: Path, day: date, out_dir: Path) -> tuple[Path, Pat
             f"- Profit (PnL): {profit:.2f}\n"
             f"- ROI: {roi * 100:.2f}%\n"
             f"- Bankroll (start -> end): {day_start_bankroll:.2f} -> {bankroll_after:.2f}\n"
-            f"- Stop-loss triggered (20%): {'YES' if stop_loss_triggered else 'NO'}\n"
+            f"- Stop-loss triggered ({stop_loss_pct * 100:.0f}%): {'YES' if stop_loss_triggered else 'NO'}\n"
             f"- W/L/P: {int(d[3] or 0)}/{int(d[4] or 0)}/{int(d[5] or 0)}\n"
             f"\n## By source_quality\n"
             + ("\n".join(source_lines_daily) if source_lines_daily else "- (no bets)")
