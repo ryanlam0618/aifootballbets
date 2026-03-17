@@ -16,6 +16,14 @@ from v2.paper.run_7d import run_7d
 DEFAULT_PROVIDER_JSON = REPO_ROOT / "tests" / "fixtures" / "paper7d_provider.json"
 
 
+def _reset_file(path: Path, *, label: str) -> None:
+    if not path.exists():
+        return
+    if path.is_dir():
+        raise SystemExit(f"Refusing to reset {label}: expected file but got directory: {path}")
+    path.unlink()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
@@ -31,12 +39,24 @@ def main() -> None:
     parser.add_argument("--out-dir", default="reports/v2/repro", help="output directory")
     parser.add_argument("--decision-log-dir", default="reports/v2/repro/decisions", help="decision JSONL directory")
     parser.add_argument("--run-prefix", default="paper7d_repro", help="run id prefix")
+    parser.add_argument(
+        "--reset",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="reset sqlite/snapshot files before running (default: true)",
+    )
     args = parser.parse_args()
 
     start = datetime.strptime(str(args.start_date), "%Y-%m-%d").date()
     provider_json = str(args.provider_json).strip()
     if not provider_json:
         raise SystemExit("--provider-json is required")
+
+    sqlite_path = Path(args.sqlite)
+    snapshot_db_path = Path(args.snapshot_db)
+    if args.reset:
+        _reset_file(sqlite_path, label="--sqlite")
+        _reset_file(snapshot_db_path, label="--snapshot-db")
 
     result = run_7d(
         start_date=start,
