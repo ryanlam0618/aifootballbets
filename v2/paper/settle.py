@@ -6,7 +6,9 @@ from pathlib import Path
 from typing import List, Tuple
 
 from v2.config import settings_v2
+from v2.paper.closing_odds import load_tracker_closing_odds_by_bet_id
 from v2.paper.constants import LEAGUE_UNIVERSE
+from v2.paper.clv import compute_clv
 from v2.paper.ledger import bankroll_before_day, open_unsettled_bets_for_day, settle_bet
 from v2.paper.models import MatchInfo
 from v2.paper.providers import (
@@ -246,7 +248,12 @@ def _fetch_closing_odds_map(day: date, unsettled_rows: list, league_keys: List[s
     return odds_map or {}
 
 
-def run_settlement(db_path: Path, day: date, provider: ResultsProvider | None = None) -> int:
+def run_settlement(
+    db_path: Path,
+    day: date,
+    provider: ResultsProvider | None = None,
+    closing_odds_tracker_sqlite: Path | None = None,
+) -> int:
     provider = provider or EspnResultsProvider()
     score_map, score_map_ids = _scores_with_ids(provider=provider, day=day, league_keys=LEAGUE_UNIVERSE)
 
@@ -255,6 +262,13 @@ def run_settlement(db_path: Path, day: date, provider: ResultsProvider | None = 
         return 0
 
     close_odds_map = _fetch_closing_odds_map(day=day, unsettled_rows=unsettled, league_keys=LEAGUE_UNIVERSE)
+
+    tracker_map = {}
+    tracker_db = closing_odds_tracker_sqlite
+    if tracker_db is None and str(settings_v2.paper_closing_odds_tracker_sqlite).strip():
+        tracker_db = Path(settings_v2.paper_closing_odds_tracker_sqlite)
+    if tracker_db is not None:
+        tracker_map = load_tracker_closing_odds_by_bet_id(Path(tracker_db), unsettled)
 
     bankroll = bankroll_before_day(db_path, day, settings_v2.initial_bankroll)
     settled_count = 0
@@ -291,7 +305,21 @@ def run_settlement(db_path: Path, day: date, provider: ResultsProvider | None = 
         odds_close = None
         clv_abs = None
         clv_pct = None
-        if candidate_id:
+
+        # 1) Prefer tracker-derived closing odds hook (OddsPortal snapshots), keyed by bet_id.
+        tracker_close = tracker_map.get(str(row["bet_id"]))
+        if tracker_close is not None:
+            try:
+                odds_close = float(tracker_close)
+                odds_bet = float(row["odds_bet"] or 0.0)
+                clv_abs, clv_pct = compute_clv(odds_bet=odds_bet, odds_close=odds_close)
+            except Exception:
+                odds_close = None
+                clv_abs = None
+                clv_pct = None
+
+        # 2) Fallback to provider-based close odds map.
+        if odds_close is None and candidate_id:
             market = str(row["market"] or "")
             line = str(row["line"] or "").strip()
             selection = str(row["selection"] or "")
@@ -302,9 +330,7 @@ def run_settlement(db_path: Path, day: date, provider: ResultsProvider | None = 
                 try:
                     odds_close = float(oc)
                     odds_bet = float(row["odds_bet"] or 0.0)
-                    if odds_bet > 0:
-                        clv_abs = odds_close - odds_bet
-                        clv_pct = (clv_abs / odds_bet) * 100.0
+                    clv_abs, clv_pct = compute_clv(odds_bet=odds_bet, odds_close=odds_close)
                 except Exception:
                     odds_close = None
                     clv_abs = None
@@ -355,11 +381,21 @@ def main() -> None:
         default="",
         help="optional local JSON fixture for deterministic settlement results",
     )
+    parser.add_argument(
+        "--closing-odds-tracker-sqlite",
+        default="",
+        help="optional OddsPortal tracker sqlite for closing-odds hook",
+    )
     args = parser.parse_args()
 
     day = datetime.strptime(args.date, "%Y-%m-%d").date()
     provider = _build_results_provider(args.results_provider, provider_json=args.provider_json)
-    n = run_settlement(Path(args.sqlite), day, provider=provider)
+    n = run_settlement(
+        Path(args.sqlite),
+        day,
+        provider=provider,
+        closing_odds_tracker_sqlite=(Path(args.closing_odds_tracker_sqlite) if str(args.closing_odds_tracker_sqlite).strip() else None),
+    )
     print(f"[OK] settled rows: {n} (provider={args.results_provider})")
 
 

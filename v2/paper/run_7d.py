@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 from datetime import date, datetime, timedelta
+from statistics import mean
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -31,6 +32,7 @@ def run_7d(
     decision_log_dir: Path | None = None,
     initial_bankroll: float | None = None,
     out_dir: Path | None = None,
+    closing_odds_tracker_sqlite: Path | None = None,
 ) -> dict:
     day_results: list[dict] = []
     bankroll0 = float(settings_v2.initial_bankroll if initial_bankroll is None else initial_bankroll)
@@ -61,6 +63,7 @@ def run_7d(
             db_path=db_path,
             day=day,
             provider=_build_results_provider(results_provider_name, provider_json=provider_json),
+            closing_odds_tracker_sqlite=closing_odds_tracker_sqlite,
         )
         print(f"[DAY {day.isoformat()}] settled({results_provider_name}) -> {settled}")
 
@@ -111,6 +114,9 @@ def run_7d(
         f"- Max drawdown: {summary['max_drawdown_pct']:.2f}%\n"
         f"- Winrate: {summary['winrate_pct']:.2f}%\n"
         f"- Avg edge: {summary['avg_edge_pct']:.2f}%\n"
+        f"- CLV sample size: {summary['clv_sample_size']}\n"
+        f"- Avg CLV (abs): {summary['avg_clv_abs']:.4f}\n"
+        f"- Avg CLV (%): {summary['avg_clv_pct']:.2f}%\n"
         f"- Bets: {summary['bets']}\n"
         f"- Starting bankroll: {summary['starting_bankroll']:.2f}\n"
         f"- Ending bankroll: {summary['ending_bankroll']:.2f}\n"
@@ -135,6 +141,70 @@ def run_7d(
     )
 
     return final
+
+
+def run_walkforward(
+    start_date: date,
+    end_date: date,
+    db_path: Path,
+    snapshot_db: Path,
+    run_prefix: str,
+    odds_provider_name: str = "espn",
+    results_provider_name: str = "espn",
+    provider_json: str = "",
+    allow_synthetic_odds: bool = False,
+    decision_log_dir: Path | None = None,
+    initial_bankroll: float | None = None,
+    out_dir: Path | None = None,
+    closing_odds_tracker_sqlite: Path | None = None,
+) -> dict:
+    windows: list[dict] = []
+    cur = start_date
+    output_dir = Path("reports/v2") if out_dir is None else Path(out_dir)
+
+    while cur <= end_date:
+        window = run_7d(
+            start_date=cur,
+            db_path=db_path,
+            snapshot_db=snapshot_db,
+            run_prefix=f"{run_prefix}_{cur.isoformat()}",
+            odds_provider_name=odds_provider_name,
+            results_provider_name=results_provider_name,
+            provider_json=provider_json,
+            allow_synthetic_odds=allow_synthetic_odds,
+            decision_log_dir=decision_log_dir,
+            initial_bankroll=initial_bankroll,
+            out_dir=output_dir,
+            closing_odds_tracker_sqlite=closing_odds_tracker_sqlite,
+        )
+        windows.append(window)
+        cur = cur + timedelta(days=7)
+
+    pnl_list = [float(w.get("summary", {}).get("pnl", 0.0)) for w in windows]
+    roi_list = [float(w.get("summary", {}).get("roi_pct", 0.0)) for w in windows]
+    dd_list = [float(w.get("summary", {}).get("max_drawdown_pct", 0.0)) for w in windows]
+    wr_list = [float(w.get("summary", {}).get("winrate_pct", 0.0)) for w in windows]
+    clv_list = [float(w.get("summary", {}).get("avg_clv_pct", 0.0)) for w in windows if int(w.get("summary", {}).get("clv_sample_size", 0)) > 0]
+
+    agg = {
+        "windows": len(windows),
+        "window_start": start_date.isoformat(),
+        "window_end": end_date.isoformat(),
+        "total_pnl": sum(pnl_list) if pnl_list else 0.0,
+        "avg_pnl": mean(pnl_list) if pnl_list else 0.0,
+        "avg_roi_pct": mean(roi_list) if roi_list else 0.0,
+        "avg_max_drawdown_pct": mean(dd_list) if dd_list else 0.0,
+        "avg_winrate_pct": mean(wr_list) if wr_list else 0.0,
+        "avg_clv_pct": mean(clv_list) if clv_list else 0.0,
+        "positive_windows": sum(1 for x in pnl_list if x > 0),
+    }
+
+    payload = {"aggregate": agg, "windows": windows}
+    output_dir.mkdir(parents=True, exist_ok=True)
+    out_json = output_dir / f"paper_walkforward_{start_date.isoformat()}_{end_date.isoformat()}.json"
+    out_json.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(f"[WALKFORWARD] json={out_json} windows={agg['windows']} total_pnl={agg['total_pnl']:.2f} avg_roi={agg['avg_roi_pct']:.2f}%")
+    return payload
 
 
 def main() -> None:
@@ -185,12 +255,43 @@ def main() -> None:
         default=float(settings_v2.initial_bankroll),
         help="initial bankroll for this run (default: INITIAL_BANKROLL env or 2000)",
     )
+    parser.add_argument(
+        "--walkforward-end-date",
+        default="",
+        help="optional YYYY-MM-DD; when set, runs rolling 7-day windows from --start-date to this end date",
+    )
+    parser.add_argument(
+        "--closing-odds-tracker-sqlite",
+        default="",
+        help="optional OddsPortal tracker sqlite for closing-odds hook",
+    )
     args = parser.parse_args()
 
     if str(args.start_date).strip():
         start = datetime.strptime(args.start_date, "%Y-%m-%d").date()
     else:
         start = _default_start_date_today_shanghai()
+
+    closing_tracker = Path(args.closing_odds_tracker_sqlite) if str(args.closing_odds_tracker_sqlite).strip() else None
+
+    if str(args.walkforward_end_date).strip():
+        wf_end = datetime.strptime(args.walkforward_end_date, "%Y-%m-%d").date()
+        run_walkforward(
+            start_date=start,
+            end_date=wf_end,
+            db_path=Path(args.sqlite),
+            snapshot_db=Path(args.snapshot_db),
+            run_prefix=args.run_prefix,
+            odds_provider_name=args.odds_provider,
+            results_provider_name=args.results_provider,
+            provider_json=str(args.provider_json or "").strip(),
+            allow_synthetic_odds=bool(args.allow_synthetic_odds),
+            decision_log_dir=Path(args.decision_log_dir) if str(args.decision_log_dir).strip() else None,
+            initial_bankroll=args.bankroll,
+            out_dir=Path(args.out_dir),
+            closing_odds_tracker_sqlite=closing_tracker,
+        )
+        return
 
     run_7d(
         start,
@@ -204,6 +305,7 @@ def main() -> None:
         decision_log_dir=Path(args.decision_log_dir) if str(args.decision_log_dir).strip() else None,
         initial_bankroll=args.bankroll,
         out_dir=Path(args.out_dir),
+        closing_odds_tracker_sqlite=closing_tracker,
     )
 
 

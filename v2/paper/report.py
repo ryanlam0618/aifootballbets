@@ -65,7 +65,10 @@ def summarize_window_metrics(db_path: Path, start: date, end: date, initial_bank
               SUM(CASE WHEN lower(COALESCE(result,''))='win' THEN 1 ELSE 0 END) AS wins,
               SUM(CASE WHEN lower(COALESCE(result,''))='loss' THEN 1 ELSE 0 END) AS losses,
               SUM(CASE WHEN lower(COALESCE(result,''))='push' THEN 1 ELSE 0 END) AS pushes,
-              COALESCE(AVG(model_prob - CASE WHEN odds_bet > 0 THEN (1.0 / odds_bet) ELSE 0 END), 0) AS avg_edge
+              COALESCE(AVG(model_prob - CASE WHEN odds_bet > 0 THEN (1.0 / odds_bet) ELSE 0 END), 0) AS avg_edge,
+              COALESCE(AVG(CASE WHEN odds_close IS NOT NULL THEN clv_abs ELSE NULL END), 0) AS avg_clv_abs,
+              COALESCE(AVG(CASE WHEN odds_close IS NOT NULL THEN clv_pct ELSE NULL END), 0) AS avg_clv_pct,
+              SUM(CASE WHEN odds_close IS NOT NULL THEN 1 ELSE 0 END) AS clv_sample_size
             FROM bet_log
             WHERE substr(kickoff_time_hkt, 1, 10) BETWEEN ? AND ?
             """,
@@ -79,6 +82,9 @@ def summarize_window_metrics(db_path: Path, start: date, end: date, initial_bank
         losses = int(row[4] or 0)
         pushes = int(row[5] or 0)
         avg_edge = _to_float(row[6])
+        avg_clv_abs = _to_float(row[7])
+        avg_clv_pct = _to_float(row[8])
+        clv_sample_size = int(row[9] or 0)
 
         roi_pct = (pnl / stake) * 100.0 if stake > 0 else 0.0
         winrate_pct = (wins / bets) * 100.0 if bets > 0 else 0.0
@@ -183,6 +189,9 @@ def summarize_window_metrics(db_path: Path, start: date, end: date, initial_bank
             "roi_pct": roi_pct,
             "winrate_pct": winrate_pct,
             "avg_edge_pct": avg_edge * 100.0,
+            "avg_clv_abs": avg_clv_abs,
+            "avg_clv_pct": avg_clv_pct,
+            "clv_sample_size": clv_sample_size,
             "max_drawdown_pct": max_drawdown_pct,
             "starting_bankroll": float(initial_bankroll),
             "ending_bankroll": ending_bankroll,
@@ -298,6 +307,9 @@ def generate_reports(db_path: Path, day: date, out_dir: Path) -> tuple[Path, Pat
             f"- Max drawdown: {summary['max_drawdown_pct']:.2f}%\n"
             f"- Winrate: {summary['winrate_pct']:.2f}%\n"
             f"- Avg edge: {summary['avg_edge_pct']:.2f}%\n"
+            f"- CLV sample size: {summary['clv_sample_size']}\n"
+            f"- Avg CLV (abs): {summary['avg_clv_abs']:.4f}\n"
+            f"- Avg CLV (%): {summary['avg_clv_pct']:.2f}%\n"
             f"\n## Baseline comparison\n"
             f"- Kelly-fraction PnL: {summary['pnl']:.2f}\n"
             f"- Flat-stake PnL: {summary['baseline_flat']['pnl']:.2f}\n"

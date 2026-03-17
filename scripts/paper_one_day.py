@@ -38,6 +38,11 @@ def main() -> None:
     parser.add_argument("--results-provider", choices=["espn", "sofascore"], default="espn")
     parser.add_argument("--allow-synthetic-odds", action="store_true")
     parser.add_argument("--decision-log", default="")
+    parser.add_argument(
+        "--closing-odds-tracker-sqlite",
+        default="",
+        help="optional OddsPortal tracker sqlite for closing-odds hook",
+    )
     args = parser.parse_args()
 
     day = datetime.strptime(args.date, "%Y-%m-%d").date()
@@ -61,7 +66,12 @@ def main() -> None:
         decision_log_path=decision_log_path,
     )
 
-    settled = run_settlement(db_path=Path(args.sqlite), day=day, provider=results_provider)
+    settled = run_settlement(
+        db_path=Path(args.sqlite),
+        day=day,
+        provider=results_provider,
+        closing_odds_tracker_sqlite=(Path(args.closing_odds_tracker_sqlite) if str(args.closing_odds_tracker_sqlite).strip() else None),
+    )
     daily, weekly = generate_reports(db_path=Path(args.sqlite), day=day, out_dir=Path(args.out_dir))
 
     print(f"[OK] date={day.isoformat()}")

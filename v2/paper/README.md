@@ -27,9 +27,11 @@ Lightweight stdlib-first paper trading flow for football value betting.
 - Settlement correctness for OU/AH quarter lines (`0.25/0.75` split into half-lines).
 - Decision logging JSONL per day with fields:
   - `match`, `market`, `line`, `odds_source`, `source_quality`, `model_prob`, `edge`, `kelly_stake`, `constraints_triggered`
+- De-vig implied probabilities for 1X2 / OU / AH (toggle: `PAPER_DEVIG_ENABLED=1`).
 - Daily + weekly markdown reports.
 - 7-day final summary with:
   - final PnL / ROI / max drawdown / winrate / average edge
+  - CLV summary (`avg_clv_abs`, `avg_clv_pct`, `clv_sample_size`) when closing odds exist
   - by market type
   - baseline comparison (flat stake vs kelly-fraction)
 
@@ -50,6 +52,8 @@ PAPER_MAX_STAKE_FRACTION_PER_BET=0.05
 PAPER_MAX_LEAGUE_EXPOSURE_FRACTION_PER_DAY=0.20
 PAPER_ALLOW_SYNTHETIC_ODDS=0
 PAPER_FLAT_STAKE_FRACTION=0.02
+PAPER_DEVIG_ENABLED=1
+PAPER_CLOSING_ODDS_TRACKER_SQLITE=
 # Optional: ODDS_API_KEY=...
 ```
 
