@@ -1,12 +1,14 @@
+import sqlite3
 import tempfile
 import unittest
 from datetime import date
 from pathlib import Path
+from unittest.mock import patch
 
 from v2.paper.db import ensure_tracking_schema
 from v2.paper.ledger import open_unsettled_bets_for_day
 from v2.paper.models import MatchInfo
-from v2.paper.providers import EspnResultsProvider, OddsProvider
+from v2.paper.providers import EspnResultsProvider, OddsProvider, match_key
 from v2.paper.run_day import run_for_day
 from v2.paper.settle import run_settlement
 
@@ -36,6 +38,12 @@ class StaticResultsProvider(EspnResultsProvider):
         by_names = {"brentford|wolverhampton wanderers": (1, 2)}
         by_ids = {"740887": (1, 2), "soccer_epl:740887": (1, 2)}
         return by_names, by_ids
+
+
+class NamesOnlyResultsProvider(EspnResultsProvider):
+    def fetch_ft_scores_with_ids(self, day, league_keys):
+        # Explicitly exercise names-only fallback path (no match-id map available).
+        return {"brentford|wolverhampton wanderers": (1, 2)}, {}
 
 
 class TestEspnProviderAndResultsOnly(unittest.TestCase):
@@ -83,6 +91,59 @@ class TestEspnProviderAndResultsOnly(unittest.TestCase):
                 day=date(2026, 3, 16),
                 provider=StaticResultsProvider(),
             )
+            self.assertGreaterEqual(settled, 1)
+
+    def test_settlement_falls_back_to_name_mapping_when_match_id_missing(self):
+        with tempfile.TemporaryDirectory() as td:
+            db_path = Path(td) / "tracking.sqlite"
+            ensure_tracking_schema(db_path)
+
+            run_for_day(
+                day=date(2026, 3, 16),
+                db_path=db_path,
+                snapshot_db=Path(td) / "snap.sqlite",
+                initial_bankroll=2000.0,
+                run_id="settle_by_name_ut",
+                provider=EmptyOddsRealFixtureProvider(),
+                allow_synthetic_odds=True,
+            )
+
+            conn = sqlite3.connect(str(db_path))
+            try:
+                row = conn.execute(
+                    "SELECT notes, home, away, market, line, selection, stake, odds_bet FROM bet_log LIMIT 1"
+                ).fetchone()
+                self.assertIsNotNone(row)
+                notes, home, away, market, line, selection, stake, odds_bet = row
+                self.assertIn("match_id=", str(notes))
+
+                conn.execute(
+                    "UPDATE bet_log SET notes = REPLACE(notes, ?, '')",
+                    ("match_id=soccer_epl:740887",),
+                )
+                conn.commit()
+            finally:
+                conn.close()
+
+            calls = {"seen": 0}
+            expected_k = match_key("Brentford", "Wolverhampton Wanderers")
+
+            def _spy_resolve_profit(bet_row, score):
+                calls["seen"] += 1
+                # Settlement should still succeed by team-name key after match_id removal.
+                self.assertEqual(match_key(str(bet_row["home"]), str(bet_row["away"])), expected_k)
+                self.assertEqual(score, (1, 2))
+                # Keep deterministic profit to avoid coupling to strategy internals.
+                return "loss", -float(bet_row["stake"])
+
+            with patch("v2.paper.settle._resolve_profit", side_effect=_spy_resolve_profit):
+                settled = run_settlement(
+                    db_path=db_path,
+                    day=date(2026, 3, 16),
+                    provider=NamesOnlyResultsProvider(),
+                )
+
+            self.assertGreaterEqual(calls["seen"], 1)
             self.assertGreaterEqual(settled, 1)
 
 
