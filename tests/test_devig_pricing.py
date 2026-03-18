@@ -1,3 +1,4 @@
+import math
 import unittest
 
 from v2.paper.pricing import build_devig_implied_map
@@ -41,6 +42,24 @@ class TestDevigPricing(unittest.TestCase):
         implied = build_devig_implied_map(odds_map)
         self.assertAlmostEqual(implied[("m2", "1X2", "Home")], 0.5, places=9)
         self.assertAlmostEqual(implied[("m2", "1X2", "Away")], 1 / 3, places=9)
+
+    def test_invalid_price_in_group_does_not_pollute_other_selections(self):
+        odds_map = {
+            ("m3", "1X2", "Home"): 2.50,
+            ("m3", "1X2", "Draw"): 3.20,
+            ("m3", "1X2", "Away"): 1.00,  # invalid -> nan raw implied
+            ("m4", "Over/Under 2.5", "Over"): 1.95,
+            ("m4", "Over/Under 2.5", "Under"): 0.00,  # invalid -> nan raw implied
+        }
+
+        implied = build_devig_implied_map(odds_map)
+
+        self.assertAlmostEqual(implied[("m3", "1X2", "Home")], 1 / 2.5, places=9)
+        self.assertAlmostEqual(implied[("m3", "1X2", "Draw")], 1 / 3.2, places=9)
+        self.assertTrue(math.isnan(implied[("m3", "1X2", "Away")]))
+
+        self.assertAlmostEqual(implied[("m4", "Over/Under 2.5", "Over")], 1 / 1.95, places=9)
+        self.assertTrue(math.isnan(implied[("m4", "Over/Under 2.5", "Under")]))
 
 
 if __name__ == "__main__":

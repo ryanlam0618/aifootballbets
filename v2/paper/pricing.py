@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from typing import Dict, Tuple
 
 
@@ -14,9 +15,15 @@ def implied_probability_raw(odds: float) -> float:
     return (1.0 / o) if o > 1.0 else float("nan")
 
 
+def _all_finite(values: tuple[float, ...]) -> bool:
+    return all(math.isfinite(v) for v in values)
+
+
 def devig_two_way(odds_a: float, odds_b: float) -> tuple[float, float]:
     pa = implied_probability_raw(odds_a)
     pb = implied_probability_raw(odds_b)
+    if not _all_finite((pa, pb)):
+        return pa, pb
     s = pa + pb
     if s <= 0:
         return pa, pb
@@ -27,6 +34,8 @@ def devig_1x2(odds_home: float, odds_draw: float, odds_away: float) -> tuple[flo
     ph = implied_probability_raw(odds_home)
     pd = implied_probability_raw(odds_draw)
     pa = implied_probability_raw(odds_away)
+    if not _all_finite((ph, pd, pa)):
+        return ph, pd, pa
     s = ph + pd + pa
     if s <= 0:
         return ph, pd, pa
