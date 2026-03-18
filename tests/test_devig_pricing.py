@@ -61,6 +61,32 @@ class TestDevigPricing(unittest.TestCase):
         self.assertAlmostEqual(implied[("m4", "Over/Under 2.5", "Over")], 1 / 1.95, places=9)
         self.assertTrue(math.isnan(implied[("m4", "Over/Under 2.5", "Under")]))
 
+    def test_asian_handicap_pairs_home_minus_with_away_plus_same_line(self):
+        odds_map = {
+            ("m5", "Asian Handicap -0.5", "Home"): 2.02,
+            ("m5", "Asian Handicap 0.5", "Away"): 1.90,
+        }
+
+        implied = build_devig_implied_map(odds_map)
+
+        # Should de-vig as one 2-way market instead of falling back to raw implieds
+        self.assertAlmostEqual(
+            implied[("m5", "Asian Handicap -0.5", "Home")] + implied[("m5", "Asian Handicap 0.5", "Away")],
+            1.0,
+            places=9,
+        )
+
+    def test_over_under_groups_equivalent_numeric_lines(self):
+        odds_map = {
+            ("m6", "Over/Under 2.5", "Over"): 1.95,
+            ("m6", "Over/Under 2.50", "Under"): 1.95,
+        }
+
+        implied = build_devig_implied_map(odds_map)
+
+        self.assertAlmostEqual(implied[("m6", "Over/Under 2.5", "Over")], 0.5, places=9)
+        self.assertAlmostEqual(implied[("m6", "Over/Under 2.50", "Under")], 0.5, places=9)
+
 
 if __name__ == "__main__":
     unittest.main()
