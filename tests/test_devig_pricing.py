@@ -87,6 +87,35 @@ class TestDevigPricing(unittest.TestCase):
         self.assertAlmostEqual(implied[("m6", "Over/Under 2.5", "Over")], 0.5, places=9)
         self.assertAlmostEqual(implied[("m6", "Over/Under 2.50", "Under")], 0.5, places=9)
 
+    def test_selection_aliases_are_canonicalized_before_grouping(self):
+        odds_map = {
+            ("m7", "1X2", "h"): 2.50,
+            ("m7", "1X2", "x"): 3.20,
+            ("m7", "1X2", "a"): 2.80,
+            ("m8", "Over/Under 2.5", "o"): 1.95,
+            ("m8", "Over/Under 2.5", "u"): 1.95,
+            ("m9", "Asian Handicap -0.5", "h"): 2.02,
+            ("m9", "Asian Handicap 0.5", "a"): 1.90,
+        }
+
+        implied = build_devig_implied_map(odds_map)
+
+        self.assertAlmostEqual(
+            implied[("m7", "1X2", "h")] + implied[("m7", "1X2", "x")] + implied[("m7", "1X2", "a")],
+            1.0,
+            places=9,
+        )
+        self.assertAlmostEqual(
+            implied[("m8", "Over/Under 2.5", "o")] + implied[("m8", "Over/Under 2.5", "u")],
+            1.0,
+            places=9,
+        )
+        self.assertAlmostEqual(
+            implied[("m9", "Asian Handicap -0.5", "h")] + implied[("m9", "Asian Handicap 0.5", "a")],
+            1.0,
+            places=9,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

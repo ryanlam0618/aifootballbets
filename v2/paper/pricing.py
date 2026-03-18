@@ -54,6 +54,35 @@ def _canonical_group_key(match_id: str, market_key: str, selection: str) -> tupl
     return None
 
 
+def _canonical_selection(market_family: str, selection: str) -> str | None:
+    s = str(selection or "").strip().lower()
+
+    if market_family == "1X2":
+        if s in {"home", "h", "1"}:
+            return "Home"
+        if s in {"draw", "d", "x"}:
+            return "Draw"
+        if s in {"away", "a", "2"}:
+            return "Away"
+        return None
+
+    if market_family == "Over/Under":
+        if s in {"over", "o"}:
+            return "Over"
+        if s in {"under", "u"}:
+            return "Under"
+        return None
+
+    if market_family == "Asian Handicap":
+        if s in {"home", "h"}:
+            return "Home"
+        if s in {"away", "a"}:
+            return "Away"
+        return None
+
+    return None
+
+
 def devig_two_way(odds_a: float, odds_b: float) -> tuple[float, float]:
     pa = implied_probability_raw(odds_a)
     pb = implied_probability_raw(odds_b)
@@ -98,7 +127,11 @@ def build_devig_implied_map(odds_map: Dict[OddsKey, float]) -> Dict[OddsKey, flo
         gk = _canonical_group_key(match_id, market_key, selection)
         if gk is None:
             continue
-        grouped.setdefault(gk, {}).setdefault(selection, []).append((k, float(odd)))
+        _mid, family, _line = gk
+        sel = _canonical_selection(family, selection)
+        if sel is None:
+            continue
+        grouped.setdefault(gk, {}).setdefault(sel, []).append((k, float(odd)))
 
     for (_match_id, market_family, _line_norm), sel_map in grouped.items():
         if market_family == "1X2":
