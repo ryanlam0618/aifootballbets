@@ -53,6 +53,23 @@ def _query_source_split(conn: sqlite3.Connection, start: date, end: date):
     ).fetchall()
 
 
+def _query_clv_source_split(conn: sqlite3.Connection, start: date, end: date):
+    return conn.execute(
+        """
+        SELECT
+          COALESCE(source_quality, 'synthetic_odds') AS source_quality,
+          SUM(CASE WHEN odds_close IS NOT NULL THEN 1 ELSE 0 END) AS clv_sample_size,
+          COALESCE(AVG(CASE WHEN odds_close IS NOT NULL THEN clv_abs ELSE NULL END), 0) AS avg_clv_abs,
+          COALESCE(AVG(CASE WHEN odds_close IS NOT NULL THEN clv_pct ELSE NULL END), 0) AS avg_clv_pct
+        FROM bet_log
+        WHERE substr(kickoff_time_hkt, 1, 10) BETWEEN ? AND ?
+        GROUP BY COALESCE(source_quality, 'synthetic_odds')
+        ORDER BY source_quality
+        """,
+        (start.isoformat(), end.isoformat()),
+    ).fetchall()
+
+
 def summarize_window_metrics(db_path: Path, start: date, end: date, initial_bankroll: float) -> dict:
     conn = sqlite3.connect(str(db_path))
     try:
@@ -85,6 +102,7 @@ def summarize_window_metrics(db_path: Path, start: date, end: date, initial_bank
         avg_clv_abs = _to_float(row[7])
         avg_clv_pct = _to_float(row[8])
         clv_sample_size = int(row[9] or 0)
+        clv_coverage_pct = (clv_sample_size / bets) * 100.0 if bets > 0 else 0.0
 
         roi_pct = (pnl / stake) * 100.0 if stake > 0 else 0.0
         winrate_pct = (wins / bets) * 100.0 if bets > 0 else 0.0
@@ -150,6 +168,18 @@ def summarize_window_metrics(db_path: Path, start: date, end: date, initial_bank
                 }
             )
 
+        clv_source_rows = _query_clv_source_split(conn, start, end)
+        clv_by_source_quality = []
+        for r in clv_source_rows:
+            clv_by_source_quality.append(
+                {
+                    "source_quality": str(r[0]),
+                    "clv_sample_size": int(r[1] or 0),
+                    "avg_clv_abs": _to_float(r[2]),
+                    "avg_clv_pct": _to_float(r[3]),
+                }
+            )
+
         # Baseline: flat stake fraction per bet against starting bankroll.
         flat_frac = max(0.0, float(settings_v2.paper_flat_stake_fraction))
         flat_stake = initial_bankroll * flat_frac
@@ -192,10 +222,12 @@ def summarize_window_metrics(db_path: Path, start: date, end: date, initial_bank
             "avg_clv_abs": avg_clv_abs,
             "avg_clv_pct": avg_clv_pct,
             "clv_sample_size": clv_sample_size,
+            "clv_coverage_pct": clv_coverage_pct,
             "max_drawdown_pct": max_drawdown_pct,
             "starting_bankroll": float(initial_bankroll),
             "ending_bankroll": ending_bankroll,
             "by_market": by_market,
+            "clv_by_source_quality": clv_by_source_quality,
             "baseline_flat": {
                 "stake_per_bet": flat_stake,
                 "total_stake": baseline_total_stake,

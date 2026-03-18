@@ -115,6 +115,7 @@ def run_7d(
         f"- Winrate: {summary['winrate_pct']:.2f}%\n"
         f"- Avg edge: {summary['avg_edge_pct']:.2f}%\n"
         f"- CLV sample size: {summary['clv_sample_size']}\n"
+        f"- CLV coverage: {summary.get('clv_coverage_pct', 0.0):.2f}%\n"
         f"- Avg CLV (abs): {summary['avg_clv_abs']:.4f}\n"
         f"- Avg CLV (%): {summary['avg_clv_pct']:.2f}%\n"
         f"- Bets: {summary['bets']}\n"
@@ -131,6 +132,18 @@ def run_7d(
             f"- {row['market_type']}: bets={row['bets']}, pnl={row['pnl']:.2f}, "
             f"roi={row['roi_pct']:.2f}%, winrate={row['winrate_pct']:.2f}%, avg_edge={row['avg_edge_pct']:.2f}%\n"
         )
+
+    md += "\n## CLV by source_quality\n"
+    clv_by_source = summary.get("clv_by_source_quality", [])
+    if clv_by_source:
+        for row in clv_by_source:
+            md += (
+                f"- {row['source_quality']}: clv_n={row['clv_sample_size']}, "
+                f"avg_clv_abs={row['avg_clv_abs']:.4f}, avg_clv_pct={row['avg_clv_pct']:.2f}%\n"
+            )
+    else:
+        md += "- (no CLV samples)\n"
+
     out_md.write_text(md, encoding="utf-8")
 
     print(f"[7D SUMMARY] json={out_json} md={out_md}")

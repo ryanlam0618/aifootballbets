@@ -6,7 +6,7 @@ from pathlib import Path
 
 from v2.config import settings_v2
 from v2.paper.db import ensure_tracking_schema
-from v2.paper.report import generate_reports
+from v2.paper.report import generate_reports, summarize_window_metrics
 from v2.paper.models import MatchInfo
 from v2.paper.providers import OddsProvider
 from v2.paper.run_day import run_for_day
@@ -251,8 +251,9 @@ class TestSelectionConstraintsAndReports(unittest.TestCase):
                     INSERT INTO bet_log (
                       bet_id, kickoff_time_hkt, league, home, away, market, market_type, line, selection,
                       odds_bet, model_prob, ev, kelly_pct, stake, result, profit, bankroll,
-                      source_book, source_file, run_id, source_quality, odds_source
-                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                      source_book, source_file, run_id, source_quality, odds_source,
+                      odds_close, clv_abs, clv_pct
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                     """,
                     (
                         "r1",
@@ -277,6 +278,9 @@ class TestSelectionConstraintsAndReports(unittest.TestCase):
                         "ut",
                         "real_odds",
                         "espn",
+                        2.0,
+                        -0.1,
+                        -4.7619047619,
                     ),
                 )
                 conn.execute(
@@ -284,8 +288,9 @@ class TestSelectionConstraintsAndReports(unittest.TestCase):
                     INSERT INTO bet_log (
                       bet_id, kickoff_time_hkt, league, home, away, market, market_type, line, selection,
                       odds_bet, model_prob, ev, kelly_pct, stake, result, profit, bankroll,
-                      source_book, source_file, run_id, source_quality, odds_source
-                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                      source_book, source_file, run_id, source_quality, odds_source,
+                      odds_close, clv_abs, clv_pct
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                     """,
                     (
                         "s1",
@@ -310,6 +315,9 @@ class TestSelectionConstraintsAndReports(unittest.TestCase):
                         "ut",
                         "synthetic_odds",
                         "synthetic",
+                        None,
+                        None,
+                        None,
                     ),
                 )
                 conn.commit()
@@ -321,6 +329,19 @@ class TestSelectionConstraintsAndReports(unittest.TestCase):
             self.assertIn("## By source_quality", text)
             self.assertIn("real_odds", text)
             self.assertIn("synthetic_odds", text)
+
+            summary = summarize_window_metrics(
+                db_path=db_path,
+                start=date(2026, 3, 16),
+                end=date(2026, 3, 16),
+                initial_bankroll=2000.0,
+            )
+            self.assertAlmostEqual(summary["clv_coverage_pct"], 50.0, places=9)
+            by_source = {str(r["source_quality"]): r for r in summary["clv_by_source_quality"]}
+            self.assertIn("real_odds", by_source)
+            self.assertIn("synthetic_odds", by_source)
+            self.assertEqual(int(by_source["real_odds"]["clv_sample_size"]), 1)
+            self.assertEqual(int(by_source["synthetic_odds"]["clv_sample_size"]), 0)
 
     def test_results_only_mode_is_selected_and_reported(self):
         old_day = settings_v2.paper_max_bets_per_day
