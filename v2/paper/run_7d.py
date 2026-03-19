@@ -146,6 +146,17 @@ def run_7d(
     else:
         md += "- (no CLV samples)\n"
 
+    md += "\n## Closing odds coverage by source\n"
+    close_cov = summary.get("close_odds_coverage", [])
+    if close_cov:
+        for row in close_cov:
+            md += (
+                f"- close_odds={row.get('close_odds_source', 'none')}: bets={int(row.get('bets', 0) or 0)}, "
+                f"clv_n={int(row.get('clv_sample_size', 0) or 0)}, coverage={float(row.get('coverage_pct', 0.0)):.2f}%\n"
+            )
+    else:
+        md += "- (no bets)\n"
+
     out_md.write_text(md, encoding="utf-8")
 
     print(f"[7D SUMMARY] json={out_json} md={out_md}")

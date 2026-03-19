@@ -71,6 +71,22 @@ def _query_clv_source_split(conn: sqlite3.Connection, start: date, end: date):
     ).fetchall()
 
 
+def _query_close_odds_source_coverage(conn: sqlite3.Connection, start: date, end: date):
+    return conn.execute(
+        """
+        SELECT
+          COALESCE(close_odds_source, 'none') AS close_odds_source,
+          COUNT(*) AS bets,
+          SUM(CASE WHEN odds_close IS NOT NULL THEN 1 ELSE 0 END) AS clv_sample_size
+        FROM bet_log
+        WHERE substr(kickoff_time_hkt, 1, 10) BETWEEN ? AND ?
+        GROUP BY COALESCE(close_odds_source, 'none')
+        ORDER BY bets DESC, close_odds_source ASC
+        """,
+        (start.isoformat(), end.isoformat()),
+    ).fetchall()
+
+
 def summarize_window_metrics(db_path: Path, start: date, end: date, initial_bankroll: float) -> dict:
     conn = sqlite3.connect(str(db_path))
     try:
@@ -182,6 +198,20 @@ def summarize_window_metrics(db_path: Path, start: date, end: date, initial_bank
                 }
             )
 
+        close_source_rows = _query_close_odds_source_coverage(conn, start, end)
+        close_odds_coverage = []
+        for r in close_source_rows:
+            bets_src = int(r[1] or 0)
+            clv_n_src = int(r[2] or 0)
+            close_odds_coverage.append(
+                {
+                    "close_odds_source": str(r[0]),
+                    "bets": bets_src,
+                    "clv_sample_size": clv_n_src,
+                    "coverage_pct": (clv_n_src / bets_src) * 100.0 if bets_src > 0 else 0.0,
+                }
+            )
+
         # Baseline: flat stake fraction per bet against starting bankroll.
         flat_frac = max(0.0, float(settings_v2.paper_flat_stake_fraction))
         flat_stake = initial_bankroll * flat_frac
@@ -230,6 +260,7 @@ def summarize_window_metrics(db_path: Path, start: date, end: date, initial_bank
             "ending_bankroll": ending_bankroll,
             "by_market": by_market,
             "clv_by_source_quality": clv_by_source_quality,
+            "close_odds_coverage": close_odds_coverage,
             "baseline_flat": {
                 "stake_per_bet": flat_stake,
                 "total_stake": baseline_total_stake,
@@ -342,6 +373,16 @@ def generate_reports(db_path: Path, day: date, out_dir: Path) -> tuple[Path, Pat
                 f"  - {sq} (close_odds={close_src}): clv_sample_size={ss}, avg_clv_abs={avg_abs:.4f}, avg_clv_pct={avg_pct:.2f}%"
             )
 
+        close_source_lines = []
+        for row in summary.get("close_odds_coverage", []):
+            close_src = str(row.get("close_odds_source", "none"))
+            bets_src = int(row.get("bets", 0) or 0)
+            clv_n_src = int(row.get("clv_sample_size", 0) or 0)
+            cov_src = _to_float(row.get("coverage_pct", 0.0))
+            close_source_lines.append(
+                f"  - close_odds={close_src}: bets={bets_src}, clv_sample_size={clv_n_src}, coverage={cov_src:.2f}%"
+            )
+
         weekly_md = (
             f"# Paper Weekly Report ({start.isoformat()} -> {day.isoformat()})\n\n"
             f"- Bets: {int(w[0] or 0)}\n"
@@ -373,6 +414,9 @@ def generate_reports(db_path: Path, day: date, out_dir: Path) -> tuple[Path, Pat
             + "\n"
             f"\n## CLV by source_quality\n"
             + ("\n".join(clv_source_lines) if clv_source_lines else "- (no CLV samples)")
+            + "\n"
+            f"\n## Closing odds coverage by source\n"
+            + ("\n".join(close_source_lines) if close_source_lines else "- (no bets)")
             + "\n"
         )
         weekly_path.write_text(weekly_md, encoding="utf-8")

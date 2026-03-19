@@ -328,6 +328,7 @@ class TestSelectionConstraintsAndReports(unittest.TestCase):
             text = weekly.read_text(encoding="utf-8")
             self.assertIn("## By source_quality", text)
             self.assertIn("## CLV by source_quality", text)
+            self.assertIn("## Closing odds coverage by source", text)
             self.assertIn("CLV coverage: 50.00%", text)
             self.assertIn("real_odds", text)
             self.assertIn("synthetic_odds", text)
@@ -344,6 +345,12 @@ class TestSelectionConstraintsAndReports(unittest.TestCase):
             self.assertIn(("synthetic_odds", "none"), by_source)
             self.assertEqual(int(by_source[("real_odds", "none")]["clv_sample_size"]), 1)
             self.assertEqual(int(by_source[("synthetic_odds", "none")]["clv_sample_size"]), 0)
+
+            close_cov = {str(r.get("close_odds_source", "none")): r for r in summary.get("close_odds_coverage", [])}
+            self.assertIn("none", close_cov)
+            self.assertEqual(int(close_cov["none"]["bets"]), 2)
+            self.assertEqual(int(close_cov["none"]["clv_sample_size"]), 1)
+            self.assertAlmostEqual(float(close_cov["none"]["coverage_pct"]), 50.0, places=9)
 
     def test_results_only_mode_is_selected_and_reported(self):
         old_day = settings_v2.paper_max_bets_per_day
