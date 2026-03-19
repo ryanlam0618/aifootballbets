@@ -35,17 +35,45 @@ def _format_lineup_block(lineup: dict | None, side_key: str) -> str:
 
 
 def collect_lineup_and_injury(home_team: str, away_team: str, match_date: str) -> Dict[str, Any]:
+    """Collect lineup + injuries.
+
+    Default OFF (no network / no SofaScore dependency) unless:
+      SOFASCORE_ENABLED=1
+
+    Schema must stay stable so downstream pipeline continues working.
+    """
+
     # v2 standalone fallback (no v1 src dependencies)
-    # Keep schema stable so downstream pipeline continues working.
     lineup = {
         "home_team": {"name": home_team, "formation": "Unknown", "starters": [], "substitutes": []},
         "away_team": {"name": away_team, "formation": "Unknown", "starters": [], "substitutes": []},
+        "source": "v2-standalone-fallback",
     }
     injury = {
         "home": {"injuries": [], "suspensions": [], "total_impact": 0.0},
         "away": {"injuries": [], "suspensions": [], "total_impact": 0.0},
         "source": "v2-standalone-fallback",
     }
+
+    try:
+        from v2.ingest.sofascore_lineup import fetch_lineup_and_injury, sofascore_enabled
+
+        if sofascore_enabled():
+            # Save raw JSON responses for audit/backtest replay.
+            raw_dir = Path("data") / "v2" / "sofascore_raw"
+            payload = fetch_lineup_and_injury(
+                home_team=home_team,
+                away_team=away_team,
+                match_date=match_date,
+                raw_dir=raw_dir,
+                sleep_s=0.2,
+            )
+            if isinstance(payload, dict) and payload.get("lineup"):
+                return payload
+    except Exception:
+        # never fail the main pipeline
+        pass
+
     return {"lineup": lineup, "injury": injury}
 
 

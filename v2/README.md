@@ -52,7 +52,31 @@ DEFAULT_TIMEZONE=Asia/Hong_Kong
 ODDSHARVESTER_DATA_DIR=OddsHarvester
 ODDSHARVESTER_CMD=
 ODDS_API_MAX_LEAGUES_PER_RUN=4
+
+# SofaScore lineup + missingPlayers (default OFF)
+# 設成 1 才會在 ingest/team_news.collect_lineup_and_injury 啟用 SofaScore 公開 JSON endpoints
+SOFASCORE_ENABLED=0
 ```
+
+## SofaScore lineup / injury ingestion (optional, default OFF)
+
+- 來源：SofaScore 公開 JSON endpoints（例如：
+  - `/api/v1/sport/football/scheduled-events/YYYY-MM-DD`
+  - `/api/v1/event/{event_id}/lineups`
+  - `/api/v1/event/{event_id}`（備用 / debug）
+- Raw JSON 落地：`data/v2/sofascore_raw/`（方便 backtest replay / debug）
+
+啟用：
+
+```bash
+SOFASCORE_ENABLED=1 python -m v2.main --matches "soccer_epl|Fulham vs Arsenal"
+```
+
+Rate limit / etiquette（非常保守）：
+
+- 每個 request 之間 sleep ~0.2s（module 內預設）
+- 建議只在需要 lineup / missingPlayers 時啟用
+- 若遇到 429/封鎖，請加大 sleep 或改用本地 raw replay
 
 - `ODDSHARVESTER_DATA_DIR`：OddsHarvester 輸出 JSON 目錄（會在 24h 內掃描）
 - `ODDSHARVESTER_CMD`：可選；每次 run 前先執行一次刷新命令
