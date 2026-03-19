@@ -35,6 +35,16 @@ def _try_float(text: str) -> float | None:
         return None
 
 
+def _line_from_selection(selection: str) -> float | None:
+    # Extract first signed/unsigned decimal token from labels like
+    # "Over 2.5", "Under 2,5", "Home -0.5", "Away +0.5".
+    s = str(selection or "").strip().replace("−", "-").replace(",", ".")
+    m = re.search(r"([-+]?\d+(?:\.\d+)?)", s)
+    if not m:
+        return None
+    return _try_float(m.group(1))
+
+
 def _canonical_group_key(match_id: str, market_key: str, selection: str) -> tuple[str, str, str] | None:
     m_raw = str(market_key or "").strip()
     m_lower = m_raw.lower()
@@ -51,6 +61,8 @@ def _canonical_group_key(match_id: str, market_key: str, selection: str) -> tupl
                 tail = tail.replace(prefix, "", 1).strip()
                 break
         line = _try_float(tail)
+        if line is None:
+            line = _line_from_selection(selection)
         line_norm = f"{line:g}" if line is not None else tail
         return (str(match_id), "Over/Under", line_norm)
 
@@ -62,6 +74,8 @@ def _canonical_group_key(match_id: str, market_key: str, selection: str) -> tupl
                 tail = tail.replace(prefix, "", 1).strip()
                 break
         line = _try_float(tail)
+        if line is None:
+            line = _line_from_selection(selection)
         if line is None:
             line_norm = tail
         else:

@@ -189,6 +189,27 @@ class TestDevigPricing(unittest.TestCase):
             places=9,
         )
 
+    def test_fallback_to_selection_line_when_market_line_is_missing(self):
+        odds_map = {
+            ("m17", "OU", "Over 2.5"): 1.93,
+            ("m17", "Over/Under", "Under 2,50"): 1.97,
+            ("m18", "AH", "Home -0.25"): 1.98,
+            ("m18", "Asian Handicap", "Away +0,25"): 1.94,
+        }
+
+        implied = build_devig_implied_map(odds_map)
+
+        self.assertAlmostEqual(
+            implied[("m17", "OU", "Over 2.5")] + implied[("m17", "Over/Under", "Under 2,50")],
+            1.0,
+            places=9,
+        )
+        self.assertAlmostEqual(
+            implied[("m18", "AH", "Home -0.25")] + implied[("m18", "Asian Handicap", "Away +0,25")],
+            1.0,
+            places=9,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
