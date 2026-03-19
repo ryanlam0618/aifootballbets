@@ -27,19 +27,31 @@ def _try_float(text: str) -> float | None:
 
 
 def _canonical_group_key(match_id: str, market_key: str, selection: str) -> tuple[str, str, str] | None:
-    m = str(market_key or "").strip()
+    m_raw = str(market_key or "").strip()
+    m_lower = m_raw.lower()
 
-    if m == "1X2":
+    # 1X2 aliases from mixed providers
+    if m_lower in {"1x2", "match odds", "moneyline", "h2h"}:
         return (str(match_id), "1X2", "")
 
-    if m.startswith("Over/Under"):
-        tail = m.replace("Over/Under", "", 1).strip()
+    # Over/Under aliases (e.g. "OU 2.5", "O/U 2.5", "totals 2.5")
+    if m_lower.startswith("over/under") or m_lower.startswith("ou") or m_lower.startswith("o/u") or m_lower.startswith("totals"):
+        tail = m_raw
+        for prefix in ("Over/Under", "over/under", "OU", "ou", "O/U", "o/u", "Totals", "totals"):
+            if tail.startswith(prefix):
+                tail = tail.replace(prefix, "", 1).strip()
+                break
         line = _try_float(tail)
         line_norm = f"{line:g}" if line is not None else tail
         return (str(match_id), "Over/Under", line_norm)
 
-    if m.startswith("Asian Handicap"):
-        tail = m.replace("Asian Handicap", "", 1).strip()
+    # Asian Handicap aliases ("AH -0.5", "Asian -0.5", "spreads -0.5")
+    if m_lower.startswith("asian handicap") or m_lower.startswith("ah") or m_lower.startswith("asian") or m_lower.startswith("spreads"):
+        tail = m_raw
+        for prefix in ("Asian Handicap", "asian handicap", "AH", "ah", "Asian", "asian", "Spreads", "spreads"):
+            if tail.startswith(prefix):
+                tail = tail.replace(prefix, "", 1).strip()
+                break
         line = _try_float(tail)
         if line is None:
             line_norm = tail

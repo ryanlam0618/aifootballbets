@@ -116,6 +116,37 @@ class TestDevigPricing(unittest.TestCase):
             places=9,
         )
 
+    def test_market_aliases_are_canonicalized_before_grouping(self):
+        odds_map = {
+            ("m10", "match odds", "1"): 2.50,
+            ("m10", "h2h", "x"): 3.20,
+            ("m10", "moneyline", "2"): 2.80,
+            ("m11", "OU 2.5", "Over"): 1.95,
+            ("m11", "Totals 2.50", "Under"): 1.95,
+            ("m12", "AH -0.5", "Home"): 2.02,
+            ("m12", "spreads 0.5", "Away"): 1.90,
+        }
+
+        implied = build_devig_implied_map(odds_map)
+
+        self.assertAlmostEqual(
+            implied[("m10", "match odds", "1")]
+            + implied[("m10", "h2h", "x")]
+            + implied[("m10", "moneyline", "2")],
+            1.0,
+            places=9,
+        )
+        self.assertAlmostEqual(
+            implied[("m11", "OU 2.5", "Over")] + implied[("m11", "Totals 2.50", "Under")],
+            1.0,
+            places=9,
+        )
+        self.assertAlmostEqual(
+            implied[("m12", "AH -0.5", "Home")] + implied[("m12", "spreads 0.5", "Away")],
+            1.0,
+            places=9,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
