@@ -9,7 +9,10 @@ from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
-import httpx
+try:
+    import httpx  # type: ignore
+except Exception:  # pragma: no cover - exercised in envs without httpx
+    httpx = None
 
 
 SOFASCORE_BASE_URL = "https://www.sofascore.com"
@@ -103,23 +106,43 @@ class SofaScoreClient:
         self.sleep_s = sleep_s
         self.timeout_s = timeout_s
 
-        self._client = httpx.Client(
-            headers=_default_headers(),
-            timeout=httpx.Timeout(timeout_s),
-            follow_redirects=True,
-        )
+        self._client = None
+        self._requests = None
+
+        if httpx is not None:
+            self._client = httpx.Client(
+                headers=_default_headers(),
+                timeout=httpx.Timeout(timeout_s),
+                follow_redirects=True,
+            )
+        else:
+            # Fallback path for lean test/runtime envs where httpx is absent.
+            import requests  # local import to avoid hard dependency at module import time
+
+            sess = requests.Session()
+            sess.headers.update(_default_headers())
+            self._requests = sess
 
     def close(self) -> None:
         try:
-            self._client.close()
+            if self._client is not None:
+                self._client.close()
+            if self._requests is not None:
+                self._requests.close()
         except Exception:
             pass
 
     def _get_json(self, path: str, *, dump_name: Optional[str] = None) -> Any:
         url = f"{self.base_url}{path}"
-        r = self._client.get(url)
-        r.raise_for_status()
-        data = r.json()
+        if self._client is not None:
+            r = self._client.get(url)
+            r.raise_for_status()
+            data = r.json()
+        else:
+            assert self._requests is not None
+            r = self._requests.get(url, timeout=self.timeout_s, allow_redirects=True)
+            r.raise_for_status()
+            data = r.json()
 
         if self.raw_dir and dump_name:
             _dump_json(data, self.raw_dir / dump_name)
