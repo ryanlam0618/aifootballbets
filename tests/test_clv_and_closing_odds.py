@@ -9,6 +9,7 @@ from v2.paper.closing_odds import load_tracker_closing_odds_by_bet_id
 from v2.paper.clv import compute_clv
 from v2.paper.db import ensure_tracking_schema
 from v2.paper.providers import EspnResultsProvider
+from v2.paper.report import summarize_window_metrics
 from v2.paper.settle import run_settlement
 
 
@@ -259,6 +260,145 @@ class TestClvAndClosingOdds(unittest.TestCase):
             self.assertIsNotNone(row)
             self.assertAlmostEqual(float(row[0]), 2.40, places=9)
             self.assertEqual(str(row[1]), "provider")
+
+    def test_summary_emits_closing_odds_fallback_diagnostics(self):
+        with tempfile.TemporaryDirectory() as td:
+            db_path = Path(td) / "tracking.sqlite"
+            ensure_tracking_schema(db_path)
+
+            conn = sqlite3.connect(str(db_path))
+            try:
+                conn.execute(
+                    """
+                    INSERT INTO bet_log (
+                      bet_id, kickoff_time_hkt, league, home, away, market, market_type, line, selection,
+                      odds_bet, model_prob, ev, kelly_pct, stake, result, profit, bankroll,
+                      source_book, source_file, run_id, source_quality, odds_source,
+                      odds_close, clv_abs, clv_pct, close_odds_source
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                    """,
+                    (
+                        "b_t",
+                        "2026-03-16T10:00:00+08:00",
+                        "EPL",
+                        "A",
+                        "B",
+                        "1X2",
+                        "1X2",
+                        "",
+                        "Home",
+                        2.0,
+                        0.55,
+                        0.05,
+                        0.02,
+                        100.0,
+                        "win",
+                        100.0,
+                        2100.0,
+                        "paper_sim",
+                        "ut",
+                        "ut",
+                        "real_odds",
+                        "espn",
+                        2.1,
+                        0.1,
+                        5.0,
+                        "tracker",
+                    ),
+                )
+                conn.execute(
+                    """
+                    INSERT INTO bet_log (
+                      bet_id, kickoff_time_hkt, league, home, away, market, market_type, line, selection,
+                      odds_bet, model_prob, ev, kelly_pct, stake, result, profit, bankroll,
+                      source_book, source_file, run_id, source_quality, odds_source,
+                      odds_close, clv_abs, clv_pct, close_odds_source
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                    """,
+                    (
+                        "b_p",
+                        "2026-03-16T11:00:00+08:00",
+                        "EPL",
+                        "C",
+                        "D",
+                        "1X2",
+                        "1X2",
+                        "",
+                        "Away",
+                        2.0,
+                        0.55,
+                        0.05,
+                        0.02,
+                        100.0,
+                        "loss",
+                        -100.0,
+                        2000.0,
+                        "paper_sim",
+                        "ut",
+                        "ut",
+                        "real_odds",
+                        "espn",
+                        2.2,
+                        0.2,
+                        10.0,
+                        "provider",
+                    ),
+                )
+                conn.execute(
+                    """
+                    INSERT INTO bet_log (
+                      bet_id, kickoff_time_hkt, league, home, away, market, market_type, line, selection,
+                      odds_bet, model_prob, ev, kelly_pct, stake, result, profit, bankroll,
+                      source_book, source_file, run_id, source_quality, odds_source,
+                      odds_close, clv_abs, clv_pct, close_odds_source
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                    """,
+                    (
+                        "b_n",
+                        "2026-03-16T12:00:00+08:00",
+                        "EPL",
+                        "E",
+                        "F",
+                        "1X2",
+                        "1X2",
+                        "",
+                        "Home",
+                        2.0,
+                        0.55,
+                        0.05,
+                        0.02,
+                        100.0,
+                        "push",
+                        0.0,
+                        2000.0,
+                        "paper_sim",
+                        "ut",
+                        "ut",
+                        "real_odds",
+                        "espn",
+                        None,
+                        None,
+                        None,
+                        None,
+                    ),
+                )
+                conn.commit()
+            finally:
+                conn.close()
+
+            summary = summarize_window_metrics(
+                db_path=db_path,
+                start=date(2026, 3, 16),
+                end=date(2026, 3, 16),
+                initial_bankroll=2000.0,
+            )
+            fb = summary.get("close_odds_fallback", {})
+            self.assertEqual(int(fb.get("tracker_clv_sample_size", 0) or 0), 1)
+            self.assertEqual(int(fb.get("provider_fallback_clv_sample_size", 0) or 0), 1)
+            self.assertEqual(int(fb.get("uncovered_bets", 0) or 0), 1)
+            self.assertAlmostEqual(float(fb.get("provider_fallback_share_pct_of_bets", 0.0) or 0.0), 33.3333333333, places=6)
+            self.assertAlmostEqual(float(fb.get("provider_fallback_share_pct_of_clv_samples", 0.0) or 0.0), 50.0, places=9)
+            self.assertAlmostEqual(float(fb.get("uncovered_pct", 0.0) or 0.0), 33.3333333333, places=6)
 
 
 if __name__ == "__main__":

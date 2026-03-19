@@ -212,6 +212,35 @@ def summarize_window_metrics(db_path: Path, start: date, end: date, initial_bank
                 }
             )
 
+        # Closing-odds fallback diagnostics:
+        # primary path: tracker, fallback: provider, uncovered: none/other with no odds_close.
+        tracker_clv_n = 0
+        provider_clv_n = 0
+        none_bets = 0
+        none_clv_n = 0
+        other_uncovered = 0
+        for row in close_odds_coverage:
+            src = str(row.get("close_odds_source", "none"))
+            bets_src = int(row.get("bets", 0) or 0)
+            clv_n_src = int(row.get("clv_sample_size", 0) or 0)
+            if src == "tracker":
+                tracker_clv_n += clv_n_src
+            elif src == "provider":
+                provider_clv_n += clv_n_src
+            elif src == "none":
+                none_bets += bets_src
+                none_clv_n += clv_n_src
+            else:
+                # Unknown source with partial/no CLV attachment; treat missing part as uncovered.
+                other_uncovered += max(0, bets_src - clv_n_src)
+
+        total_bets = bets
+        clv_total = clv_sample_size
+        uncovered_bets = max(0, total_bets - clv_total)
+        fallback_share_pct_of_bets = (provider_clv_n / total_bets) * 100.0 if total_bets > 0 else 0.0
+        fallback_share_pct_of_clv_samples = (provider_clv_n / clv_total) * 100.0 if clv_total > 0 else 0.0
+        uncovered_pct = (uncovered_bets / total_bets) * 100.0 if total_bets > 0 else 0.0
+
         # Baseline: flat stake fraction per bet against starting bankroll.
         flat_frac = max(0.0, float(settings_v2.paper_flat_stake_fraction))
         flat_stake = initial_bankroll * flat_frac
@@ -261,6 +290,17 @@ def summarize_window_metrics(db_path: Path, start: date, end: date, initial_bank
             "by_market": by_market,
             "clv_by_source_quality": clv_by_source_quality,
             "close_odds_coverage": close_odds_coverage,
+            "close_odds_fallback": {
+                "tracker_clv_sample_size": tracker_clv_n,
+                "provider_fallback_clv_sample_size": provider_clv_n,
+                "none_source_bets": none_bets,
+                "none_source_clv_sample_size": none_clv_n,
+                "other_uncovered_bets": other_uncovered,
+                "uncovered_bets": uncovered_bets,
+                "uncovered_pct": uncovered_pct,
+                "provider_fallback_share_pct_of_bets": fallback_share_pct_of_bets,
+                "provider_fallback_share_pct_of_clv_samples": fallback_share_pct_of_clv_samples,
+            },
             "baseline_flat": {
                 "stake_per_bet": flat_stake,
                 "total_stake": baseline_total_stake,
@@ -383,6 +423,8 @@ def generate_reports(db_path: Path, day: date, out_dir: Path) -> tuple[Path, Pat
                 f"  - close_odds={close_src}: bets={bets_src}, clv_sample_size={clv_n_src}, coverage={cov_src:.2f}%"
             )
 
+        fallback_diag = summary.get("close_odds_fallback", {})
+
         weekly_md = (
             f"# Paper Weekly Report ({start.isoformat()} -> {day.isoformat()})\n\n"
             f"- Bets: {int(w[0] or 0)}\n"
@@ -418,6 +460,13 @@ def generate_reports(db_path: Path, day: date, out_dir: Path) -> tuple[Path, Pat
             f"\n## Closing odds coverage by source\n"
             + ("\n".join(close_source_lines) if close_source_lines else "- (no bets)")
             + "\n"
+            f"\n## Closing odds fallback diagnostics\n"
+            f"- tracker_clv_sample_size: {int(fallback_diag.get('tracker_clv_sample_size', 0) or 0)}\n"
+            f"- provider_fallback_clv_sample_size: {int(fallback_diag.get('provider_fallback_clv_sample_size', 0) or 0)}\n"
+            f"- provider_fallback_share_pct_of_bets: {float(fallback_diag.get('provider_fallback_share_pct_of_bets', 0.0) or 0.0):.2f}%\n"
+            f"- provider_fallback_share_pct_of_clv_samples: {float(fallback_diag.get('provider_fallback_share_pct_of_clv_samples', 0.0) or 0.0):.2f}%\n"
+            f"- uncovered_bets: {int(fallback_diag.get('uncovered_bets', 0) or 0)}\n"
+            f"- uncovered_pct: {float(fallback_diag.get('uncovered_pct', 0.0) or 0.0):.2f}%\n"
         )
         weekly_path.write_text(weekly_md, encoding="utf-8")
     finally:

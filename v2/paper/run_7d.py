@@ -157,6 +157,15 @@ def run_7d(
     else:
         md += "- (no bets)\n"
 
+    fallback_diag = summary.get("close_odds_fallback", {})
+    md += "\n## Closing odds fallback diagnostics\n"
+    md += f"- tracker_clv_sample_size: {int(fallback_diag.get('tracker_clv_sample_size', 0) or 0)}\n"
+    md += f"- provider_fallback_clv_sample_size: {int(fallback_diag.get('provider_fallback_clv_sample_size', 0) or 0)}\n"
+    md += f"- provider_fallback_share_pct_of_bets: {float(fallback_diag.get('provider_fallback_share_pct_of_bets', 0.0) or 0.0):.2f}%\n"
+    md += f"- provider_fallback_share_pct_of_clv_samples: {float(fallback_diag.get('provider_fallback_share_pct_of_clv_samples', 0.0) or 0.0):.2f}%\n"
+    md += f"- uncovered_bets: {int(fallback_diag.get('uncovered_bets', 0) or 0)}\n"
+    md += f"- uncovered_pct: {float(fallback_diag.get('uncovered_pct', 0.0) or 0.0):.2f}%\n"
+
     out_md.write_text(md, encoding="utf-8")
 
     print(f"[7D SUMMARY] json={out_json} md={out_md}")

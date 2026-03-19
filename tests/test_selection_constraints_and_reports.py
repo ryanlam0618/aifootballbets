@@ -329,6 +329,7 @@ class TestSelectionConstraintsAndReports(unittest.TestCase):
             self.assertIn("## By source_quality", text)
             self.assertIn("## CLV by source_quality", text)
             self.assertIn("## Closing odds coverage by source", text)
+            self.assertIn("## Closing odds fallback diagnostics", text)
             self.assertIn("CLV coverage: 50.00%", text)
             self.assertIn("real_odds", text)
             self.assertIn("synthetic_odds", text)
@@ -351,6 +352,12 @@ class TestSelectionConstraintsAndReports(unittest.TestCase):
             self.assertEqual(int(close_cov["none"]["bets"]), 2)
             self.assertEqual(int(close_cov["none"]["clv_sample_size"]), 1)
             self.assertAlmostEqual(float(close_cov["none"]["coverage_pct"]), 50.0, places=9)
+
+            fallback = summary.get("close_odds_fallback", {})
+            self.assertEqual(int(fallback.get("tracker_clv_sample_size", 0) or 0), 0)
+            self.assertEqual(int(fallback.get("provider_fallback_clv_sample_size", 0) or 0), 0)
+            self.assertEqual(int(fallback.get("uncovered_bets", 0) or 0), 1)
+            self.assertAlmostEqual(float(fallback.get("uncovered_pct", 0.0) or 0.0), 50.0, places=9)
 
     def test_results_only_mode_is_selected_and_reported(self):
         old_day = settings_v2.paper_max_bets_per_day
