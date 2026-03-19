@@ -162,3 +162,26 @@ xvfb-run -a ./.venv312/bin/python -m v2.tracking.odds_tracker \
 ./.venv312/bin/python -m v2.tracking.report_odds_movement \
   --sqlite data/v2/tracking/odds_tracker.sqlite
 ```
+
+### 24h 常駐運維模板（cron / systemd / docker + rotate）
+
+新增 `v2/tracking/daemon.py` 會產生 `ops/tracker24h/` 下的運維模板：
+
+- `tracker24h.cron`（每小時 watchdog）
+- `aifootballbets-tracker24h.service`
+- `aifootballbets-tracker24h.timer`
+- `docker-compose.tracker24h.yml`
+- `tracker24h.logrotate`
+
+生成方式：
+
+```bash
+./.venv312/bin/python -m v2.tracking.daemon
+```
+
+輸出檔案位於：
+
+```text
+ops/tracker24h/
+```
+

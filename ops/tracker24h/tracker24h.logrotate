@@ -1,0 +1,8 @@
+/home/openclaw/.openclaw/workspace/projects/aifootballbets/logs/tracker24h.log {
+  daily
+  rotate 14
+  missingok
+  notifempty
+  compress
+  copytruncate
+}

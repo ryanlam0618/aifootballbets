@@ -1,0 +1,10 @@
+services:
+  tracker24h:
+    image: python:3.12-slim
+    working_dir: /workspace
+    command: ["/bin/bash", "-lc", "cd /home/openclaw/.openclaw/workspace/projects/aifootballbets && ./.venv312/bin/python v2/tracking/run_until_kickoff.py --base-url 'https://www.oddsportal.com/football/england/premier-league/brentford-wolves-0jR7cwU6/' --sample-every-min 10 --top-lines 2 --prefer-lines-ou '2.5,2.75' --prefer-lines-ah '-0.25,0.0' --sqlite 'data/v2/tracking/brentford_wolves_until_kickoff.sqlite' --jsonl 'data/v2/tracking/brentford_wolves_until_kickoff.jsonl' --storage-state '/tmp/oddsportal_storage.json' --pinchtab-verify"]
+    volumes:
+      - /home/openclaw/.openclaw/workspace/projects/aifootballbets:/workspace
+    restart: unless-stopped
+    environment:
+      - PINCHTAB_TOKEN=${PINCHTAB_TOKEN:-}

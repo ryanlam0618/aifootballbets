@@ -1,0 +1,10 @@
+[Unit]
+Description=Watchdog for AIFootballBets tracker 24h
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+Unit=aifootballbets-tracker24h.service
+
+[Install]
+WantedBy=timers.target
