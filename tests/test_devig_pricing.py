@@ -210,6 +210,34 @@ class TestDevigPricing(unittest.TestCase):
             places=9,
         )
 
+    def test_vulgar_fraction_lines_are_grouped_correctly(self):
+        odds_map = {
+            ("m19", "OU", "Over 2½"): 1.91,
+            ("m19", "Over/Under", "Under 2.5"): 1.99,
+            ("m20", "AH", "Home -0¼"): 2.03,
+            ("m20", "Asian Handicap", "Away +0.25"): 1.89,
+            ("m21", "AH", "Home -½"): 1.95,
+            ("m21", "Asian Handicap", "Away +0.5"): 1.95,
+        }
+
+        implied = build_devig_implied_map(odds_map)
+
+        self.assertAlmostEqual(
+            implied[("m19", "OU", "Over 2½")] + implied[("m19", "Over/Under", "Under 2.5")],
+            1.0,
+            places=9,
+        )
+        self.assertAlmostEqual(
+            implied[("m20", "AH", "Home -0¼")] + implied[("m20", "Asian Handicap", "Away +0.25")],
+            1.0,
+            places=9,
+        )
+        self.assertAlmostEqual(
+            implied[("m21", "AH", "Home -½")] + implied[("m21", "Asian Handicap", "Away +0.5")],
+            1.0,
+            places=9,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

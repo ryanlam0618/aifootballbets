@@ -5,6 +5,13 @@ import re
 from typing import Dict, Tuple
 
 
+_VULGAR_FRACTIONS: dict[str, float] = {
+    "¼": 0.25,
+    "½": 0.5,
+    "¾": 0.75,
+}
+
+
 OddsKey = Tuple[str, str, str]
 
 
@@ -29,6 +36,19 @@ def _try_float(text: str) -> float | None:
     # Normalize to a float-friendly representation.
     s = s.replace("−", "-").replace(",", ".")
 
+    # Support quarter/half/three-quarter unicode fractions, e.g. "2½", "-0¼".
+    frac_match = re.fullmatch(r"([+-]?\d*)\s*([¼½¾])", s)
+    if frac_match:
+        int_token = frac_match.group(1)
+        frac = _VULGAR_FRACTIONS[frac_match.group(2)]
+        if int_token in {"", "+", "-"}:
+            return -frac if int_token == "-" else frac
+
+        int_part = int(int_token)
+        if int_part < 0:
+            return int_part - frac
+        return int_part + frac
+
     try:
         return float(s)
     except Exception:
@@ -36,10 +56,10 @@ def _try_float(text: str) -> float | None:
 
 
 def _line_from_selection(selection: str) -> float | None:
-    # Extract first signed/unsigned decimal token from labels like
-    # "Over 2.5", "Under 2,5", "Home -0.5", "Away +0.5".
+    # Extract first signed/unsigned numeric token from labels like
+    # "Over 2.5", "Under 2,5", "Home -0.5", "Away +0.5", "Over 2½".
     s = str(selection or "").strip().replace("−", "-").replace(",", ".")
-    m = re.search(r"([-+]?\d+(?:\.\d+)?)", s)
+    m = re.search(r"([-+]?\d+(?:\.\d+)?(?:[¼½¾])?|[-+]?[¼½¾])", s)
     if not m:
         return None
     return _try_float(m.group(1))
@@ -103,18 +123,20 @@ def _canonical_selection(market_family: str, selection: str) -> str | None:
         return None
 
     if market_family == "Over/Under":
-        # Accept providers that include the line in selection labels, e.g. "Over 2.5".
-        if s in {"over", "o"} or re.match(r"^over\s*[-+]?\d", s_norm):
+        # Accept providers that include the line in selection labels, e.g. "Over 2.5", "Over 2½".
+        line_token = r"(?:\d|[¼½¾])"
+        if s in {"over", "o"} or re.match(rf"^over\s*[-+]?{line_token}", s_norm):
             return "Over"
-        if s in {"under", "u"} or re.match(r"^under\s*[-+]?\d", s_norm):
+        if s in {"under", "u"} or re.match(rf"^under\s*[-+]?{line_token}", s_norm):
             return "Under"
         return None
 
     if market_family == "Asian Handicap":
-        # Accept labels with side + line, e.g. "Home -0.5", "Away +0.5".
-        if s in {"home", "h"} or re.match(r"^home\s*[-+]?\d", s_norm):
+        # Accept labels with side + line, e.g. "Home -0.5", "Away +0.5", "Home -½".
+        line_token = r"(?:\d|[¼½¾])"
+        if s in {"home", "h"} or re.match(rf"^home\s*[-+]?{line_token}", s_norm):
             return "Home"
-        if s in {"away", "a"} or re.match(r"^away\s*[-+]?\d", s_norm):
+        if s in {"away", "a"} or re.match(rf"^away\s*[-+]?{line_token}", s_norm):
             return "Away"
         return None
 
