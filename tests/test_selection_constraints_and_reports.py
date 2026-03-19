@@ -327,6 +327,8 @@ class TestSelectionConstraintsAndReports(unittest.TestCase):
             _daily, weekly = generate_reports(db_path=db_path, day=date(2026, 3, 16), out_dir=out_dir)
             text = weekly.read_text(encoding="utf-8")
             self.assertIn("## By source_quality", text)
+            self.assertIn("## CLV by source_quality", text)
+            self.assertIn("CLV coverage: 50.00%", text)
             self.assertIn("real_odds", text)
             self.assertIn("synthetic_odds", text)
 

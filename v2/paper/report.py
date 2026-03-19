@@ -329,6 +329,16 @@ def generate_reports(db_path: Path, day: date, out_dir: Path) -> tuple[Path, Pat
             initial_bankroll=float(settings_v2.initial_bankroll),
         )
 
+        clv_source_lines = []
+        for row in summary["clv_by_source_quality"]:
+            sq = str(row["source_quality"])
+            ss = int(row["clv_sample_size"])
+            avg_abs = _to_float(row["avg_clv_abs"])
+            avg_pct = _to_float(row["avg_clv_pct"])
+            clv_source_lines.append(
+                f"  - {sq}: clv_sample_size={ss}, avg_clv_abs={avg_abs:.4f}, avg_clv_pct={avg_pct:.2f}%"
+            )
+
         weekly_md = (
             f"# Paper Weekly Report ({start.isoformat()} -> {day.isoformat()})\n\n"
             f"- Bets: {int(w[0] or 0)}\n"
@@ -340,6 +350,7 @@ def generate_reports(db_path: Path, day: date, out_dir: Path) -> tuple[Path, Pat
             f"- Winrate: {summary['winrate_pct']:.2f}%\n"
             f"- Avg edge: {summary['avg_edge_pct']:.2f}%\n"
             f"- CLV sample size: {summary['clv_sample_size']}\n"
+            f"- CLV coverage: {summary.get('clv_coverage_pct', 0.0):.2f}%\n"
             f"- Avg CLV (abs): {summary['avg_clv_abs']:.4f}\n"
             f"- Avg CLV (%): {summary['avg_clv_pct']:.2f}%\n"
             f"\n## Baseline comparison\n"
@@ -356,6 +367,9 @@ def generate_reports(db_path: Path, day: date, out_dir: Path) -> tuple[Path, Pat
             + "\n"
             f"\n## By source_quality\n"
             + ("\n".join(source_lines_weekly) if source_lines_weekly else "- (no bets)")
+            + "\n"
+            f"\n## CLV by source_quality\n"
+            + ("\n".join(clv_source_lines) if clv_source_lines else "- (no CLV samples)")
             + "\n"
         )
         weekly_path.write_text(weekly_md, encoding="utf-8")
