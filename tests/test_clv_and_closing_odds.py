@@ -275,7 +275,7 @@ class TestClvAndClosingOdds(unittest.TestCase):
                       odds_bet, model_prob, ev, kelly_pct, stake, result, profit, bankroll,
                       source_book, source_file, run_id, source_quality, odds_source,
                       odds_close, clv_abs, clv_pct, close_odds_source
-                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                     """,
                     (
                         "b_t",
@@ -313,7 +313,7 @@ class TestClvAndClosingOdds(unittest.TestCase):
                       odds_bet, model_prob, ev, kelly_pct, stake, result, profit, bankroll,
                       source_book, source_file, run_id, source_quality, odds_source,
                       odds_close, clv_abs, clv_pct, close_odds_source
-                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                     """,
                     (
                         "b_p",
@@ -351,7 +351,7 @@ class TestClvAndClosingOdds(unittest.TestCase):
                       odds_bet, model_prob, ev, kelly_pct, stake, result, profit, bankroll,
                       source_book, source_file, run_id, source_quality, odds_source,
                       odds_close, clv_abs, clv_pct, close_odds_source
-                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                     """,
                     (
                         "b_n",
