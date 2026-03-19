@@ -168,6 +168,27 @@ class TestDevigPricing(unittest.TestCase):
             places=9,
         )
 
+    def test_selection_labels_with_embedded_lines_are_canonicalized(self):
+        odds_map = {
+            ("m15", "OU 2.5", "Over 2.5"): 1.91,
+            ("m15", "Over/Under 2.50", "Under 2,5"): 1.99,
+            ("m16", "AH -0.5", "Home -0.5"): 2.05,
+            ("m16", "Asian Handicap 0.5", "Away +0.5"): 1.87,
+        }
+
+        implied = build_devig_implied_map(odds_map)
+
+        self.assertAlmostEqual(
+            implied[("m15", "OU 2.5", "Over 2.5")] + implied[("m15", "Over/Under 2.50", "Under 2,5")],
+            1.0,
+            places=9,
+        )
+        self.assertAlmostEqual(
+            implied[("m16", "AH -0.5", "Home -0.5")] + implied[("m16", "Asian Handicap 0.5", "Away +0.5")],
+            1.0,
+            places=9,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

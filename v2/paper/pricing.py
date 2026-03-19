@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import re
 from typing import Dict, Tuple
 
 
@@ -76,6 +77,7 @@ def _canonical_group_key(match_id: str, market_key: str, selection: str) -> tupl
 
 def _canonical_selection(market_family: str, selection: str) -> str | None:
     s = str(selection or "").strip().lower()
+    s_norm = s.replace("−", "-").replace(",", ".")
 
     if market_family == "1X2":
         if s in {"home", "h", "1"}:
@@ -87,16 +89,18 @@ def _canonical_selection(market_family: str, selection: str) -> str | None:
         return None
 
     if market_family == "Over/Under":
-        if s in {"over", "o"}:
+        # Accept providers that include the line in selection labels, e.g. "Over 2.5".
+        if s in {"over", "o"} or re.match(r"^over\s*[-+]?\d", s_norm):
             return "Over"
-        if s in {"under", "u"}:
+        if s in {"under", "u"} or re.match(r"^under\s*[-+]?\d", s_norm):
             return "Under"
         return None
 
     if market_family == "Asian Handicap":
-        if s in {"home", "h"}:
+        # Accept labels with side + line, e.g. "Home -0.5", "Away +0.5".
+        if s in {"home", "h"} or re.match(r"^home\s*[-+]?\d", s_norm):
             return "Home"
-        if s in {"away", "a"}:
+        if s in {"away", "a"} or re.match(r"^away\s*[-+]?\d", s_norm):
             return "Away"
         return None
 
