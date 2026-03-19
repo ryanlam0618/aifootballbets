@@ -40,6 +40,7 @@ def ensure_tracking_schema(db_path: Path) -> None:
                 odds_close REAL,
                 clv_abs REAL,
                 clv_pct REAL,
+                close_odds_source TEXT,
                 created_at_utc TEXT NOT NULL DEFAULT (datetime('now'))
             );
             CREATE INDEX IF NOT EXISTS idx_bet_log_bet_time ON bet_log (bet_time_hkt);
@@ -61,6 +62,8 @@ def ensure_tracking_schema(db_path: Path) -> None:
             conn.execute("ALTER TABLE bet_log ADD COLUMN source_quality TEXT NOT NULL DEFAULT 'synthetic_odds'")
         if "odds_source" not in cols:
             conn.execute("ALTER TABLE bet_log ADD COLUMN odds_source TEXT")
+        if "close_odds_source" not in cols:
+            conn.execute("ALTER TABLE bet_log ADD COLUMN close_odds_source TEXT")
 
         conn.commit()
     finally:

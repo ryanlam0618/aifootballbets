@@ -21,6 +21,22 @@ class TestTracker24hDaemon(unittest.TestCase):
         self.assertIn("--sample-every-min 10", cmd)
         self.assertIn("--pinchtab-verify", cmd)
 
+    def test_build_tracker_command_shell_quotes_paths(self):
+        cmd = build_tracker_command(
+            repo_root="/tmp/repo with space",
+            base_url="https://example.com/match?x=1&y=2",
+            sqlite_path="data/v2/tracking/a b.sqlite",
+            jsonl_path="data/v2/tracking/a b.jsonl",
+        )
+        self.assertIn("cd '/tmp/repo with space' &&", cmd)
+        self.assertIn("--sqlite 'data/v2/tracking/a b.sqlite'", cmd)
+        self.assertIn("--jsonl 'data/v2/tracking/a b.jsonl'", cmd)
+
+    def test_cron_renderer_escapes_double_quotes(self):
+        command = "cd '/repo with space' && ./.venv312/bin/python s.py --base-url 'https://x?m=\"abc\"'"
+        cron = render_cron_hourly(command)
+        self.assertIn('\\"abc\\"', cron)
+
     def test_renderers_include_expected_markers(self):
         command = "cd /repo && ./.venv312/bin/python v2/tracking/run_until_kickoff.py"
 

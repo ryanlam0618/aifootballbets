@@ -140,7 +140,7 @@ def run_7d(
     if clv_by_source:
         for row in clv_by_source:
             md += (
-                f"- {row['source_quality']}: clv_n={row['clv_sample_size']}, "
+                f"- {row['source_quality']} (close_odds={row.get('close_odds_source', 'none')}): clv_n={row['clv_sample_size']}, "
                 f"avg_clv_abs={row['avg_clv_abs']:.4f}, avg_clv_pct={row['avg_clv_pct']:.2f}%\n"
             )
     else:

@@ -305,6 +305,7 @@ def run_settlement(
         odds_close = None
         clv_abs = None
         clv_pct = None
+        close_odds_source = None
 
         # 1) Prefer tracker-derived closing odds hook (OddsPortal snapshots), keyed by bet_id.
         tracker_close = tracker_map.get(str(row["bet_id"]))
@@ -313,10 +314,12 @@ def run_settlement(
                 odds_close = float(tracker_close)
                 odds_bet = float(row["odds_bet"] or 0.0)
                 clv_abs, clv_pct = compute_clv(odds_bet=odds_bet, odds_close=odds_close)
+                close_odds_source = "tracker"
             except Exception:
                 odds_close = None
                 clv_abs = None
                 clv_pct = None
+                close_odds_source = None
 
         # 2) Fallback to provider-based close odds map.
         if odds_close is None and candidate_id:
@@ -331,10 +334,12 @@ def run_settlement(
                     odds_close = float(oc)
                     odds_bet = float(row["odds_bet"] or 0.0)
                     clv_abs, clv_pct = compute_clv(odds_bet=odds_bet, odds_close=odds_close)
+                    close_odds_source = "provider"
                 except Exception:
                     odds_close = None
                     clv_abs = None
                     clv_pct = None
+                    close_odds_source = None
 
         settle_bet(
             db_path,
@@ -345,6 +350,7 @@ def run_settlement(
             odds_close=odds_close,
             clv_abs=clv_abs,
             clv_pct=clv_pct,
+            close_odds_source=close_odds_source,
         )
         settled_count += 1
 

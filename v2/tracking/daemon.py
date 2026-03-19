@@ -1,6 +1,11 @@
 from __future__ import annotations
 
 from pathlib import Path
+import shlex
+
+
+def _escape_double_quoted_shell(s: str) -> str:
+    return str(s).replace("\\", "\\\\").replace('"', '\\"')
 
 
 def build_tracker_command(
@@ -17,29 +22,40 @@ def build_tracker_command(
     prefer_lines_ah: str = "-0.25,0.0",
     pinchtab_verify: bool = True,
 ) -> str:
-    cmd = (
-        f"cd {repo_root} && "
-        f"{python_bin} {script_path} "
-        f"--base-url '{base_url}' "
-        f"--sample-every-min {int(sample_every_min)} "
-        f"--top-lines {int(top_lines)} "
-        f"--prefer-lines-ou '{prefer_lines_ou}' "
-        f"--prefer-lines-ah '{prefer_lines_ah}' "
-        f"--sqlite '{sqlite_path}' "
-        f"--jsonl '{jsonl_path}' "
-        f"--storage-state '{storage_state}'"
-    )
+    parts = [
+        python_bin,
+        script_path,
+        "--base-url",
+        base_url,
+        "--sample-every-min",
+        str(int(sample_every_min)),
+        "--top-lines",
+        str(int(top_lines)),
+        "--prefer-lines-ou",
+        prefer_lines_ou,
+        "--prefer-lines-ah",
+        prefer_lines_ah,
+        "--sqlite",
+        sqlite_path,
+        "--jsonl",
+        jsonl_path,
+        "--storage-state",
+        storage_state,
+    ]
     if pinchtab_verify:
-        cmd += " --pinchtab-verify"
-    return cmd
+        parts.append("--pinchtab-verify")
+
+    quoted = " ".join(shlex.quote(p) for p in parts)
+    return f"cd {shlex.quote(repo_root)} && {quoted}"
 
 
 def render_cron_hourly(command: str, log_path: str = "logs/tracker24h.log") -> str:
+    safe_command = _escape_double_quoted_shell(command)
     return (
         "# aifootballbets tracker 24h (hourly watchdog)\n"
         "SHELL=/bin/bash\n"
         "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\n"
-        f"0 * * * * flock -n /tmp/aifootballbets_tracker24h.lock bash -lc \"{command}\" >> {log_path} 2>&1\n"
+        f"0 * * * * flock -n /tmp/aifootballbets_tracker24h.lock bash -lc \"{safe_command}\" >> {log_path} 2>&1\n"
     )
 
 

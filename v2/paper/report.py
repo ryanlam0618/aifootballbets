@@ -58,13 +58,14 @@ def _query_clv_source_split(conn: sqlite3.Connection, start: date, end: date):
         """
         SELECT
           COALESCE(source_quality, 'synthetic_odds') AS source_quality,
+          COALESCE(close_odds_source, 'none') AS close_odds_source,
           SUM(CASE WHEN odds_close IS NOT NULL THEN 1 ELSE 0 END) AS clv_sample_size,
           COALESCE(AVG(CASE WHEN odds_close IS NOT NULL THEN clv_abs ELSE NULL END), 0) AS avg_clv_abs,
           COALESCE(AVG(CASE WHEN odds_close IS NOT NULL THEN clv_pct ELSE NULL END), 0) AS avg_clv_pct
         FROM bet_log
         WHERE substr(kickoff_time_hkt, 1, 10) BETWEEN ? AND ?
-        GROUP BY COALESCE(source_quality, 'synthetic_odds')
-        ORDER BY source_quality
+        GROUP BY COALESCE(source_quality, 'synthetic_odds'), COALESCE(close_odds_source, 'none')
+        ORDER BY source_quality, close_odds_source
         """,
         (start.isoformat(), end.isoformat()),
     ).fetchall()
@@ -174,9 +175,10 @@ def summarize_window_metrics(db_path: Path, start: date, end: date, initial_bank
             clv_by_source_quality.append(
                 {
                     "source_quality": str(r[0]),
-                    "clv_sample_size": int(r[1] or 0),
-                    "avg_clv_abs": _to_float(r[2]),
-                    "avg_clv_pct": _to_float(r[3]),
+                    "close_odds_source": str(r[1]),
+                    "clv_sample_size": int(r[2] or 0),
+                    "avg_clv_abs": _to_float(r[3]),
+                    "avg_clv_pct": _to_float(r[4]),
                 }
             )
 
@@ -332,11 +334,12 @@ def generate_reports(db_path: Path, day: date, out_dir: Path) -> tuple[Path, Pat
         clv_source_lines = []
         for row in summary["clv_by_source_quality"]:
             sq = str(row["source_quality"])
+            close_src = str(row.get("close_odds_source", "none"))
             ss = int(row["clv_sample_size"])
             avg_abs = _to_float(row["avg_clv_abs"])
             avg_pct = _to_float(row["avg_clv_pct"])
             clv_source_lines.append(
-                f"  - {sq}: clv_sample_size={ss}, avg_clv_abs={avg_abs:.4f}, avg_clv_pct={avg_pct:.2f}%"
+                f"  - {sq} (close_odds={close_src}): clv_sample_size={ss}, avg_clv_abs={avg_abs:.4f}, avg_clv_pct={avg_pct:.2f}%"
             )
 
         weekly_md = (

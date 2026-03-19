@@ -339,11 +339,11 @@ class TestSelectionConstraintsAndReports(unittest.TestCase):
                 initial_bankroll=2000.0,
             )
             self.assertAlmostEqual(summary["clv_coverage_pct"], 50.0, places=9)
-            by_source = {str(r["source_quality"]): r for r in summary["clv_by_source_quality"]}
-            self.assertIn("real_odds", by_source)
-            self.assertIn("synthetic_odds", by_source)
-            self.assertEqual(int(by_source["real_odds"]["clv_sample_size"]), 1)
-            self.assertEqual(int(by_source["synthetic_odds"]["clv_sample_size"]), 0)
+            by_source = {(str(r["source_quality"]), str(r.get("close_odds_source", "none"))): r for r in summary["clv_by_source_quality"]}
+            self.assertIn(("real_odds", "none"), by_source)
+            self.assertIn(("synthetic_odds", "none"), by_source)
+            self.assertEqual(int(by_source[("real_odds", "none")]["clv_sample_size"]), 1)
+            self.assertEqual(int(by_source[("synthetic_odds", "none")]["clv_sample_size"]), 0)
 
     def test_results_only_mode_is_selected_and_reported(self):
         old_day = settings_v2.paper_max_bets_per_day

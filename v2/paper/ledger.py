@@ -125,6 +125,7 @@ def settle_bet(
     odds_close: float | None = None,
     clv_abs: float | None = None,
     clv_pct: float | None = None,
+    close_odds_source: str | None = None,
 ) -> None:
     ensure_tracking_schema(db_path)
     conn = sqlite3.connect(str(db_path))
@@ -133,7 +134,7 @@ def settle_bet(
             """
             UPDATE bet_log
             SET result = ?, profit = ?, bankroll = ?,
-                odds_close = ?, clv_abs = ?, clv_pct = ?
+                odds_close = ?, clv_abs = ?, clv_pct = ?, close_odds_source = ?
             WHERE bet_id = ?
             """,
             (
@@ -143,6 +144,7 @@ def settle_bet(
                 (float(odds_close) if odds_close is not None else None),
                 (float(clv_abs) if clv_abs is not None else None),
                 (float(clv_pct) if clv_pct is not None else None),
+                (str(close_odds_source) if close_odds_source else None),
                 bet_id,
             ),
         )
