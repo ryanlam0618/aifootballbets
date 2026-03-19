@@ -147,6 +147,27 @@ class TestDevigPricing(unittest.TestCase):
             places=9,
         )
 
+    def test_numeric_line_parsing_tolerates_decimal_comma_and_unicode_minus(self):
+        odds_map = {
+            ("m13", "Over/Under 2,5", "Over"): 1.95,
+            ("m13", "OU 2.50", "Under"): 1.95,
+            ("m14", "AH −0,5", "Home"): 2.02,
+            ("m14", "Asian Handicap 0.5", "Away"): 1.90,
+        }
+
+        implied = build_devig_implied_map(odds_map)
+
+        self.assertAlmostEqual(
+            implied[("m13", "Over/Under 2,5", "Over")] + implied[("m13", "OU 2.50", "Under")],
+            1.0,
+            places=9,
+        )
+        self.assertAlmostEqual(
+            implied[("m14", "AH −0,5", "Home")] + implied[("m14", "Asian Handicap 0.5", "Away")],
+            1.0,
+            places=9,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

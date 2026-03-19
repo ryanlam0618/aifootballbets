@@ -20,8 +20,16 @@ def _all_finite(values: tuple[float, ...]) -> bool:
 
 
 def _try_float(text: str) -> float | None:
+    s = str(text).strip()
+    if not s:
+        return None
+
+    # Provider feeds can emit localized decimal commas and unicode minus signs.
+    # Normalize to a float-friendly representation.
+    s = s.replace("−", "-").replace(",", ".")
+
     try:
-        return float(str(text).strip())
+        return float(s)
     except Exception:
         return None
 
