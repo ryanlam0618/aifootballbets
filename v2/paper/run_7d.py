@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import sqlite3
+from collections import Counter
 from datetime import date, datetime, timedelta
 from statistics import mean
 from pathlib import Path
@@ -156,6 +158,60 @@ def run_7d(
     return final
 
 
+def _window_inserted_kpi_aggregate(db_path: Path, start_date: date, end_date: date) -> dict:
+    conn = sqlite3.connect(str(db_path))
+    try:
+        rows = conn.execute(
+            """
+            SELECT
+              COALESCE(league, 'UNKNOWN') AS league,
+              COALESCE(market_type, 'UNKNOWN') AS strategy,
+              COUNT(*) AS inserted_count,
+              COALESCE(SUM(stake), 0) AS stake,
+              COALESCE(SUM(CASE WHEN profit IS NULL THEN 0 ELSE profit END), 0) AS pnl,
+              SUM(CASE WHEN lower(COALESCE(result,''))='win' THEN 1 ELSE 0 END) AS wins,
+              SUM(CASE WHEN lower(COALESCE(result,''))='loss' THEN 1 ELSE 0 END) AS losses,
+              SUM(CASE WHEN lower(COALESCE(result,''))='push' THEN 1 ELSE 0 END) AS pushes
+            FROM bet_log
+            WHERE substr(kickoff_time_hkt, 1, 10) BETWEEN ? AND ?
+            GROUP BY COALESCE(league, 'UNKNOWN'), COALESCE(market_type, 'UNKNOWN')
+            ORDER BY inserted_count DESC, league ASC, strategy ASC
+            """,
+            (start_date.isoformat(), end_date.isoformat()),
+        ).fetchall()
+
+        out = []
+        for r in rows:
+            inserted_count = int(r[2] or 0)
+            stake = float(r[3] or 0.0)
+            pnl = float(r[4] or 0.0)
+            wins = int(r[5] or 0)
+            losses = int(r[6] or 0)
+            pushes = int(r[7] or 0)
+            out.append(
+                {
+                    "league": str(r[0]),
+                    "strategy": str(r[1]),
+                    "inserted_count": inserted_count,
+                    "stake": stake,
+                    "pnl": pnl,
+                    "roi_pct": (pnl / stake) * 100.0 if stake > 0 else 0.0,
+                    "wins": wins,
+                    "losses": losses,
+                    "pushes": pushes,
+                    "winrate_pct": (wins / inserted_count) * 100.0 if inserted_count > 0 else 0.0,
+                }
+            )
+
+        return {
+            "kpi_basis": "inserted",
+            "rows": out,
+            "note": "KPI metrics (stake/pnl/roi/winrate) are computed from inserted rows in bet_log.",
+        }
+    finally:
+        conn.close()
+
+
 def run_walkforward(
     start_date: date,
     end_date: date,
@@ -199,10 +255,63 @@ def run_walkforward(
     wr_list = [float(w.get("summary", {}).get("winrate_pct", 0.0)) for w in windows]
     clv_list = [float(w.get("summary", {}).get("avg_clv_pct", 0.0)) for w in windows if int(w.get("summary", {}).get("clv_sample_size", 0)) > 0]
 
+    selected_per_window: list[int] = []
+    inserted_per_window: list[int] = []
+    inserted_new_per_window: list[int] = []
+    by_window_tag_rows: list[dict] = []
+    league_counter: Counter[str] = Counter()
+    strategy_counter: Counter[str] = Counter()
+
+    for w in windows:
+        days = w.get("days", [])
+        selected_count = 0
+        inserted_count = 0
+
+        for d in days:
+            sel = int(d.get("selection", {}).get("selected", 0) or 0)
+            ins = int(d.get("selection", {}).get("inserted", 0) or 0)
+            selected_count += sel
+            inserted_count += ins
+
+        start_s = str(w.get("start_date"))
+        end_s = str(w.get("end_date"))
+        ws = datetime.strptime(start_s, "%Y-%m-%d").date()
+        we = datetime.strptime(end_s, "%Y-%m-%d").date()
+        tags = _window_inserted_kpi_aggregate(db_path=db_path, start_date=ws, end_date=we)
+
+        for row in tags.get("rows", []):
+            lg = str(row.get("league", "UNKNOWN"))
+            st = str(row.get("strategy", "UNKNOWN"))
+            ic = int(row.get("inserted_count", 0) or 0)
+            league_counter[lg] += ic
+            strategy_counter[st] += ic
+
+        # attach selected_count at window level and annotate selected_count on tag rows as helper
+        w["selected_count"] = selected_count
+        w["inserted_new_count"] = inserted_count
+        w["inserted_count"] = int(w.get("summary", {}).get("bets", 0) or 0)
+        w["inserted_kpi_tags"] = tags
+        window_inserted_total = int(w.get("summary", {}).get("bets", 0) or 0)
+        by_window_tag_rows.append(
+            {
+                "window_start": start_s,
+                "window_end": end_s,
+                "selected_count": selected_count,
+                "inserted_count": window_inserted_total,
+                "inserted_new_count": inserted_count,
+                "kpi_basis": "inserted",
+                "rows": tags.get("rows", []),
+            }
+        )
+        selected_per_window.append(selected_count)
+        inserted_per_window.append(window_inserted_total)
+        inserted_new_per_window.append(inserted_count)
+
     agg = {
         "windows": len(windows),
         "window_start": start_date.isoformat(),
         "window_end": end_date.isoformat(),
+        "kpi_basis": "inserted",
         "total_pnl": sum(pnl_list) if pnl_list else 0.0,
         "avg_pnl": mean(pnl_list) if pnl_list else 0.0,
         "avg_roi_pct": mean(roi_list) if roi_list else 0.0,
@@ -210,9 +319,29 @@ def run_walkforward(
         "avg_winrate_pct": mean(wr_list) if wr_list else 0.0,
         "avg_clv_pct": mean(clv_list) if clv_list else 0.0,
         "positive_windows": sum(1 for x in pnl_list if x > 0),
+        "total_selected_count": sum(selected_per_window),
+        "total_inserted_count": sum(inserted_per_window),
+        "total_inserted_new_count": sum(inserted_new_per_window),
+        "selection_insertion_gap": sum(selected_per_window) - sum(inserted_per_window),
+        "selection_new_insertion_gap": sum(selected_per_window) - sum(inserted_new_per_window),
+        "dedupe_behavior": {
+            "root_cause": "bet_log.bet_id is UNIQUE and ledger uses INSERT OR IGNORE on reruns",
+            "effect": "rerun can produce selected_count > inserted_new_count because already-existing bet_id rows are ignored",
+            "metric_definition": {
+                "inserted_count": "total rows in bet_log within window (KPI basis)",
+                "inserted_new_count": "rows newly inserted during this run",
+                "selected_count": "strategy selected candidates before DB dedupe",
+            },
+        },
     }
 
-    payload = {"aggregate": agg, "windows": windows}
+    payload = {
+        "aggregate": agg,
+        "windows": windows,
+        "by_window_league_strategy": by_window_tag_rows,
+        "by_league_inserted": [{"league": k, "inserted_count": v} for k, v in league_counter.most_common()],
+        "by_strategy_inserted": [{"strategy": k, "inserted_count": v} for k, v in strategy_counter.most_common()],
+    }
     output_dir.mkdir(parents=True, exist_ok=True)
     out_json = output_dir / f"paper_walkforward_{start_date.isoformat()}_{end_date.isoformat()}.json"
     out_json.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
