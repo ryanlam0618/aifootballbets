@@ -775,10 +775,10 @@ def fetch_lineup_and_injury(
 
 
 def sofascore_enabled() -> bool:
-    """Default ON.
+    """Default OFF.
 
-    Set SOFASCORE_ENABLED=0 to disable network fetching.
+    Set SOFASCORE_ENABLED=1 to enable network fetching.
     """
-    v = os.getenv("SOFASCORE_ENABLED", "1").strip().lower()
-    return v not in {"0", "false", "no", "off"}
+    v = os.getenv("SOFASCORE_ENABLED", "0").strip().lower()
+    return v in {"1", "true", "yes", "on"}
 
