@@ -66,14 +66,23 @@ class TestWalkforwardInsertedKpi(unittest.TestCase):
         }
 
         with tempfile.TemporaryDirectory() as td:
+            out_dir = Path(td) / "reports"
             payload = run_walkforward(
                 start_date=date(2026, 3, 1),
                 end_date=date(2026, 3, 8),
                 db_path=Path(td) / "tracking.sqlite",
                 snapshot_db=Path(td) / "snap.sqlite",
                 run_prefix="wf_ut",
-                out_dir=Path(td) / "reports",
+                out_dir=out_dir,
             )
+
+            md_path = out_dir / "paper_walkforward_2026-03-01_2026-03-08.md"
+            self.assertTrue(md_path.exists())
+            md_text = md_path.read_text(encoding="utf-8")
+            self.assertIn("# Paper Walkforward Summary", md_text)
+            self.assertIn("## Aggregate", md_text)
+            self.assertIn("KPI basis: inserted", md_text)
+            self.assertIn("## By window league/strategy (inserted KPI)", md_text)
 
         self.assertEqual(payload["aggregate"]["kpi_basis"], "inserted")
         self.assertEqual(payload["aggregate"]["windows"], 2)

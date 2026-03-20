@@ -232,6 +232,71 @@ def _window_inserted_kpi_aggregate(db_path: Path, start_date: date, end_date: da
         conn.close()
 
 
+def _render_walkforward_markdown(payload: dict) -> str:
+    agg = payload.get("aggregate", {})
+    by_league = payload.get("by_league_inserted", [])
+    by_strategy = payload.get("by_strategy_inserted", [])
+    by_window = payload.get("by_window_league_strategy", [])
+
+    lines = [
+        f"# Paper Walkforward Summary ({agg.get('window_start', '')} -> {agg.get('window_end', '')})",
+        "",
+        "## Aggregate",
+        f"- KPI basis: {agg.get('kpi_basis', 'inserted')}",
+        f"- Windows: {int(agg.get('windows', 0) or 0)}",
+        f"- Total PnL: {float(agg.get('total_pnl', 0.0) or 0.0):.2f}",
+        f"- Avg ROI: {float(agg.get('avg_roi_pct', 0.0) or 0.0):.2f}%",
+        f"- Avg max drawdown: {float(agg.get('avg_max_drawdown_pct', 0.0) or 0.0):.2f}%",
+        f"- Avg winrate: {float(agg.get('avg_winrate_pct', 0.0) or 0.0):.2f}%",
+        f"- Avg CLV (%): {float(agg.get('avg_clv_pct', 0.0) or 0.0):.2f}%",
+        f"- Total selected_count: {int(agg.get('total_selected_count', 0) or 0)}",
+        f"- Total inserted_count: {int(agg.get('total_inserted_count', 0) or 0)}",
+        f"- Total inserted_new_count: {int(agg.get('total_inserted_new_count', 0) or 0)}",
+        f"- selection_insertion_gap: {int(agg.get('selection_insertion_gap', 0) or 0)}",
+        f"- selection_new_insertion_gap: {int(agg.get('selection_new_insertion_gap', 0) or 0)}",
+        "",
+        "## By league (inserted)",
+    ]
+
+    if by_league:
+        for row in by_league:
+            lines.append(f"- {row.get('league', 'UNKNOWN')}: inserted_count={int(row.get('inserted_count', 0) or 0)}")
+    else:
+        lines.append("- (no rows)")
+
+    lines.append("")
+    lines.append("## By strategy (inserted)")
+    if by_strategy:
+        for row in by_strategy:
+            lines.append(f"- {row.get('strategy', 'UNKNOWN')}: inserted_count={int(row.get('inserted_count', 0) or 0)}")
+    else:
+        lines.append("- (no rows)")
+
+    lines.append("")
+    lines.append("## By window league/strategy (inserted KPI)")
+    if by_window:
+        for w in by_window:
+            ws = str(w.get("window_start", ""))
+            we = str(w.get("window_end", ""))
+            lines.append(
+                f"- {ws} -> {we}: selected={int(w.get('selected_count', 0) or 0)}, "
+                f"inserted={int(w.get('inserted_count', 0) or 0)}, inserted_new={int(w.get('inserted_new_count', 0) or 0)}"
+            )
+            for r in w.get("rows", []):
+                lines.append(
+                    "  - "
+                    f"{r.get('league', 'UNKNOWN')} / {r.get('strategy', 'UNKNOWN')}: "
+                    f"inserted_count={int(r.get('inserted_count', 0) or 0)}, "
+                    f"stake={float(r.get('stake', 0.0) or 0.0):.2f}, "
+                    f"pnl={float(r.get('pnl', 0.0) or 0.0):.2f}, "
+                    f"roi={float(r.get('roi_pct', 0.0) or 0.0):.2f}%"
+                )
+    else:
+        lines.append("- (no windows)")
+
+    return "\n".join(lines) + "\n"
+
+
 def run_walkforward(
     start_date: date,
     end_date: date,
@@ -364,8 +429,13 @@ def run_walkforward(
     }
     output_dir.mkdir(parents=True, exist_ok=True)
     out_json = output_dir / f"paper_walkforward_{start_date.isoformat()}_{end_date.isoformat()}.json"
+    out_md = output_dir / f"paper_walkforward_{start_date.isoformat()}_{end_date.isoformat()}.md"
     out_json.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
-    print(f"[WALKFORWARD] json={out_json} windows={agg['windows']} total_pnl={agg['total_pnl']:.2f} avg_roi={agg['avg_roi_pct']:.2f}%")
+    out_md.write_text(_render_walkforward_markdown(payload), encoding="utf-8")
+    print(
+        f"[WALKFORWARD] json={out_json} md={out_md} windows={agg['windows']} "
+        f"total_pnl={agg['total_pnl']:.2f} avg_roi={agg['avg_roi_pct']:.2f}%"
+    )
     return payload
 
 
