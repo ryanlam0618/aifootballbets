@@ -44,8 +44,8 @@ def collect_lineup_and_injury(
 ) -> Dict[str, Any]:
     """Collect lineup + injuries.
 
-    Default ON (fetch from SofaScore) unless:
-      SOFASCORE_ENABLED=0
+    Default OFF (no network) unless:
+      SOFASCORE_ENABLED=1
 
     Schema must stay stable so downstream pipeline continues working.
     """
