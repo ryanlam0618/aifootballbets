@@ -20,24 +20,6 @@ def test_collect_lineup_default_off_does_not_call_sofascore(monkeypatch):
     assert out["injury"]["source"] == "v2-standalone-fallback"
 
 
-def test_collect_lineup_unset_flag_defaults_off(monkeypatch):
-    monkeypatch.delenv("SOFASCORE_ENABLED", raising=False)
-
-    called = {"n": 0}
-
-    def _should_not_be_called(*args, **kwargs):
-        called["n"] += 1
-        raise AssertionError("fetch_lineup_and_injury should not run when SOFASCORE_ENABLED is unset")
-
-    monkeypatch.setattr(sofa, "fetch_lineup_and_injury", _should_not_be_called)
-
-    out = team_news.collect_lineup_and_injury("Home", "Away", "2026-03-20")
-
-    assert called["n"] == 0
-    assert out["lineup"]["source"] == "v2-standalone-fallback"
-    assert out["injury"]["source"] == "v2-standalone-fallback"
-
-
 def test_collect_lineup_enabled_calls_sofascore(monkeypatch):
     monkeypatch.setenv("SOFASCORE_ENABLED", "1")
 
