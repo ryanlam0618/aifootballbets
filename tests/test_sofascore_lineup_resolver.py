@@ -93,6 +93,32 @@ def test_resolve_event_returns_confidence_when_name_normalized():
     assert resolved.confidence >= 0.62
 
 
+def test_resolve_event_handles_accented_names_with_ascii_query():
+    scheduled = {
+        "events": [
+            {
+                "id": 2002,
+                "homeTeam": {"name": "Atlético Tucumán"},
+                "awayTeam": {"name": "Gimnasia y Esgrima"},
+                "startTimestamp": 1774051200,
+            }
+        ]
+    }
+    client = _FakeClient(scheduled)
+
+    resolved = resolve_event(
+        "Atletico Tucuman",
+        "Gimnasia y Esgrima",
+        "2026-03-20",
+        client=client,
+        kickoff_time_utc="2026-03-21T00:00:00Z",
+    )
+
+    assert resolved is not None
+    assert resolved.event_id == 2002
+    assert resolved.confidence >= 0.7
+
+
 def test_event_id_cache_roundtrip(tmp_path: Path):
     cache = EventIdCache(tmp_path / "cache.json")
     cache.set_event(

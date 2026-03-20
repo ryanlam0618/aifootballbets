@@ -4,6 +4,7 @@ import json
 import os
 import re
 import time
+import unicodedata
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -20,6 +21,8 @@ SOFASCORE_BASE_URL = "https://www.sofascore.com"
 
 def _norm(x: str) -> str:
     x = (x or "").lower().strip()
+    x = unicodedata.normalize("NFKD", x)
+    x = "".join(ch for ch in x if not unicodedata.combining(ch))
     x = x.replace("&", " and ")
     x = re.sub(r"[^a-z0-9\u4e00-\u9fff\s]", " ", x)
     x = re.sub(r"\s+", " ", x).strip()
