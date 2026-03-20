@@ -146,6 +146,7 @@ def build_features(
     injuries_df: pd.DataFrame,
     history_csv_path: str,
     out_csv: Path,
+    sofascore_features_df: Optional[pd.DataFrame] = None,
 ) -> pd.DataFrame:
     try:
         hist = pd.read_csv(history_csv_path)
@@ -186,6 +187,13 @@ def build_features(
 
         of = _odds_features(odds_24h_df, match_id)
         inf = _injury_features(injuries_df, match_id)
+
+        # Optional SofaScore structured features (default zeros if missing)
+        ss = {}
+        if sofascore_features_df is not None and (not sofascore_features_df.empty) and ("match_id" in sofascore_features_df.columns):
+            mss = sofascore_features_df[sofascore_features_df["match_id"] == match_id]
+            if not mss.empty:
+                ss = mss.iloc[0].to_dict()
 
         rows.append(
             {
@@ -243,10 +251,25 @@ def build_features(
                 "latest_odds": of["latest_odds"],
                 "odds_delta": of["odds_delta"],
                 "history_insufficient": of["history_insufficient"],
-                # 陣容/傷停
+                # 陣容/傷停（傳統：injuries.csv）
                 "home_missing_players": inf["home_missing"],
                 "away_missing_players": inf["away_missing"],
                 "lineup_change_proxy": inf["injury_diff"],
+
+                # SofaScore（結構化；default off 時會係 0/NaN）
+                "sofascore_lineup_confirmed": ss.get("lineup_confirmed"),
+                "sofascore_home_missing_count": ss.get("home_missing_count", 0),
+                "sofascore_away_missing_count": ss.get("away_missing_count", 0),
+                "sofascore_home_doubtful_count": ss.get("home_doubtful_count", 0),
+                "sofascore_away_doubtful_count": ss.get("away_doubtful_count", 0),
+                "sofascore_home_missing_gk": ss.get("home_missing_gk", 0),
+                "sofascore_home_missing_df": ss.get("home_missing_df", 0),
+                "sofascore_home_missing_mf": ss.get("home_missing_mf", 0),
+                "sofascore_home_missing_fw": ss.get("home_missing_fw", 0),
+                "sofascore_away_missing_gk": ss.get("away_missing_gk", 0),
+                "sofascore_away_missing_df": ss.get("away_missing_df", 0),
+                "sofascore_away_missing_mf": ss.get("away_missing_mf", 0),
+                "sofascore_away_missing_fw": ss.get("away_missing_fw", 0),
                 # 評分系統相關必要佔位
                 "home_elo": np.nan,
                 "away_elo": np.nan,

@@ -124,6 +124,7 @@ def run(matches: List[str], bankroll: float | None, default_league_key: str = "s
     fixtures_csv = data_root / "fixtures_master.csv"
     odds_24h_csv = data_root / "odds_24h.csv"
     injuries_csv = data_root / "injuries.csv"
+    sofascore_features_csv = data_root / "sofascore_features.csv"
     features_csv = data_root / "features_master.csv"
     reco_csv = reports_root / "betting_recommendations.csv"
     records_xlsx = reports_root / "betting_records.xlsx"
@@ -146,6 +147,8 @@ def run(matches: List[str], bankroll: float | None, default_league_key: str = "s
 
     # 3) lineup + injuries + grok (T-60 gate)
     injury_all_rows = []
+    sofascore_feature_rows = []
+
     for _, fx in fixtures_df.iterrows():
         match_id = str(fx["match_id"])
         home = fx["home_team"]
@@ -173,8 +176,37 @@ def run(matches: List[str], bankroll: float | None, default_league_key: str = "s
         write_lineup_text(match_id, home, away, payload, grok_text, lineup_txt_dir)
         injury_all_rows.extend(injury_rows(match_id, home, away, payload.get("injury") or {}))
 
+        # SofaScore structured features (optional, default-off at source)
+        sf = payload.get("sofascore_features") or {}
+        home_sf = sf.get("home") or {}
+        away_sf = sf.get("away") or {}
+        sofascore_feature_rows.append(
+            {
+                "match_id": match_id,
+                "lineup_confirmed": sf.get("lineup_confirmed"),
+                "home_missing_count": int(home_sf.get("missing_count") or 0),
+                "away_missing_count": int(away_sf.get("missing_count") or 0),
+                "home_doubtful_count": int(home_sf.get("doubtful_count") or 0),
+                "away_doubtful_count": int(away_sf.get("doubtful_count") or 0),
+                "home_missing_gk": int((home_sf.get("missing_by_position") or {}).get("G", 0) or 0),
+                "home_missing_df": int((home_sf.get("missing_by_position") or {}).get("D", 0) or 0),
+                "home_missing_mf": int((home_sf.get("missing_by_position") or {}).get("M", 0) or 0),
+                "home_missing_fw": int((home_sf.get("missing_by_position") or {}).get("F", 0) or 0),
+                "away_missing_gk": int((away_sf.get("missing_by_position") or {}).get("G", 0) or 0),
+                "away_missing_df": int((away_sf.get("missing_by_position") or {}).get("D", 0) or 0),
+                "away_missing_mf": int((away_sf.get("missing_by_position") or {}).get("M", 0) or 0),
+                "away_missing_fw": int((away_sf.get("missing_by_position") or {}).get("F", 0) or 0),
+                "sofascore_source": (payload.get("injury") or {}).get("source"),
+            }
+        )
+
     injuries_df = injuries_to_csv(injury_all_rows, injuries_csv)
     print(f"[OK] injuries rows: {len(injuries_df)} -> {injuries_csv}")
+
+    sofascore_features_df = pd.DataFrame(sofascore_feature_rows)
+    sofascore_features_csv.parent.mkdir(parents=True, exist_ok=True)
+    sofascore_features_df.to_csv(sofascore_features_csv, index=False, encoding="utf-8-sig")
+    print(f"[OK] sofascore features rows: {len(sofascore_features_df)} -> {sofascore_features_csv}")
 
     # 4) features
     features_df = build_features(
@@ -183,6 +215,7 @@ def run(matches: List[str], bankroll: float | None, default_league_key: str = "s
         injuries_df=injuries_df,
         history_csv_path=settings_v2.history_csv_path,
         out_csv=features_csv,
+        sofascore_features_df=sofascore_features_df,
     )
     print(f"[OK] features: {len(features_df)} -> {features_csv}")
 
