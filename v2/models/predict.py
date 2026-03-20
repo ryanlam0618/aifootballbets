@@ -137,23 +137,33 @@ def predict_markets(
         probs_1x2 = _build_probabilities(mu_h, mu_a)
         score_mat = _score_matrix(mu_h, mu_a, max_goals=10)
 
-        # 1x2
-        for sel, key in [("Home", "home_win"), ("Draw", "draw"), ("Away", "away_win")]:
-            odd = market_odds_map.get((match_id, "1X2", sel))
-            if not odd:
+        # OU-only (all available lines) — keep just 1 best bet per match.
+        # We still build score_mat via Poisson and use it to price O/U lines.
+        for (mid, market_key, sel), odd in market_odds_map.items():
+            if mid != match_id:
                 continue
-            mp = probs_1x2[key]
+            if not market_key.startswith("Over/Under"):
+                continue
+
+            try:
+                line = float(market_key.split(" ")[-1])
+            except Exception:
+                line = 2.5
+
+            p_over = _prob_over(score_mat, line)
+            mp = p_over if sel == "Over" else (1 - p_over)
             ip = _implied(odd)
             edge = mp - ip
             ev = _ev(mp, odd)
+
             picks.append(
                 ModelPick(
                     match_id=match_id,
                     league=league,
                     home_team=home,
                     away_team=away,
-                    market="1X2",
-                    line="",
+                    market="Over/Under",
+                    line=str(line),
                     selection=sel,
                     odds=float(odd),
                     model_probability=mp,
@@ -161,71 +171,20 @@ def predict_markets(
                     edge=edge,
                     ev=ev,
                     confidence=_to_conf(edge),
-                    rationale=f"1X2 綜合機率 (Poisson/DC/NB), μ={mu_h:.2f}-{mu_a:.2f}",
+                    rationale=f"總入球分佈推導 O/U {line}",
                 )
             )
 
-        # OU + AH from available odds map
-        for (mid, market_key, sel), odd in market_odds_map.items():
-            if mid != match_id:
-                continue
-            if market_key.startswith("Over/Under"):
-                try:
-                    line = float(market_key.split(" ")[-1])
-                except Exception:
-                    line = 2.5
-                p_over = _prob_over(score_mat, line)
-                mp = p_over if sel == "Over" else (1 - p_over)
-                ip = _implied(odd)
-                edge = mp - ip
-                ev = _ev(mp, odd)
-                picks.append(
-                    ModelPick(
-                        match_id=match_id,
-                        league=league,
-                        home_team=home,
-                        away_team=away,
-                        market="Over/Under",
-                        line=str(line),
-                        selection=sel,
-                        odds=float(odd),
-                        model_probability=mp,
-                        implied_probability=ip,
-                        edge=edge,
-                        ev=ev,
-                        confidence=_to_conf(edge),
-                        rationale=f"總入球分佈推導 O/U {line}",
-                    )
-                )
-            elif market_key.startswith("Asian Handicap"):
-                try:
-                    line = float(market_key.split(" ")[-1])
-                except Exception:
-                    line = 0.0
-                # line here from bookmaker on named side, assume line belongs to Home side
-                p_home = _prob_home_ah(score_mat, line)
-                mp = p_home if sel == "Home" else (1 - p_home)
-                ip = _implied(odd)
-                edge = mp - ip
-                ev = _ev(mp, odd)
-                picks.append(
-                    ModelPick(
-                        match_id=match_id,
-                        league=league,
-                        home_team=home,
-                        away_team=away,
-                        market="Asian Handicap",
-                        line=str(line),
-                        selection=sel,
-                        odds=float(odd),
-                        model_probability=mp,
-                        implied_probability=ip,
-                        edge=edge,
-                        ev=ev,
-                        confidence=_to_conf(edge),
-                        rationale=f"比分矩陣推導 AH {line}",
-                    )
-                )
+    out = pd.DataFrame([p.__dict__ for p in picks])
+    if out.empty:
+        return out
+
+    # OU-only: keep just the best edge per match_id.
+    out = out.sort_values(["match_id", "edge"], ascending=[True, False])
+    out = out.groupby("match_id", as_index=False).head(1).reset_index(drop=True)
+
+    out["expected_value_assessment"] = np.where(out["ev"] > 0, "Positive", "Negative")
+    return out
 
     out = pd.DataFrame([p.__dict__ for p in picks])
     if out.empty:
