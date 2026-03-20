@@ -38,6 +38,43 @@ class _FakeClientWithRetry:
         return None
 
 
+class _FakeClientFallback404:
+    def __init__(self):
+        self.lineup_calls: list[int] = []
+
+    def scheduled_events(self, _date):
+        return {
+            "events": [
+                {
+                    "id": 111,
+                    "homeTeam": {"name": "Club Necaxa"},
+                    "awayTeam": {"name": "Club Tijuana"},
+                    "startTimestamp": 1774054800,
+                },
+                {
+                    "id": 222,
+                    "homeTeam": {"name": "Club Necaxa"},
+                    "awayTeam": {"name": "Club Tijuana"},
+                    "startTimestamp": 1774058400,
+                },
+            ]
+        }
+
+    def lineups(self, event_id):
+        self.lineup_calls.append(int(event_id))
+        if int(event_id) == 111:
+            raise Exception("404 Not Found")
+        assert int(event_id) == 222
+        return {
+            "confirmed": True,
+            "home": {"players": [{"player": {"id": 1, "name": "H1"}, "substitute": False}], "missingPlayers": []},
+            "away": {"players": [{"player": {"id": 2, "name": "A1"}, "substitute": False}], "missingPlayers": []},
+        }
+
+    def close(self):
+        return None
+
+
 def test_best_event_prefers_kickoff_tolerance():
     events = [
         {
@@ -169,3 +206,27 @@ def test_fetch_uses_cached_event_id_without_scheduled_lookup(monkeypatch, tmp_pa
 
     assert out["lineup"]["source"] == "sofascore"
     assert fake_client.calls == 1
+
+
+def test_fetch_fallbacks_when_best_event_lineups_404(monkeypatch):
+    from v2.ingest import sofascore_lineup as mod
+
+    fake_client = _FakeClientFallback404()
+
+    class _ClientFactory:
+        def __call__(self, *args, **kwargs):
+            return fake_client
+
+    monkeypatch.setattr(mod, "SofaScoreClient", _ClientFactory())
+
+    out = fetch_lineup_and_injury(
+        home_team="Club Necaxa",
+        away_team="Club Tijuana",
+        match_date="2026-03-20",
+        kickoff_time_utc="2026-03-21T01:00:00Z",
+    )
+
+    assert out["lineup"]["source"] == "sofascore"
+    assert len(out["lineup"]["home_team"]["starters"]) == 1
+    assert len(out["lineup"]["away_team"]["starters"]) == 1
+    assert fake_client.lineup_calls == [111, 222]

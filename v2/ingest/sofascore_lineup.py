@@ -250,7 +250,7 @@ def _score_event_candidate(
     return _CandidateEvent(event=event, confidence=confidence, min_pair_score=min_pair)
 
 
-def _best_event_by_fuzzy(
+def _rank_event_candidates(
     home_team: str,
     away_team: str,
     events: list[dict],
@@ -259,9 +259,9 @@ def _best_event_by_fuzzy(
     kickoff_tolerance_minutes: int = 240,
     min_confidence: float = 0.55,
     min_pair_score: float = 0.45,
-) -> Optional[_CandidateEvent]:
-    best: Optional[_CandidateEvent] = None
+) -> list[_CandidateEvent]:
     kickoff_ts = _parse_kickoff_ts(kickoff_time_utc)
+    ranked: list[_CandidateEvent] = []
 
     for e in events:
         if not isinstance(e, dict):
@@ -273,16 +273,34 @@ def _best_event_by_fuzzy(
             kickoff_ts=kickoff_ts,
             kickoff_tolerance_minutes=kickoff_tolerance_minutes,
         )
-        if best is None or cand.confidence > best.confidence:
-            best = cand
+        if cand.confidence < min_confidence or cand.min_pair_score < min_pair_score:
+            continue
+        ranked.append(cand)
 
-    if best is None:
-        return None
+    ranked.sort(key=lambda c: c.confidence, reverse=True)
+    return ranked
 
-    # avoid false positives when only one team matches or confidence too low
-    if best.confidence < min_confidence or best.min_pair_score < min_pair_score:
-        return None
-    return best
+
+def _best_event_by_fuzzy(
+    home_team: str,
+    away_team: str,
+    events: list[dict],
+    *,
+    kickoff_time_utc: Optional[str] = None,
+    kickoff_tolerance_minutes: int = 240,
+    min_confidence: float = 0.55,
+    min_pair_score: float = 0.45,
+) -> Optional[_CandidateEvent]:
+    ranked = _rank_event_candidates(
+        home_team,
+        away_team,
+        events,
+        kickoff_time_utc=kickoff_time_utc,
+        kickoff_tolerance_minutes=kickoff_tolerance_minutes,
+        min_confidence=min_confidence,
+        min_pair_score=min_pair_score,
+    )
+    return ranked[0] if ranked else None
 
 
 def _ensure_dir(p: Path) -> None:
@@ -427,6 +445,15 @@ class SofaScoreClient:
             f"/api/v1/event/{int(event_id)}/lineups",
             dump_name=f"lineups_{int(event_id)}.json" if self.raw_dir else None,
         )
+
+
+def _is_not_found_error(exc: Exception) -> bool:
+    if httpx is not None and isinstance(exc, httpx.HTTPStatusError):
+        try:
+            return int(exc.response.status_code) == 404
+        except Exception:
+            return False
+    return "404" in str(exc)
 
 
 def resolve_event(
@@ -685,6 +712,26 @@ def parse_lineups_to_schema(
     return {"lineup": lineup, "injury": injury, "sofascore_features": features}
 
 
+def _empty_payload(home_team: str, away_team: str, source: str) -> Dict[str, Any]:
+    return {
+        "lineup": {
+            "home_team": {"name": home_team, "formation": "Unknown", "starters": [], "substitutes": []},
+            "away_team": {"name": away_team, "formation": "Unknown", "starters": [], "substitutes": []},
+            "source": source,
+        },
+        "injury": {
+            "home": {"injuries": [], "suspensions": [], "total_impact": 0.0},
+            "away": {"injuries": [], "suspensions": [], "total_impact": 0.0},
+            "source": source,
+        },
+        "sofascore_features": {
+            "lineup_confirmed": None,
+            "home": {"missing_count": 0, "doubtful_count": 0, "missing_by_position": {}},
+            "away": {"missing_count": 0, "doubtful_count": 0, "missing_by_position": {}},
+        },
+    }
+
+
 def fetch_lineup_and_injury(
     home_team: str,
     away_team: str,
@@ -702,77 +749,81 @@ def fetch_lineup_and_injury(
     cache = EventIdCache(cache_path)
 
     try:
-        cached_event_id = cache.get_event_id(match_id)
-        if cached_event_id is not None:
-            raw = client.lineups(cached_event_id)
+        tried_event_ids: set[int] = set()
+
+        def _attempt_lineups(event_id: int, name_home: str, name_away: str) -> Optional[Dict[str, Any]]:
+            tried_event_ids.add(int(event_id))
+            raw = client.lineups(int(event_id))
             return parse_lineups_to_schema(
                 raw,
-                home_team_name=home_team,
-                away_team_name=away_team,
+                home_team_name=name_home,
+                away_team_name=name_away,
                 source="sofascore",
             )
 
-        resolved = resolve_event(
+        cached_event_id = cache.get_event_id(match_id)
+        if cached_event_id is not None:
+            try:
+                out = _attempt_lineups(cached_event_id, home_team, away_team)
+                if out:
+                    return out
+            except Exception as e:
+                if not _is_not_found_error(e):
+                    raise
+
+        date_str = (match_date or "").strip()[:10]
+        data = client.scheduled_events(date_str)
+        events = data.get("events", []) if isinstance(data, dict) else []
+        if not events:
+            return _empty_payload(home_team, away_team, "sofascore:not_resolved")
+
+        ranked = _rank_event_candidates(
             home_team,
             away_team,
-            match_date,
-            client=client,
+            events,
             kickoff_time_utc=kickoff_time_utc,
         )
-        if not resolved:
-            return {
-                "lineup": {
-                    "home_team": {"name": home_team, "formation": "Unknown", "starters": [], "substitutes": []},
-                    "away_team": {"name": away_team, "formation": "Unknown", "starters": [], "substitutes": []},
-                    "source": "sofascore:not_resolved",
-                },
-                "injury": {
-                    "home": {"injuries": [], "suspensions": [], "total_impact": 0.0},
-                    "away": {"injuries": [], "suspensions": [], "total_impact": 0.0},
-                    "source": "sofascore:not_resolved",
-                },
-                "sofascore_features": {
-                    "lineup_confirmed": None,
-                    "home": {"missing_count": 0, "doubtful_count": 0, "missing_by_position": {}},
-                    "away": {"missing_count": 0, "doubtful_count": 0, "missing_by_position": {}},
-                },
-            }
+        if not ranked:
+            return _empty_payload(home_team, away_team, "sofascore:not_resolved")
 
-        cache.set_event(
-            match_id=match_id,
-            event_id=resolved.event_id,
-            confidence=resolved.confidence,
-            home_team=resolved.home_name,
-            away_team=resolved.away_name,
-            match_date=match_date,
-            kickoff_time_utc=kickoff_time_utc,
-        )
+        first_error: Optional[Exception] = None
+        for cand in ranked:
+            event = cand.event
+            event_id = int(event.get("id"))
+            if event_id in tried_event_ids:
+                continue
 
-        raw = client.lineups(resolved.event_id)
-        return parse_lineups_to_schema(
-            raw,
-            home_team_name=resolved.home_name,
-            away_team_name=resolved.away_name,
-            source="sofascore",
-        )
+            resolved_home_name = (event.get("homeTeam") or {}).get("name") or home_team
+            resolved_away_name = (event.get("awayTeam") or {}).get("name") or away_team
+            event_ts = event.get("startTimestamp")
+            kickoff_iso = None
+            if isinstance(event_ts, int):
+                kickoff_iso = datetime.fromtimestamp(event_ts, tz=timezone.utc).isoformat()
+
+            try:
+                out = _attempt_lineups(event_id, resolved_home_name, resolved_away_name)
+                cache.set_event(
+                    match_id=match_id,
+                    event_id=event_id,
+                    confidence=cand.confidence,
+                    home_team=resolved_home_name,
+                    away_team=resolved_away_name,
+                    match_date=match_date,
+                    kickoff_time_utc=kickoff_time_utc or kickoff_iso,
+                )
+                return out
+            except Exception as e:
+                if first_error is None:
+                    first_error = e
+                if _is_not_found_error(e):
+                    continue
+                raise
+
+        if first_error is not None:
+            return _empty_payload(home_team, away_team, f"sofascore:error:{type(first_error).__name__}")
+        return _empty_payload(home_team, away_team, "sofascore:not_resolved")
     except Exception as e:
-        return {
-            "lineup": {
-                "home_team": {"name": home_team, "formation": "Unknown", "starters": [], "substitutes": []},
-                "away_team": {"name": away_team, "formation": "Unknown", "starters": [], "substitutes": []},
-                "source": f"sofascore:error:{type(e).__name__}",
-            },
-            "injury": {
-                "home": {"injuries": [], "suspensions": [], "total_impact": 0.0},
-                "away": {"injuries": [], "suspensions": [], "total_impact": 0.0},
-                "source": f"sofascore:error:{type(e).__name__}",
-            },
-            "sofascore_features": {
-                "lineup_confirmed": None,
-                "home": {"missing_count": 0, "doubtful_count": 0, "missing_by_position": {}},
-                "away": {"missing_count": 0, "doubtful_count": 0, "missing_by_position": {}},
-            },
-        }
+        return _empty_payload(home_team, away_team, f"sofascore:error:{type(e).__name__}")
     finally:
         client.close()
 
