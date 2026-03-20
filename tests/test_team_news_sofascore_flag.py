@@ -3,13 +3,13 @@ from v2.ingest import team_news
 
 
 def test_collect_lineup_default_off_does_not_call_sofascore(monkeypatch):
-    monkeypatch.delenv("SOFASCORE_ENABLED", raising=False)
+    monkeypatch.setenv("SOFASCORE_ENABLED", "0")
 
     called = {"n": 0}
 
     def _should_not_be_called(*args, **kwargs):
         called["n"] += 1
-        raise AssertionError("fetch_lineup_and_injury should not run when SOFASCORE_ENABLED is unset")
+        raise AssertionError("fetch_lineup_and_injury should not run when SOFASCORE_ENABLED=0")
 
     monkeypatch.setattr(sofa, "fetch_lineup_and_injury", _should_not_be_called)
 

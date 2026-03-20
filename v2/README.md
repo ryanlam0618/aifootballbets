@@ -55,7 +55,7 @@ ODDS_API_MAX_LEAGUES_PER_RUN=4
 
 # SofaScore lineup + missingPlayers (default OFF)
 # 設成 1 才會在 ingest/team_news.collect_lineup_and_injury 啟用 SofaScore 公開 JSON endpoints
-SOFASCORE_ENABLED=0
+SOFASCORE_ENABLED=0  # disable
 ```
 
 ## SofaScore lineup / injury ingestion (optional, default OFF)
@@ -69,7 +69,8 @@ SOFASCORE_ENABLED=0
 啟用：
 
 ```bash
-SOFASCORE_ENABLED=1 python -m v2.main --matches "soccer_epl|Fulham vs Arsenal"
+# Default is ON; set SOFASCORE_ENABLED=0 to disable.
+python -m v2.main --matches "soccer_epl|Fulham vs Arsenal"
 ```
 
 Rate limit / etiquette（非常保守）：
