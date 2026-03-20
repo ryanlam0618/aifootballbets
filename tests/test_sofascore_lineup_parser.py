@@ -74,8 +74,16 @@ def test_parse_new_lineups_format_players_and_missing_players():
     assert "Home Injured" in names_inj
     assert "Home Suspended" in names_sus
 
+    # feature payload for downstream join
+    feats = out["sofascore_features"]
+    assert feats["lineup_confirmed"] is True
+    assert feats["home"]["missing_count"] == 2
+    assert feats["home"]["doubtful_count"] == 0
+    assert feats["home"]["missing_by_position"]["D"] == 1
+    assert feats["home"]["missing_by_position"]["M"] == 1
 
-def test_parse_old_lineups_format_starers_subs():
+
+def test_parse_old_lineups_format_starters_subs():
     raw = {
         "lineups": [
             {

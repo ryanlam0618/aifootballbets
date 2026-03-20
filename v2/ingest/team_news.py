@@ -34,7 +34,14 @@ def _format_lineup_block(lineup: dict | None, side_key: str) -> str:
     )
 
 
-def collect_lineup_and_injury(home_team: str, away_team: str, match_date: str) -> Dict[str, Any]:
+def collect_lineup_and_injury(
+    home_team: str,
+    away_team: str,
+    match_date: str,
+    *,
+    match_id: str | None = None,
+    kickoff_time_utc: str | None = None,
+) -> Dict[str, Any]:
     """Collect lineup + injuries.
 
     Default OFF (no network / no SofaScore dependency) unless:
@@ -65,6 +72,8 @@ def collect_lineup_and_injury(home_team: str, away_team: str, match_date: str) -
                 home_team=home_team,
                 away_team=away_team,
                 match_date=match_date,
+                match_id=match_id,
+                kickoff_time_utc=kickoff_time_utc,
                 raw_dir=raw_dir,
                 sleep_s=0.2,
             )
@@ -74,7 +83,15 @@ def collect_lineup_and_injury(home_team: str, away_team: str, match_date: str) -
         # never fail the main pipeline
         pass
 
-    return {"lineup": lineup, "injury": injury}
+    return {
+        "lineup": lineup,
+        "injury": injury,
+        "sofascore_features": {
+            "lineup_confirmed": None,
+            "home": {"missing_count": 0, "doubtful_count": 0, "missing_by_position": {}},
+            "away": {"missing_count": 0, "doubtful_count": 0, "missing_by_position": {}},
+        },
+    }
 
 
 def grok_research(home_team: str, away_team: str, match_date: str) -> str:

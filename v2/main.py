@@ -152,7 +152,13 @@ def run(matches: List[str], bankroll: float | None, default_league_key: str = "s
         away = fx["away_team"]
         match_date = str(fx.get("match_date"))
 
-        payload = collect_lineup_and_injury(home, away, match_date)
+        payload = collect_lineup_and_injury(
+            home,
+            away,
+            match_date,
+            match_id=match_id,
+            kickoff_time_utc=str(fx.get("commence_time_utc") or ""),
+        )
 
         # T-60 gate
         grok_text = "[Skipped] Not in T-60 window"
