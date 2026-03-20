@@ -124,6 +124,13 @@ def predict_markets(
 
         mu_h = _safe_float(row.get("home_xg_avg_5"), 1.25)
         mu_a = _safe_float(row.get("away_xg_avg_5"), 1.10)
+
+        # Guard against NaN/inf from missing history data: fall back to sane defaults.
+        if not (mu_h == mu_h) or mu_h in (float("inf"), float("-inf")):
+            mu_h = 1.25
+        if not (mu_a == mu_a) or mu_a in (float("inf"), float("-inf")):
+            mu_a = 1.10
+
         mu_h = max(0.2, min(4.5, mu_h))
         mu_a = max(0.2, min(4.5, mu_a))
 
