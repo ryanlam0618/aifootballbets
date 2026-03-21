@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from v2.ingest.sofascore_lineup import (
     EventIdCache,
     _best_event_by_fuzzy,
@@ -230,3 +232,110 @@ def test_fetch_fallbacks_when_best_event_lineups_404(monkeypatch):
     assert len(out["lineup"]["home_team"]["starters"]) == 1
     assert len(out["lineup"]["away_team"]["starters"]) == 1
     assert fake_client.lineup_calls == [111, 222]
+
+
+def test_client_retries_429_then_succeeds(monkeypatch, tmp_path: Path):
+    from v2.ingest import sofascore_lineup as mod
+
+    class _Resp:
+        def __init__(self, status_code: int, payload: dict, headers=None):
+            self.status_code = status_code
+            self._payload = payload
+            self.headers = headers or {}
+
+        def raise_for_status(self):
+            if self.status_code >= 400:
+                raise _HTTPStatusError(self)
+
+        def json(self):
+            return self._payload
+
+    class _HTTPStatusError(Exception):
+        def __init__(self, response):
+            super().__init__(f"HTTP {response.status_code}")
+            self.response = response
+
+    class _RequestError(Exception):
+        pass
+
+    class _Client:
+        def __init__(self, *args, **kwargs):
+            self.calls = 0
+
+        def get(self, _url):
+            self.calls += 1
+            if self.calls == 1:
+                return _Resp(429, {}, headers={"Retry-After": "0"})
+            return _Resp(200, {"events": [{"id": 1}]})
+
+        def close(self):
+            return None
+
+    class _Timeout:
+        def __init__(self, _v):
+            pass
+
+    class _FakeHttpx:
+        Client = _Client
+        Timeout = _Timeout
+        HTTPStatusError = _HTTPStatusError
+        RequestError = _RequestError
+
+    sleeps: list[float] = []
+    monkeypatch.setattr(mod, "httpx", _FakeHttpx)
+    monkeypatch.setattr(mod.time, "sleep", lambda s: sleeps.append(float(s)))
+
+    c = mod.SofaScoreClient(raw_dir=tmp_path, sleep_s=0.0, max_retries=2, retry_backoff_s=0.01)
+    out = c.scheduled_events("2026-03-21")
+    c.close()
+
+    assert out["events"][0]["id"] == 1
+    assert any(s >= 0.01 for s in sleeps)
+    assert (tmp_path / "scheduled-events_2026-03-21.json").exists()
+
+
+def test_client_non_retryable_404_raises(monkeypatch):
+    from v2.ingest import sofascore_lineup as mod
+
+    class _Resp:
+        def __init__(self, status_code: int):
+            self.status_code = status_code
+            self.headers = {}
+
+        def raise_for_status(self):
+            raise _HTTPStatusError(self)
+
+    class _HTTPStatusError(Exception):
+        def __init__(self, response):
+            super().__init__(f"HTTP {response.status_code}")
+            self.response = response
+
+    class _RequestError(Exception):
+        pass
+
+    class _Client:
+        def __init__(self, *args, **kwargs):
+            self.calls = 0
+
+        def get(self, _url):
+            self.calls += 1
+            return _Resp(404)
+
+        def close(self):
+            return None
+
+    class _Timeout:
+        def __init__(self, _v):
+            pass
+
+    class _FakeHttpx:
+        Client = _Client
+        Timeout = _Timeout
+        HTTPStatusError = _HTTPStatusError
+        RequestError = _RequestError
+
+    monkeypatch.setattr(mod, "httpx", _FakeHttpx)
+    c = mod.SofaScoreClient(sleep_s=0.0, max_retries=3, retry_backoff_s=0.01)
+    with pytest.raises(_HTTPStatusError):
+        c.scheduled_events("2026-03-21")
+    c.close()
