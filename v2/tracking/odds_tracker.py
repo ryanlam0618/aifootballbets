@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
 
-from scripts.oddsportal_one_match import extract_odds, normalize_market_type, parse_line_csv
+from v2.tracking.oddsportal_one_match import extract_odds, normalize_market_type, parse_line_csv
 
 
 @dataclass(frozen=True)

@@ -17,7 +17,7 @@ from zoneinfo import ZoneInfo
 
 from playwright.async_api import async_playwright
 
-from scripts.oddsportal_one_match import normalize_market_type, parse_line_csv
+from v2.tracking.oddsportal_one_match import normalize_market_type, parse_line_csv
 from v2.tracking.odds_tracker import (
     Target,
     append_jsonl,
