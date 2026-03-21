@@ -6,7 +6,7 @@ import re
 import time
 import unicodedata
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
@@ -102,6 +102,54 @@ def _parse_kickoff_ts(value: Any) -> Optional[int]:
         return int(dt.timestamp())
     except Exception:
         return None
+
+
+def _candidate_schedule_dates(match_date: str, kickoff_time_utc: Optional[str] = None) -> list[str]:
+    """Build a small, de-duplicated date window for scheduled-events lookup.
+
+    We keep request volume low (at most 3 dates):
+    - preferred match_date (if parseable)
+    - kickoff date (if provided and parseable)
+    - +/- 1 day around the anchor date to tolerate timezone/date drift
+    """
+
+    def _parse_date(s: str) -> Optional[datetime]:
+        t = (s or "").strip()[:10]
+        if not t:
+            return None
+        try:
+            return datetime.strptime(t, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        except Exception:
+            return None
+
+    dates: list[datetime] = []
+
+    md = _parse_date(match_date)
+    if md is not None:
+        dates.append(md)
+
+    kts = _parse_kickoff_ts(kickoff_time_utc)
+    if kts is not None:
+        kdate = datetime.fromtimestamp(kts, tz=timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        dates.append(kdate)
+
+    if not dates:
+        return [datetime.now(timezone.utc).strftime("%Y-%m-%d")]
+
+    # choose first anchor, include neighbors; then append other explicit dates
+    anchor = dates[0]
+    expanded = [anchor - timedelta(days=1), anchor, anchor + timedelta(days=1)] + dates[1:]
+
+    out: list[str] = []
+    seen: set[str] = set()
+    for d in expanded:
+        key = d.strftime("%Y-%m-%d")
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(key)
+
+    return out[:3]
 
 
 def _retry_after_seconds(headers: Any) -> Optional[float]:
@@ -464,22 +512,27 @@ def resolve_event(
     client: SofaScoreClient,
     kickoff_time_utc: Optional[str] = None,
 ) -> Optional[ResolvedEvent]:
-    date_str = (match_date or "").strip()[:10]
-    if not date_str:
-        return None
+    date_candidates = _candidate_schedule_dates(match_date, kickoff_time_utc)
 
-    data = client.scheduled_events(date_str)
-    events = data.get("events", []) if isinstance(data, dict) else []
-    if not events:
-        return None
+    best: Optional[_CandidateEvent] = None
+    for date_str in date_candidates:
+        data = client.scheduled_events(date_str)
+        events = data.get("events", []) if isinstance(data, dict) else []
+        if not events:
+            continue
 
-    best = _best_event_by_fuzzy(
-        home_team,
-        away_team,
-        events,
-        kickoff_time_utc=kickoff_time_utc,
-    )
-    if not best:
+        cand = _best_event_by_fuzzy(
+            home_team,
+            away_team,
+            events,
+            kickoff_time_utc=kickoff_time_utc,
+        )
+        if cand is None:
+            continue
+        if best is None or cand.confidence > best.confidence:
+            best = cand
+
+    if best is None:
         return None
 
     event = best.event
@@ -771,9 +824,13 @@ def fetch_lineup_and_injury(
                 if not _is_not_found_error(e):
                     raise
 
-        date_str = (match_date or "").strip()[:10]
-        data = client.scheduled_events(date_str)
-        events = data.get("events", []) if isinstance(data, dict) else []
+        events: list[dict] = []
+        for date_str in _candidate_schedule_dates(match_date, kickoff_time_utc):
+            data = client.scheduled_events(date_str)
+            day_events = data.get("events", []) if isinstance(data, dict) else []
+            if isinstance(day_events, list) and day_events:
+                events.extend([e for e in day_events if isinstance(e, dict)])
+
         if not events:
             return _empty_payload(home_team, away_team, "sofascore:not_resolved")
 

@@ -6,6 +6,7 @@ import pytest
 from v2.ingest.sofascore_lineup import (
     EventIdCache,
     _best_event_by_fuzzy,
+    _candidate_schedule_dates,
     fetch_lineup_and_injury,
     resolve_event,
 )
@@ -17,6 +18,8 @@ class _FakeClient:
         self._lineups = lineups or {}
 
     def scheduled_events(self, _date):
+        if isinstance(self._scheduled, dict) and _date in self._scheduled:
+            return self._scheduled[_date]
         return self._scheduled
 
     def lineups(self, event_id):
@@ -75,6 +78,46 @@ class _FakeClientFallback404:
 
     def close(self):
         return None
+
+
+def test_candidate_schedule_dates_spans_neighbor_days_and_dedupes():
+    dates = _candidate_schedule_dates("2026-03-21", "2026-03-21T00:30:00Z")
+    assert dates[0] == "2026-03-20"
+    assert "2026-03-21" in dates
+    assert "2026-03-22" in dates
+    assert len(dates) == len(set(dates))
+    assert len(dates) <= 3
+
+
+def test_resolve_event_crosses_midnight_window():
+    # Match date says 2026-03-21, but event is on previous UTC day
+    scheduled = {
+        "2026-03-20": {
+            "events": [
+                {
+                    "id": 777,
+                    "homeTeam": {"name": "Manchester United"},
+                    "awayTeam": {"name": "Liverpool"},
+                    "startTimestamp": 1774051200,
+                }
+            ]
+        },
+        "2026-03-21": {"events": []},
+        "2026-03-22": {"events": []},
+    }
+    client = _FakeClient(scheduled)
+
+    resolved = resolve_event(
+        "Man United",
+        "Liverpool",
+        "2026-03-21",
+        client=client,
+        kickoff_time_utc="2026-03-21T00:00:00Z",
+    )
+
+    assert resolved is not None
+    assert resolved.event_id == 777
+    assert resolved.confidence > 0.7
 
 
 def test_best_event_prefers_kickoff_tolerance():
