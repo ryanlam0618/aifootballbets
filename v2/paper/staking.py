@@ -20,11 +20,21 @@ class DailyRiskState:
 
 
 class DailyRiskManager:
-    """
-    Stop placing new bets when cumulative day pnl <= -20% of day start bankroll.
+    """Daily risk guard.
+
+    Stops placing new bets when either:
+    - cumulative day pnl <= -stop_loss_amount (absolute), OR
+    - cumulative day pnl <= -stop_loss_pct * day_start_bankroll
+
+    Amount has priority when provided.
     """
 
-    def __init__(self, day_start_bankroll: float, stop_loss_pct: float = 0.20) -> None:
+    def __init__(
+        self,
+        day_start_bankroll: float,
+        stop_loss_pct: float = 0.20,
+        stop_loss_amount: float = 0.0,
+    ) -> None:
         self.state = DailyRiskState(
             starting_bankroll=day_start_bankroll,
             bankroll=day_start_bankroll,
@@ -32,6 +42,7 @@ class DailyRiskManager:
             stop_triggered=False,
         )
         self.stop_loss_pct = stop_loss_pct
+        self.stop_loss_amount = max(0.0, float(stop_loss_amount))
 
     def can_place(self) -> bool:
         return not self.state.stop_triggered
@@ -39,6 +50,12 @@ class DailyRiskManager:
     def register_settlement(self, profit: float) -> None:
         self.state.pnl += float(profit)
         self.state.bankroll += float(profit)
+
+        if self.stop_loss_amount > 0:
+            if self.state.pnl <= (-self.stop_loss_amount):
+                self.state.stop_triggered = True
+            return
+
         if self.state.pnl <= (-self.stop_loss_pct * self.state.starting_bankroll):
             self.state.stop_triggered = True
 

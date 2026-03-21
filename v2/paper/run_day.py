@@ -173,6 +173,7 @@ def run_for_day(
     risk = DailyRiskManager(
         day_start_bankroll=day_start,
         stop_loss_pct=max(0.0, float(settings_v2.paper_daily_stop_loss_pct)),
+        stop_loss_amount=max(0.0, float(getattr(settings_v2, "paper_daily_stop_loss_amount", 0.0))),
     )
 
     # guard using already-settled same-day pnl if rerun mid-day
@@ -192,9 +193,16 @@ def run_for_day(
     finally:
         conn.close()
 
+    # Daily stop-loss (absolute HKD amount) has priority; else fall back to pct.
+    day_stop_loss_amt = max(0.0, float(getattr(settings_v2, "paper_daily_stop_loss_amount", 0.0)))
     day_stop_loss_pct = max(0.0, float(settings_v2.paper_daily_stop_loss_pct))
-    if day_pnl_now <= (-day_stop_loss_pct * day_start):
-        risk.state.stop_triggered = True
+
+    if day_stop_loss_amt > 0:
+        if day_pnl_now <= (-day_stop_loss_amt):
+            risk.state.stop_triggered = True
+    else:
+        if day_pnl_now <= (-day_stop_loss_pct * day_start):
+            risk.state.stop_triggered = True
 
     selected = []
     bankroll_cursor = day_start
@@ -303,6 +311,7 @@ def run_for_day(
         "max_bets_per_league_per_day": max_bets_league,
         "max_league_exposure_fraction_per_day": max_league_exposure_frac,
         "max_stake_fraction_per_bet": float(settings_v2.paper_max_stake_fraction_per_bet),
+        "paper_daily_stop_loss_amount": day_stop_loss_amt,
         "paper_daily_stop_loss_pct": day_stop_loss_pct,
         "paper_devig_enabled": bool(settings_v2.paper_devig_enabled),
         "decision_log_path": str(decision_log_path) if decision_log_path else "",
