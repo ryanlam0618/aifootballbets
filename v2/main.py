@@ -224,6 +224,18 @@ def run(matches: List[str], bankroll: float | None, default_league_key: str = "s
     if not market_odds:
         market_odds = current_market_snapshot_by_teams(fixtures_df, snapshot_db)
 
+    # If The Odds API has no coverage (quota/exhausted), fallback to OddsPortal tracker sqlite.
+    if not market_odds:
+        try:
+            from v2.ingest.oddsportal_tracker import load_latest_quotes
+
+            tracker_db = data_root / "tracking" / "odds_tracker_24h.sqlite"
+            market_odds = load_latest_quotes(tracker_db, fixtures_df)
+            if market_odds:
+                print(f"[OK] market odds fallback: loaded {len(market_odds)} quotes from OddsPortal tracker")
+        except Exception as e:
+            print(f"[WARN] OddsPortal tracker fallback failed: {e}")
+
     pred_df = predict_markets(features_df, market_odds)
 
     if pred_df.empty:

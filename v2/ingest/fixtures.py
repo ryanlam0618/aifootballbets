@@ -100,24 +100,33 @@ def _best_fixture_by_fuzzy(req: MatchRequest, events: list[dict]) -> Optional[di
 
 
 def _fetch_league_events(league_key: str) -> list[dict]:
-    if not settings_v2.odds_api_key:
+    keys = [
+        (settings_v2.odds_api_key or "").strip(),
+        (getattr(settings_v2, "odds_api_key_backup", "") or "").strip(),
+    ]
+    keys = [k for k in keys if k]
+    if not keys:
         return []
 
     url = f"https://api.the-odds-api.com/v4/sports/{league_key}/odds"
-    params = {
-        "apiKey": settings_v2.odds_api_key,
-        "regions": "eu,uk",
-        "markets": "h2h",
-        "oddsFormat": "decimal",
-    }
-    try:
-        r = requests.get(url, params=params, timeout=25)
-        if r.status_code != 200:
-            return []
-        data = r.json()
-        return data if isinstance(data, list) else []
-    except Exception:
-        return []
+
+    for api_key in keys:
+        params = {
+            "apiKey": api_key,
+            "regions": "eu,uk",
+            "markets": "h2h",
+            "oddsFormat": "decimal",
+        }
+        try:
+            r = requests.get(url, params=params, timeout=25)
+            if r.status_code != 200:
+                continue
+            data = r.json()
+            return data if isinstance(data, list) else []
+        except Exception:
+            continue
+
+    return []
 
 
 def resolve_fixtures(requests_list: List[MatchRequest]) -> List[Fixture]:

@@ -51,6 +51,7 @@ else:
 @dataclass
 class V2Settings:
     odds_api_key: str = os.getenv("ODDS_API_KEY", "")
+    odds_api_key_backup: str = os.getenv("ODDS_API_KEY_BACKUP", "")
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
     grok_api_key: str = os.getenv("GROK_API_KEY", "")
     gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
