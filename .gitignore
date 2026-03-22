@@ -99,3 +99,16 @@ data/magisk_modules/
 
 # --- Local bootstrap artifacts ---
 get-pip.py
+# Local dev / CI artifacts
+logs/
+
+# Virtualenvs
+.venv/
+.venv*/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Local env
+.env

@@ -1,0 +1,13 @@
+[
+  {"match_url": "https://www.oddsportal.com/football/england/premier-league/brighton-liverpool-bm4x5tgU/", "market": "1X2", "label": "EPL"},
+  {"match_url": "https://www.oddsportal.com/football/spain/laliga/elche-mallorca-f9f0BAYi/", "market": "1X2", "label": "LaLiga"},
+  {"match_url": "https://www.oddsportal.com/football/italy/serie-a/ac-milan-torino-bRlhWduQ/", "market": "1X2", "label": "SerieA"},
+  {"match_url": "https://www.oddsportal.com/football/germany/bundesliga/bayern-munich-union-berlin-hj5ikutm/", "market": "1X2", "label": "Bundesliga"},
+  {"match_url": "https://www.oddsportal.com/football/france/ligue-1/nice-psg-SIbufklC/", "market": "1X2", "label": "Ligue1"},
+  {"match_url": "https://www.oddsportal.com/football/japan/j1-league/avispa-fukuoka-gamba-osaka-pnFElzso/", "market": "1X2", "label": "J1"},
+  {"match_url": "https://www.oddsportal.com/football/south-korea/k-league-1/suwon-fc-jeju-utd-GCzSMW4H/", "market": "1X2", "label": "KLeague1"},
+  {"match_url": "https://www.oddsportal.com/football/australia/a-league/auckland-fc-macarthur-fc-M7MVie1m/", "market": "1X2", "label": "ALeague"},
+  {"match_url": "https://www.oddsportal.com/football/china/super-league/qingdao-hainiu-beijing-guoan-QLbEnzBd/", "market": "1X2", "label": "CSL"},
+  {"match_url": "https://www.oddsportal.com/football/europe/champions-league/real-madrid-bayern-munich-8QKM2Spd/", "market": "1X2", "label": "UCL"},
+  {"match_url": "https://www.oddsportal.com/football/europe/champions-league/sporting-cp-arsenal-E5xgqLv3/", "market": "1X2", "label": "UCL"}
+]
