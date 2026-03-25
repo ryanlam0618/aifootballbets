@@ -131,6 +131,64 @@ python -m v2.tracking.run_until_kickoff \
 python -m v2.tracking.run_until_kickoff --pinchtab-verify --pinchtab-token "<your_token>"
 ```
 
+## PP88 Match Watcher（MySQL 模板重播）
+
+新增腳本：
+- `scripts/pp88_watcher.js`：匯出 `watchMatchOdds({...})`
+- `scripts/pp88_watch_cli.js`：CLI wrapper（由 env 控制）
+
+### 支援 env 參數
+
+- `HOME_NEEDLE`（必要）
+- `AWAY_NEEDLE`（必要）
+- `QUERY`（可選，額外關鍵字）
+- `INTERVAL_SEC`（預設 30）
+- `TIMEOUT_SEC`（預設 1800）
+- `LIST_ENDPOINT`（可選：預設會依序嘗試 `popularRecommendPB`、`getAddedOddsMatchesPB`）
+- `ALL_MARKETS`（`1` 開啟全部市場）
+- `DRY_RUN`（`1`：只印出解析到的 MID 並結束）
+- `ONCE`（`1`：單次掃描，不輪詢）
+- `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`（或 `DB_PASS`）, `DB_NAME`
+
+### 執行方式
+
+```bash
+HOME_NEEDLE="Arsenal" \
+AWAY_NEEDLE="Chelsea" \
+QUERY="premier league" \
+INTERVAL_SEC=20 \
+TIMEOUT_SEC=900 \
+ALL_MARKETS=1 \
+DB_HOST=127.0.0.1 \
+DB_PORT=3306 \
+DB_USER=myuser \
+DB_PASSWORD=mypass \
+DB_NAME=odds_capture \
+node scripts/pp88_watch_cli.js
+```
+
+成功後會輸出 CSV 到：
+- `reports/pp88/<timestamp>_<home>_vs_<away>.csv`
+
+### Smoke / dry-run
+
+```bash
+HOME_NEEDLE="Arsenal" \
+AWAY_NEEDLE="Chelsea" \
+DRY_RUN=1 \
+ONCE=1 \
+DB_HOST=127.0.0.1 \
+DB_USER=myuser \
+DB_PASSWORD=mypass \
+DB_NAME=odds_capture \
+node scripts/pp88_watch_cli.js
+```
+
+若成功解析，會輸出類似：
+- `[pp88 dry-run] resolved MID=123456 :: Arsenal vs Chelsea`
+
+---
+
 ## 主要爬蟲腳本
 
 - `TakeData/sofa_score/backfill_10y_leagues_cups.py`
