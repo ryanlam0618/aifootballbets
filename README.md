@@ -249,12 +249,15 @@ python3 TakeData/sofa_score/run_sofascore_season_backfill.py \
 python3 -m v2.tracking.oddsportal_season_matchlist \
   --competition "Premier League" \
   --season 2015-2016 \
-  --url-template "https://www.oddsportal.com/football/england/premier-league-{season}/results/"
+  --url-template "https://www.oddsportal.com/football/england/premier-league-{season}/results/" \
+  --min-match-urls 50
 ```
 
 會輸出：
 - `data/oddsportal_history/match_lists/premier_league_2015_2016.jsonl`
 - `data/oddsportal_history/match_lists/premier_league_2015_2016.meta.json`
+
+`--min-match-urls` 可做 sanity check（若抓到的 match_url 數量低於門檻，程式會以非 0 code 結束，並在 meta 標記 `count_ok=false`）。
 
 #### Step 2) 用 match list 回填 1X2 / OU / AH
 
