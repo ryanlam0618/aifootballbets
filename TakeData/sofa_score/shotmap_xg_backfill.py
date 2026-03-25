@@ -97,7 +97,7 @@ def save_state(path: Path, state: dict[str, Any]) -> None:
     path.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def build_target_query(only_missing_xg: bool) -> str:
+def build_target_query(only_missing_xg: bool, start_date: str = "", end_date: str = "") -> str:
     base = """
     SELECT m.event_id, m.match_date, m.league, m.home_team, m.away_team,
            m.home_xg_total, m.away_xg_total
@@ -106,6 +106,10 @@ def build_target_query(only_missing_xg: bool) -> str:
     WHERE m.event_id IS NOT NULL
       AND s.event_id IS NULL
     """
+    if start_date:
+        base += f" AND m.match_date >= '{start_date}' "
+    if end_date:
+        base += f" AND m.match_date <= '{end_date}' "
     if only_missing_xg:
         base += " AND (COALESCE(m.home_xg_total,0)=0 OR COALESCE(m.away_xg_total,0)=0) "
     base += " ORDER BY m.match_date ASC, m.event_id ASC "
@@ -127,6 +131,8 @@ def main() -> None:
     parser.add_argument("--sleep-min", type=float, default=0.05)
     parser.add_argument("--sleep-max", type=float, default=0.15)
     parser.add_argument("--checkpoint-every", type=int, default=100)
+    parser.add_argument("--start-date", default="", help="optional filter YYYY-MM-DD")
+    parser.add_argument("--end-date", default="", help="optional filter YYYY-MM-DD")
     args = parser.parse_args()
 
     db_path = Path(args.db)
@@ -138,7 +144,7 @@ def main() -> None:
 
     state = load_state(state_path)
 
-    q = build_target_query(args.only_missing_xg)
+    q = build_target_query(args.only_missing_xg, start_date=args.start_date, end_date=args.end_date)
     rows = conn.execute(q).fetchall()
     total_targets = len(rows)
     state["total_targets"] = total_targets

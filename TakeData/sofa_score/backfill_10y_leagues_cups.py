@@ -32,6 +32,7 @@ import requests
 
 SCHEDULE_URL = "https://www.sofascore.com/api/v1/sport/football/scheduled-events/{date}"
 STATS_URL = "https://www.sofascore.com/api/v1/event/{event_id}/statistics"
+LINEUPS_URL = "https://www.sofascore.com/api/v1/event/{event_id}/lineups"
 
 
 OUTPUT_COLUMNS = [
@@ -106,6 +107,7 @@ def canonical_competition(event: Dict) -> Optional[str]:
     n = _norm(name)
     s = _norm(slug)
     c = _norm(category)
+    text = f"{n} {s}"
 
     if _is_excluded_comp(name, slug):
         return None
@@ -136,6 +138,15 @@ def canonical_competition(event: Dict) -> Optional[str]:
     ):
         return "K League 1"
 
+    # 中超（Chinese Super League / CSL）
+    if c == "china" and (
+        "chinese super league" in n
+        or "super league" in n
+        or "csl" in n
+        or s in {"super-league", "chinese-super-league"}
+    ):
+        return "Chinese Super League"
+
     # 澳職
     if c == "australia" and (
         "a-league men" in n or s == "a-league"
@@ -163,6 +174,21 @@ def canonical_competition(event: Dict) -> Optional[str]:
             or s.startswith("afc-cup")  # ACL Two 有些 slug 會走 afc-cup-group-x
         ):
             return "AFC Champions League"
+
+    # ===== 世界盃賽（俱樂部） =====
+    if (
+        "fifa club world cup" in text
+        or s in {"fifa-club-world-cup", "club-world-cup"}
+        or ("club world cup" in n and "fifa" in n)
+    ):
+        return "FIFA Club World Cup"
+
+    if (
+        "intercontinental cup" in text
+        or s in {"intercontinental-cup", "fifa-intercontinental-cup"}
+        or "fifa intercontinental cup" in text
+    ):
+        return "Intercontinental Cup"
 
     # ===== 國內盃賽（8 聯賽相關） =====
     if c == "england":
@@ -201,6 +227,14 @@ def canonical_competition(event: Dict) -> Optional[str]:
 
     if c == "south korea" and ("fa cup" in n or s == "fa-cup"):
         return "Korean FA Cup"
+
+    if c == "china" and (
+        "fa cup" in n
+        or "china fa cup" in n
+        or "chinese fa cup" in n
+        or s in {"fa-cup", "china-fa-cup", "chinese-fa-cup"}
+    ):
+        return "Chinese FA Cup"
 
     if c == "australia":
         if (
@@ -403,6 +437,11 @@ def load_state(state_path: Path) -> Optional[Dict]:
         return None
 
 
+def save_json(path: Path, payload: Dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
 def export_csv(conn: sqlite3.Connection, out_csv: Path):
     q = "SELECT league,match_date,home_team,away_team,home_goals,away_goals,home_shots,away_shots,home_shots_on,away_shots_on,home_corners,away_corners,home_yellow,away_yellow,home_red,away_red,home_fouls,away_fouls,home_poss,away_poss,home_xg_total,away_xg_total,season FROM matches ORDER BY match_date"
     df = pd.read_sql_query(q, conn)
@@ -449,6 +488,10 @@ def main():
     parser.add_argument("--sleep", type=float, default=0.03, help="sleep seconds between event stats requests")
     parser.add_argument("--commit-every", type=int, default=50, help="DB commit interval")
     parser.add_argument("--fresh", action="store_true", help="ignore previous state and start from start-date")
+    parser.add_argument("--dump-raw-scheduled", action="store_true", default=True, help="dump raw scheduled-events json by day (default: on)")
+    parser.add_argument("--no-dump-raw-scheduled", action="store_false", dest="dump_raw_scheduled", help="disable raw scheduled-events dumping")
+    parser.add_argument("--dump-raw-lineups", action="store_true", default=True, help="fetch+dump raw lineups json by event_id (default: on)")
+    parser.add_argument("--no-dump-raw-lineups", action="store_false", dest="dump_raw_lineups", help="disable raw lineups dumping")
     args = parser.parse_args()
 
     today = dt.date.today()
@@ -459,6 +502,13 @@ def main():
 
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
+
+    raw_sched_dir = out_dir / "raw" / "scheduled-events"
+    raw_lineups_dir = out_dir / "raw" / "lineups"
+    if args.dump_raw_scheduled:
+        raw_sched_dir.mkdir(parents=True, exist_ok=True)
+    if args.dump_raw_lineups:
+        raw_lineups_dir.mkdir(parents=True, exist_ok=True)
 
     db_path = Path(args.db) if args.db else out_dir / "backfill_10y.sqlite"
     state_path = Path(args.state) if args.state else out_dir / "state.json"
@@ -513,6 +563,8 @@ def main():
         for day_idx, d in enumerate(daterange(effective_start, end_date), start=1):
             ds = d.strftime("%Y-%m-%d")
             sched = fetch_json(session, SCHEDULE_URL.format(date=ds), retries=3, timeout=30)
+            if sched and args.dump_raw_scheduled:
+                save_json(raw_sched_dir / f"{ds}.json", sched)
             if not sched:
                 print(f"[WARN] schedule fetch failed: {ds}")
                 save_state(
@@ -550,6 +602,16 @@ def main():
                     event_id = int(event_id)
                 except Exception:
                     continue
+
+                if args.dump_raw_lineups:
+                    lineup_path = raw_lineups_dir / f"{event_id}.json"
+                    if not lineup_path.exists():
+                        try:
+                            lr = session.get(LINEUPS_URL.format(event_id=event_id), timeout=20)
+                            if lr.status_code == 200:
+                                save_json(lineup_path, lr.json() if lr.text else {})
+                        except Exception:
+                            pass
 
                 if event_id in existing_ids:
                     skipped_existing += 1

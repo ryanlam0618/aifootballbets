@@ -133,6 +133,8 @@ def main() -> None:
     ap.add_argument("--sleep-max", type=float, default=0.08)
     ap.add_argument("--checkpoint-every", type=int, default=100)
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--start-date", default="", help="optional filter YYYY-MM-DD")
+    ap.add_argument("--end-date", default="", help="optional filter YYYY-MM-DD")
     args = ap.parse_args()
 
     db = sqlite3.connect(args.db)
@@ -144,14 +146,17 @@ def main() -> None:
     state = load_state(state_path)
 
     done_ids = set(r[0] for r in db.execute("SELECT event_id FROM shotmap_detail_events").fetchall())
-    rows = db.execute(
-        """
+    q = """
         SELECT event_id, match_date, league, home_team, away_team
         FROM shotmap_xg_backfill
         WHERE has_shotmap=1
-        ORDER BY match_date ASC, event_id ASC
-        """
-    ).fetchall()
+    """
+    if args.start_date:
+        q += f" AND match_date >= '{args.start_date}' "
+    if args.end_date:
+        q += f" AND match_date <= '{args.end_date}' "
+    q += " ORDER BY match_date ASC, event_id ASC "
+    rows = db.execute(q).fetchall()
     rows = [r for r in rows if int(r["event_id"]) not in done_ids]
     if args.limit and args.limit > 0:
         rows = rows[: args.limit]

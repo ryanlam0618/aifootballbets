@@ -392,6 +392,7 @@ async def _extract_once(
     top_lines: int,
     prefer_lines: Iterable[float] | None,
     fixed_lines: Iterable[float] | None,
+    adjacent_delta: float,
     debug: bool,
 ) -> dict:
     expected_outcomes = 3 if market_type == "1X2" else 2
@@ -565,6 +566,15 @@ async def _extract_once(
         fixed_lines=fixed_lines,
     )
     selected_set = {round_line(x) for x in selected_lines}
+    if adjacent_delta and adjacent_delta > 0:
+        expanded_set = set(selected_set)
+        for line in list(selected_set):
+            if line is None:
+                continue
+            expanded_set.add(round_line(line - float(adjacent_delta)))
+            expanded_set.add(round_line(line + float(adjacent_delta)))
+        selected_set = {x for x in expanded_set if x is not None}
+
     result["available_lines"] = sorted({round_line(x) for x in available_lines if x is not None})
     result["selected_lines"] = selected_lines
     result["line_frequency"] = {str(k): v for k, v in sorted(freq.items(), key=lambda kv: (-kv[1], kv[0]))}
@@ -590,6 +600,7 @@ async def extract_odds(
     top_lines: int = 2,
     prefer_lines: Iterable[float] | None = None,
     fixed_lines: Iterable[float] | None = None,
+    adjacent_delta: float = 0.0,
     debug: bool = False,
     selector_timeout_ms: int = 60000,
     max_retries: int = 2,
@@ -628,6 +639,7 @@ async def extract_odds(
                         top_lines=top_lines,
                         prefer_lines=prefer_lines,
                         fixed_lines=fixed_lines,
+                        adjacent_delta=adjacent_delta,
                         debug=debug,
                     )
                     try:
@@ -694,6 +706,7 @@ def parse_args() -> argparse.Namespace:
         default="",
         help="Fixed lines CSV to enforce (for pinned tracking across snapshots).",
     )
+    parser.add_argument("--adjacent-delta", type=float, default=0.0, help="For OU/AH, include adjacent +/-delta lines around selected top lines")
     parser.add_argument("--max-retries", type=int, default=2, help="Retries after first attempt on transient failures")
     parser.add_argument(
         "--artifacts-dir",
@@ -722,6 +735,7 @@ async def _run_cli(args: argparse.Namespace) -> int:
         top_lines=args.top_lines,
         prefer_lines=parse_line_csv(args.prefer_lines),
         fixed_lines=parse_line_csv(args.fixed_lines),
+        adjacent_delta=args.adjacent_delta,
         debug=args.debug,
         max_retries=args.max_retries,
         capture_artifacts_on_failure=not args.no_capture_artifacts_on_failure,

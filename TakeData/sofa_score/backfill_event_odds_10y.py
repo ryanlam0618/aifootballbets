@@ -35,6 +35,7 @@ TARGET_LEAGUES = {
     "Ligue 1",
     "J1 League",
     "K League 1",
+    "Chinese Super League",
     "A-League Men",
     "FA Cup",
     "EFL Cup",
@@ -44,8 +45,12 @@ TARGET_LEAGUES = {
     "Coupe de France",
     "Emperor's Cup",
     "J.League Cup",
+    "Korean FA Cup",
+    "Chinese FA Cup",
     "Australia Cup",
     "AFC Champions League",
+    "FIFA Club World Cup",
+    "Intercontinental Cup",
 }
 
 
@@ -169,6 +174,8 @@ def main() -> None:
     parser.add_argument("--all-leagues", action="store_true")
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--provider-ids", default="1,5", help="comma-separated provider ids, e.g. 1,5")
+    parser.add_argument("--start-date", default="", help="optional filter YYYY-MM-DD")
+    parser.add_argument("--end-date", default="", help="optional filter YYYY-MM-DD")
     args = parser.parse_args()
 
     provider_ids = [int(x.strip()) for x in str(args.provider_ids).split(",") if x.strip().isdigit()]
@@ -200,8 +207,12 @@ def main() -> None:
     SELECT event_id, match_date, league, home_team, away_team
     FROM matches
     WHERE event_id IS NOT NULL
-    ORDER BY match_date ASC, event_id ASC
     """
+    if args.start_date:
+        q += f" AND match_date >= '{args.start_date}' "
+    if args.end_date:
+        q += f" AND match_date <= '{args.end_date}' "
+    q += " ORDER BY match_date ASC, event_id ASC "
     rows = [r for r in matches_db.execute(q).fetchall() if int(r["event_id"]) not in done_ids]
 
     if not args.all_leagues:
@@ -400,8 +411,8 @@ def main() -> None:
 
         if err:
             out_db.execute(
-                """
-                INSERT OR REPLACE INTO event_odds_10y
+                f"""
+                INSERT OR REPLACE INTO {TABLE_NAME}
                 (event_id, match_date, league, home_team, away_team, market, line, selection,
                  open_decimal, current_decimal, source_id, fetched_at, status_code, error)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)

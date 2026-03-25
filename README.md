@@ -195,7 +195,102 @@ node scripts/pp88_watch_cli.js
 - `TakeData/sofa_score/shotmap_xg_backfill.py`
 - `TakeData/sofa_score/shotmap_detail_backfill.py`
 - `TakeData/sofa_score/backfill_event_odds_10y.py`
+- `TakeData/sofa_score/run_sofascore_season_backfill.py`（新增：按賽季一鍵 backfill）
+- `v2/tracking/oddsportal_season_matchlist.py`（新增：按聯賽/賽季抓 match list）
+- `v2/tracking/oddsportal_history_backfill.py`（新增：按 match list 回填 OddsPortal 歷史賠率）
 - `TakeData/odds_batch_scraper.py`
+
+---
+
+## Season-by-season 歷史回填（SofaScore + OddsPortal）
+
+### 前置需求
+
+1. Python 3.9+（建議用專案 `.venv`）
+2. `pip install -r requirements.txt`
+3. Playwright（OddsPortal 需要）
+   ```bash
+   python3 -m playwright install chromium
+   ```
+4. （OddsPortal）先準備 storage state，避免每次都卡 cookie/captcha
+   - 預設路徑：`/tmp/oddsportal_storage.json`
+   - 建議先用非 headless 手動過一次 consent/challenge
+
+### A) SofaScore：單賽季一鍵回填
+
+以 `2015-2016` 為例（預設賽季區間 `08-01` 到隔年 `07-31`）：
+
+```bash
+python3 TakeData/sofa_score/run_sofascore_season_backfill.py \
+  --season 2015-2016
+```
+
+此 wrapper 會依序執行：
+1. `backfill_10y_leagues_cups.py`（主資料）
+2. `shotmap_xg_backfill.py`
+3. `shotmap_detail_backfill.py`
+4. `backfill_event_odds_10y.py`
+
+皆為 resume-safe，並把 state JSON 寫到：
+- `data/backfill_sofascore_10y/state_sofascore_<season>.json`
+- `data/backfill_sofascore_10y/shotmap_backfill_state_<season>.json`
+- `data/backfill_sofascore_10y/shotmap_detail_state_<season>.json`
+- `data/backfill_sofascore_10y/event_odds_backfill_state_<season>.json`
+
+另外 `backfill_10y_leagues_cups.py` 會輸出 raw dumps（可關閉）：
+- `data/backfill_sofascore_10y/raw/scheduled-events/YYYY-MM-DD.json`
+- `data/backfill_sofascore_10y/raw/lineups/<event_id>.json`（best-effort，僅 200 時落檔）
+
+### B) OddsPortal：單賽季歷史回填
+
+#### Step 1) 先抓 match list（由聯賽/杯賽 listing URL + season）
+
+```bash
+python3 -m v2.tracking.oddsportal_season_matchlist \
+  --competition "Premier League" \
+  --season 2015-2016 \
+  --url-template "https://www.oddsportal.com/football/england/premier-league-{season}/results/"
+```
+
+會輸出：
+- `data/oddsportal_history/match_lists/premier_league_2015_2016.jsonl`
+- `data/oddsportal_history/match_lists/premier_league_2015_2016.meta.json`
+
+#### Step 2) 用 match list 回填 1X2 / OU / AH
+
+```bash
+python3 -m v2.tracking.oddsportal_history_backfill \
+  --match-list data/oddsportal_history/match_lists/premier_league_2015_2016.jsonl \
+  --markets 1X2,OU,AH \
+  --top-lines 2 \
+  --adjacent-delta 0.5 \
+  --storage-state /tmp/oddsportal_storage.json \
+  --sqlite data/oddsportal_history/oddsportal_history.sqlite
+```
+
+說明：
+- OU/AH 會在單次擷取內保留 `top_lines` 主線，並額外包含每條主線的 `±0.5` 相鄰盤（`adjacent_delta`）
+- 資料寫入 `schema_odds_tracker_v2.sql` 結構（`odds_match/odds_snapshot/odds_quote`）
+- `odds_match` 會帶 `competition/season/label` 方便分季切分
+
+### 主要輸出路徑
+
+- SofaScore：`data/backfill_sofascore_10y/`
+  - `backfill_10y.sqlite`
+  - `event_odds_10y.sqlite`
+  - `history_data_10y_leagues_cups.csv`
+  - `raw/scheduled-events/*.json`
+  - `raw/lineups/*.json`
+- OddsPortal：`data/oddsportal_history/`
+  - `match_lists/*.jsonl`
+  - `oddsportal_history.sqlite`
+  - `state_oddsportal_history.json`
+
+### Caveats
+
+- OddsPortal 可能出現 blocking / captcha / challenge，建議先 `--headless` 關閉（可見瀏覽器）做初始化。
+- `storage_state` 路徑必須可寫且可重用（建議固定檔案，不要每次新建）。
+- 大規模回填時請分賽季/分聯賽跑，避免一次拉滿造成失敗率上升。
 
 ---
 
