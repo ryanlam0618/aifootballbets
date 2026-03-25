@@ -18,14 +18,35 @@ import json
 import random
 import re
 import sqlite3
+import subprocess
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import requests
-
 TABLE_NAME = "event_odds_10y_multi"
+
+def _project_root() -> Path:
+    return Path(__file__).resolve().parents[2]
+
+
+def _fetch_json_node(url: str, timeout: int = 20) -> tuple[int, dict[str, Any]]:
+    script = _project_root() / "scripts" / "sofascore_fetch.js"
+    cmd = ["node", str(script), "--url", url, "--timeout-ms", str(int(max(1000, timeout * 1000)))]
+    proc = subprocess.run(
+        cmd,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=max(5, int(timeout + 5)),
+    )
+    if proc.returncode == 0:
+        return 200, (json.loads(proc.stdout) if proc.stdout else {})
+    err = (proc.stderr or "").lower()
+    if "http 404" in err:
+        return 404, {}
+    raise RuntimeError(proc.stderr.strip() or f"fetch failed for {url}")
+
 
 TARGET_LEAGUES = {
     "Premier League",
@@ -226,12 +247,6 @@ def main() -> None:
     save_state(state_path, state)
     print(f"[INFO] targets={total_targets}")
 
-    s = requests.Session()
-    s.headers.update({
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json,text/plain,*/*",
-    })
-
     processed_run = 0
 
     for r in rows:
@@ -251,12 +266,10 @@ def main() -> None:
 
             for provider_id in provider_ids:
                 url = f"https://www.sofascore.com/api/v1/event/{event_id}/odds/{provider_id}/all"
-                resp = s.get(url, timeout=20)
-                status_code = resp.status_code
+                status_code, payload = _fetch_json_node(url, timeout=20)
 
                 if status_code == 200:
                     got_any_200 = True
-                    payload = resp.json() if resp.text else {}
                     markets = payload.get("markets") or []
                     for m in markets:
                         name = str(m.get("marketName") or "")

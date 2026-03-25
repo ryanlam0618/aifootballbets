@@ -14,15 +14,36 @@ import argparse
 import json
 import random
 import sqlite3
+import subprocess
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import requests
-
 
 API_TMPL = "https://www.sofascore.com/api/v1/event/{event_id}/shotmap"
+
+
+def _project_root() -> Path:
+    return Path(__file__).resolve().parents[2]
+
+
+def _fetch_json_node(url: str, timeout: int = 20) -> tuple[int, dict[str, Any]]:
+    script = _project_root() / "scripts" / "sofascore_fetch.js"
+    cmd = ["node", str(script), "--url", url, "--timeout-ms", str(int(max(1000, timeout * 1000)))]
+    proc = subprocess.run(
+        cmd,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=max(5, int(timeout + 5)),
+    )
+    if proc.returncode == 0:
+        return 200, (json.loads(proc.stdout) if proc.stdout else {})
+    err = (proc.stderr or "").lower()
+    if "http 404" in err:
+        return 404, {}
+    raise RuntimeError(proc.stderr.strip() or f"fetch failed for {url}")
 
 
 def now_iso() -> str:
@@ -170,12 +191,6 @@ def main() -> None:
         print("[INFO] Nothing to process")
         return
 
-    sess = requests.Session()
-    sess.headers.update({
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json,text/plain,*/*",
-    })
-
     processed_run = 0
 
     for r in rows:
@@ -190,11 +205,9 @@ def main() -> None:
         upserted = 0
 
         try:
-            resp = sess.get(API_TMPL.format(event_id=event_id), timeout=20)
-            status_code = resp.status_code
+            status_code, payload = _fetch_json_node(API_TMPL.format(event_id=event_id), timeout=20)
             shots = []
             if status_code == 200:
-                payload = resp.json() if resp.text else {}
                 shots = (payload or {}).get("shotmap") or []
                 for sh in shots:
                     db.execute(

@@ -22,12 +22,12 @@ import argparse
 import datetime as dt
 import json
 import sqlite3
+import subprocess
 import time
 from pathlib import Path
 from typing import Dict, Iterable, Optional, Tuple
 
 import pandas as pd
-import requests
 
 
 SCHEDULE_URL = "https://www.sofascore.com/api/v1/sport/football/scheduled-events/{date}"
@@ -287,14 +287,31 @@ def to_int(v, default: int = 0) -> int:
     return int(round(n))
 
 
-def fetch_json(session: requests.Session, url: str, retries: int = 3, timeout: int = 25) -> Optional[Dict]:
+def _project_root() -> Path:
+    return Path(__file__).resolve().parents[2]
+
+
+def _node_fetch_cmd(url: str, timeout: int) -> list[str]:
+    script = _project_root() / "scripts" / "sofascore_fetch.js"
+    return ["node", str(script), "--url", url, "--timeout-ms", str(int(max(1000, timeout * 1000)))]
+
+
+def fetch_json(url: str, retries: int = 3, timeout: int = 25) -> Optional[Dict]:
     for i in range(retries):
         try:
-            r = session.get(url, timeout=timeout)
-            if r.status_code == 404:
-                return None
-            r.raise_for_status()
-            return r.json()
+            proc = subprocess.run(
+                _node_fetch_cmd(url, timeout),
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=max(5, int(timeout + 5)),
+            )
+            if proc.returncode != 0:
+                err = (proc.stderr or "").lower()
+                if "http 404" in err:
+                    return None
+                raise RuntimeError(proc.stderr.strip() or f"fetch failed for {url}")
+            return json.loads(proc.stdout) if proc.stdout else {}
         except Exception:
             if i == retries - 1:
                 return None
@@ -540,14 +557,6 @@ def main():
     conn = init_db(db_path)
     existing_ids = load_existing_event_ids(conn)
 
-    session = requests.Session()
-    session.headers.update(
-        {
-            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36",
-            "Accept": "application/json,text/plain,*/*",
-        }
-    )
-
     days_total = (end_date - effective_start).days + 1
     if days_total <= 0:
         print("Nothing to do (already up-to-date for requested range).")
@@ -562,7 +571,7 @@ def main():
 
         for day_idx, d in enumerate(daterange(effective_start, end_date), start=1):
             ds = d.strftime("%Y-%m-%d")
-            sched = fetch_json(session, SCHEDULE_URL.format(date=ds), retries=3, timeout=30)
+            sched = fetch_json(SCHEDULE_URL.format(date=ds), retries=3, timeout=30)
             if sched and args.dump_raw_scheduled:
                 save_json(raw_sched_dir / f"{ds}.json", sched)
             if not sched:
@@ -607,9 +616,9 @@ def main():
                     lineup_path = raw_lineups_dir / f"{event_id}.json"
                     if not lineup_path.exists():
                         try:
-                            lr = session.get(LINEUPS_URL.format(event_id=event_id), timeout=20)
-                            if lr.status_code == 200:
-                                save_json(lineup_path, lr.json() if lr.text else {})
+                            lineup_json = fetch_json(LINEUPS_URL.format(event_id=event_id), retries=2, timeout=20)
+                            if lineup_json is not None:
+                                save_json(lineup_path, lineup_json)
                         except Exception:
                             pass
 
@@ -625,7 +634,7 @@ def main():
                 if not home_team or not away_team or hs is None or aw is None:
                     continue
 
-                stats_json = fetch_json(session, STATS_URL.format(event_id=event_id), retries=3, timeout=25)
+                stats_json = fetch_json(STATS_URL.format(event_id=event_id), retries=3, timeout=25)
                 stats_map = extract_stats_map(stats_json or {}) if stats_json else {}
                 if not stats_map:
                     no_stats += 1

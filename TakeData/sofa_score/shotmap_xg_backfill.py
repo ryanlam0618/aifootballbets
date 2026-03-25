@@ -21,12 +21,11 @@ import argparse
 import json
 import random
 import sqlite3
+import subprocess
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-
-import requests
 
 
 def now_iso() -> str:
@@ -116,10 +115,31 @@ def build_target_query(only_missing_xg: bool, start_date: str = "", end_date: st
     return base
 
 
-def fetch_shotmap(session: requests.Session, event_id: int, timeout: int = 20):
+def _project_root() -> Path:
+    return Path(__file__).resolve().parents[2]
+
+
+def _fetch_json_node(url: str, timeout: int = 20) -> tuple[int, dict[str, Any]]:
+    script = _project_root() / "scripts" / "sofascore_fetch.js"
+    cmd = ["node", str(script), "--url", url, "--timeout-ms", str(int(max(1000, timeout * 1000)))]
+    proc = subprocess.run(
+        cmd,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=max(5, int(timeout + 5)),
+    )
+    if proc.returncode == 0:
+        return 200, (json.loads(proc.stdout) if proc.stdout else {})
+    err = (proc.stderr or "").lower()
+    if "http 404" in err:
+        return 404, {}
+    raise RuntimeError(proc.stderr.strip() or f"fetch failed for {url}")
+
+
+def fetch_shotmap(event_id: int, timeout: int = 20) -> tuple[int, dict[str, Any]]:
     url = f"https://www.sofascore.com/api/v1/event/{event_id}/shotmap"
-    r = session.get(url, timeout=timeout)
-    return r
+    return _fetch_json_node(url, timeout=timeout)
 
 
 def main() -> None:
@@ -131,6 +151,7 @@ def main() -> None:
     parser.add_argument("--sleep-min", type=float, default=0.05)
     parser.add_argument("--sleep-max", type=float, default=0.15)
     parser.add_argument("--checkpoint-every", type=int, default=100)
+    parser.add_argument("--limit", type=int, default=0, help="optional max events for smoke runs")
     parser.add_argument("--start-date", default="", help="optional filter YYYY-MM-DD")
     parser.add_argument("--end-date", default="", help="optional filter YYYY-MM-DD")
     args = parser.parse_args()
@@ -146,6 +167,8 @@ def main() -> None:
 
     q = build_target_query(args.only_missing_xg, start_date=args.start_date, end_date=args.end_date)
     rows = conn.execute(q).fetchall()
+    if args.limit and args.limit > 0:
+        rows = rows[: args.limit]
     total_targets = len(rows)
     state["total_targets"] = total_targets
     save_state(state_path, state)
@@ -154,12 +177,6 @@ def main() -> None:
     if total_targets == 0:
         print("[INFO] Nothing to process")
         return
-
-    s = requests.Session()
-    s.headers.update({
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json,text/plain,*/*",
-    })
 
     processed_in_run = 0
 
@@ -179,10 +196,8 @@ def main() -> None:
         err = ""
 
         try:
-            r = fetch_shotmap(s, event_id)
-            status_code = r.status_code
-            if r.status_code == 200:
-                payload = r.json() if r.text else {}
+            status_code, payload = fetch_shotmap(event_id)
+            if status_code == 200:
                 arr = (payload or {}).get("shotmap") or []
                 shot_count = len(arr)
                 has_shotmap = 1 if shot_count > 0 else 0
@@ -197,7 +212,7 @@ def main() -> None:
                     elif sh.get("isHome") is False:
                         away_xg += xv
                 has_xg = 1 if (home_xg > 0 or away_xg > 0) else 0
-            elif r.status_code == 404:
+            elif status_code == 404:
                 pass
             else:
                 err = f"HTTP {r.status_code}"

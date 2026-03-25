@@ -121,11 +121,30 @@ def _extract_line_from_text(text: str, market_type: str) -> float | None:
     return None
 
 
+def _standard_lines(market_type: str) -> list[float]:
+    if market_type == "OU":
+        return [0.5, 1.5, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0]
+    if market_type == "AH":
+        return [-2.0, -1.75, -1.5, -1.25, -1.0, -0.75, -0.5, -0.25, 0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
+    return []
+
+
+def _nearest_available_line(target: float, available_lines: Iterable[float]) -> float | None:
+    vals = [round_line(x) for x in available_lines if x is not None]
+    vals = [x for x in vals if x is not None]
+    if not vals:
+        return None
+    return min(vals, key=lambda x: (abs(float(x) - float(target)), abs(float(x))))
+
+
 def _select_main_lines(
     quotes: list[dict],
     top_lines: int,
     preferred_lines: Iterable[float] | None = None,
     fixed_lines: Iterable[float] | None = None,
+    line_counts: dict[float, int] | None = None,
+    available_lines: Iterable[float] | None = None,
+    market_type: str | None = None,
 ) -> tuple[list[float], dict[float, int]]:
     freq_pairs: set[tuple[float, str]] = set()
     for q in quotes:
@@ -139,10 +158,35 @@ def _select_main_lines(
     for line, _bm in freq_pairs:
         counter[line] += 1
 
-    ranked = sorted(counter.keys(), key=lambda x: (-counter[x], x))
+    for k, v in (line_counts or {}).items():
+        kk = round_line(k)
+        if kk is not None:
+            counter[kk] += int(v)
+
+    ranked = sorted(counter.keys(), key=lambda x: (-counter[x], abs(float(x)), float(x)))
+    available = sorted({round_line(x) for x in (available_lines or []) if x is not None})
+
+    # If we only have collapsed-row frequency (no bookmaker quotes yet), prefer central/standard lines.
+    if not quotes and available:
+        std = _standard_lines(market_type or "")
+        if std:
+            ranked = sorted(available, key=lambda x: (min(abs(float(x) - s) for s in std), abs(float(x)), float(x)))
+        else:
+            ranked = sorted(available, key=lambda x: (abs(float(x)), float(x)))
 
     fixed = [round_line(x) for x in (fixed_lines or []) if x is not None]
     if fixed:
+        if available:
+            mapped: list[float] = []
+            for f in fixed:
+                if f in available:
+                    mapped.append(f)
+                    continue
+                nearest = _nearest_available_line(float(f), available)
+                if nearest is not None:
+                    mapped.append(nearest)
+            seen: set[float] = set()
+            fixed = [x for x in mapped if x not in seen and not seen.add(x)]
         return fixed, dict(counter)
 
     preferred = {round_line(x) for x in (preferred_lines or []) if x is not None}
@@ -150,6 +194,30 @@ def _select_main_lines(
         constrained = [x for x in ranked if x in preferred]
         if constrained:
             ranked = constrained
+        elif available:
+            preferred_mapped: list[float] = []
+            for p in sorted(preferred):
+                nearest = _nearest_available_line(float(p), available)
+                if nearest is not None:
+                    preferred_mapped.append(nearest)
+            seen: set[float] = set()
+            mapped_unique = [x for x in preferred_mapped if x not in seen and not seen.add(x)]
+            if mapped_unique:
+                ranked = mapped_unique
+
+    if not ranked and available:
+        std = _standard_lines(market_type or "")
+        if std:
+            ranked = sorted(available, key=lambda x: (min(abs(float(x) - s) for s in std), abs(float(x))))
+        else:
+            ranked = sorted(available, key=lambda x: abs(float(x)))
+
+    if available and len(ranked) < len(available):
+        extra = [x for x in available if x not in ranked]
+        std = _standard_lines(market_type or "")
+        if std:
+            extra = sorted(extra, key=lambda x: (min(abs(float(x) - s) for s in std), abs(float(x))))
+        ranked = ranked + extra
 
     k = max(1, int(top_lines))
     return ranked[:k], dict(counter)
@@ -393,6 +461,7 @@ async def _extract_once(
     prefer_lines: Iterable[float] | None,
     fixed_lines: Iterable[float] | None,
     adjacent_delta: float,
+    max_lines_to_expand: int,
     debug: bool,
 ) -> dict:
     expected_outcomes = 3 if market_type == "1X2" else 2
@@ -463,7 +532,7 @@ async def _extract_once(
 
         return result
 
-    # OU / AH: parse collapsed lines and expand each line to parse bookmaker rows.
+    # OU / AH: scan collapsed lines first, then expand only selected lines.
     collapsed_selector = "div[data-testid='over-under-collapsed-row']"
     collapsed_rows = page.locator(collapsed_selector)
     collapsed_count = await collapsed_rows.count()
@@ -471,6 +540,8 @@ async def _extract_once(
 
     all_quotes: list[dict] = []
     available_lines: list[float] = []
+    collapsed_line_counter: Counter[float] = Counter()
+    line_to_row_indexes: dict[float, list[int]] = {}
 
     for i in range(collapsed_count):
         collapsed = collapsed_rows.nth(i)
@@ -479,6 +550,58 @@ async def _extract_once(
         if line is None:
             continue
         available_lines.append(line)
+        collapsed_line_counter[line] += 1
+        line_to_row_indexes.setdefault(line, []).append(i)
+
+    selected_lines, freq = _select_main_lines(
+        all_quotes,
+        top_lines=top_lines,
+        preferred_lines=prefer_lines,
+        fixed_lines=fixed_lines,
+        line_counts=dict(collapsed_line_counter),
+        available_lines=available_lines,
+        market_type=market_type,
+    )
+
+    selected_set = {round_line(x) for x in selected_lines if x is not None}
+    candidate_values = set(selected_set)
+    if adjacent_delta and adjacent_delta > 0:
+        for line in selected_set:
+            if line is None:
+                continue
+            candidate_values.add(round_line(float(line) - float(adjacent_delta)))
+            candidate_values.add(round_line(float(line) + float(adjacent_delta)))
+
+    available_set = sorted({round_line(x) for x in available_lines if x is not None})
+    expansion_targets: list[float] = []
+    for cand in sorted({x for x in candidate_values if x is not None}):
+        if cand in available_set:
+            expansion_targets.append(cand)
+            continue
+        nearest = _nearest_available_line(float(cand), available_set)
+        if nearest is not None:
+            expansion_targets.append(nearest)
+
+    selected_order = [x for x in selected_lines if x in expansion_targets]
+    remaining = [x for x in expansion_targets if x not in selected_order]
+    remaining = sorted(remaining, key=lambda x: (-int(collapsed_line_counter.get(x, 0)), abs(float(x))))
+
+    lines_to_expand: list[float] = []
+    for ln in selected_order + remaining:
+        if ln not in lines_to_expand:
+            lines_to_expand.append(ln)
+
+    hard_cap = max(1, int(max_lines_to_expand))
+    if len(lines_to_expand) > hard_cap:
+        lines_to_expand = lines_to_expand[:hard_cap]
+
+    for line in lines_to_expand:
+        candidate_idxs = line_to_row_indexes.get(line, [])
+        if not candidate_idxs:
+            continue
+
+        i = candidate_idxs[0]
+        collapsed = collapsed_rows.nth(i)
 
         try:
             await collapsed.click(timeout=5000)
@@ -525,8 +648,7 @@ async def _extract_once(
                 if parsed_line is not None:
                     line_in_row = parsed_line
 
-            # Filter out expanded rows that belong to other opened lines.
-            if line_in_row is None or abs(line_in_row - line) > 1e-6:
+            if line_in_row is None or abs(float(line_in_row) - float(line)) > 1e-6:
                 continue
 
             if bookmaker_name and len(odd_values) == 2:
@@ -559,25 +681,20 @@ async def _extract_once(
             dedup[key] = q
     all_quotes = list(dedup.values())
 
-    selected_lines, freq = _select_main_lines(
-        all_quotes,
-        top_lines=top_lines,
-        preferred_lines=prefer_lines,
-        fixed_lines=fixed_lines,
-    )
-    selected_set = {round_line(x) for x in selected_lines}
+    selected_set = {round_line(x) for x in selected_lines if x is not None}
     if adjacent_delta and adjacent_delta > 0:
         expanded_set = set(selected_set)
         for line in list(selected_set):
             if line is None:
                 continue
-            expanded_set.add(round_line(line - float(adjacent_delta)))
-            expanded_set.add(round_line(line + float(adjacent_delta)))
+            expanded_set.add(round_line(float(line) - float(adjacent_delta)))
+            expanded_set.add(round_line(float(line) + float(adjacent_delta)))
         selected_set = {x for x in expanded_set if x is not None}
 
     result["available_lines"] = sorted({round_line(x) for x in available_lines if x is not None})
     result["selected_lines"] = selected_lines
-    result["line_frequency"] = {str(k): v for k, v in sorted(freq.items(), key=lambda kv: (-kv[1], kv[0]))}
+    freq_for_out = freq or dict(collapsed_line_counter)
+    result["line_frequency"] = {str(k): v for k, v in sorted(freq_for_out.items(), key=lambda kv: (-kv[1], kv[0]))}
     result["odds"] = [q for q in all_quotes if round_line(q.get("line")) in selected_set]
 
     if debug:
@@ -601,6 +718,7 @@ async def extract_odds(
     prefer_lines: Iterable[float] | None = None,
     fixed_lines: Iterable[float] | None = None,
     adjacent_delta: float = 0.0,
+    max_lines_to_expand: int = 6,
     debug: bool = False,
     selector_timeout_ms: int = 60000,
     max_retries: int = 2,
@@ -640,6 +758,7 @@ async def extract_odds(
                         prefer_lines=prefer_lines,
                         fixed_lines=fixed_lines,
                         adjacent_delta=adjacent_delta,
+                        max_lines_to_expand=max_lines_to_expand,
                         debug=debug,
                     )
                     try:
@@ -707,6 +826,12 @@ def parse_args() -> argparse.Namespace:
         help="Fixed lines CSV to enforce (for pinned tracking across snapshots).",
     )
     parser.add_argument("--adjacent-delta", type=float, default=0.0, help="For OU/AH, include adjacent +/-delta lines around selected top lines")
+    parser.add_argument(
+        "--max-lines-to-expand",
+        type=int,
+        default=6,
+        help="Hard cap for OU/AH collapsed lines to expand (safety against hangs)",
+    )
     parser.add_argument("--max-retries", type=int, default=2, help="Retries after first attempt on transient failures")
     parser.add_argument(
         "--artifacts-dir",
@@ -736,6 +861,7 @@ async def _run_cli(args: argparse.Namespace) -> int:
         prefer_lines=parse_line_csv(args.prefer_lines),
         fixed_lines=parse_line_csv(args.fixed_lines),
         adjacent_delta=args.adjacent_delta,
+        max_lines_to_expand=args.max_lines_to_expand,
         debug=args.debug,
         max_retries=args.max_retries,
         capture_artifacts_on_failure=not args.no_capture_artifacts_on_failure,
