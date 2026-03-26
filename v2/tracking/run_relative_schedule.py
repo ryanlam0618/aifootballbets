@@ -4,7 +4,8 @@ from __future__ import annotations
 """Track OddsPortal odds snapshots on a fixed relative-to-kickoff schedule.
 
 Design goal (Kris):
-- kickoff time is sourced from SofaScore
+- kickoff time is sourced from OddsPortal match page (authoritative for that match_url)
+- SofaScore is used to resolve event_id (and provides cross-source join key)
 - sample at:
   * T-24h to T-60m: every 60m
   * last hour: every 5m (T-55m..T-5m)
@@ -32,6 +33,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+from v2.tracking._oddsportal_kickoff import read_kickoff_from_oddsportal_page
 from v2.tracking.odds_tracker import (
     Target,
     append_jsonl,
@@ -204,6 +206,9 @@ def lookup_sofascore_event_for_oddsportal_url(
     if not url_tokens:
         return None
 
+    window_start = datetime.combine(start_date, datetime.min.time(), tzinfo=timezone.utc)
+    window_end = window_start + timedelta(days=int(max(0, lookahead_days)) + 1)
+
     def _pick_best_from_events(events: list[dict[str, Any]]) -> SofaEvent | None:
         best: tuple[float, SofaEvent] | None = None
 
@@ -212,6 +217,10 @@ def lookup_sofascore_event_for_oddsportal_url(
                 ev_id = int(e.get("id"))
                 ts = int(e.get("startTimestamp"))
                 kickoff = datetime.fromtimestamp(ts, tz=timezone.utc)
+                # Only accept events within the requested date window.
+                if kickoff < window_start or kickoff >= window_end:
+                    continue
+
                 home = str((e.get("homeTeam") or {}).get("name") or "")
                 away = str((e.get("awayTeam") or {}).get("name") or "")
                 tour = str((e.get("tournament") or {}).get("name") or "")
@@ -401,27 +410,51 @@ async def run(args: argparse.Namespace) -> int:
         start_d = date.fromisoformat(args.start_date) if args.start_date else utc_now().date()
         for u in match_urls:
             m = matches.setdefault(u, {})
-            if not m.get("event_id") or not m.get("kickoff_utc"):
-                ev = lookup_sofascore_event_for_oddsportal_url(
-                    match_url=u,
-                    start_date=start_d,
-                    lookahead_days=args.lookahead_days,
-                    cache_path=cache_path,
-                )
-                if ev:
-                    m.update(
-                        {
-                            "event_id": ev.event_id,
-                            "kickoff_utc": iso(ev.kickoff_utc),
-                            "home": ev.home,
-                            "away": ev.away,
-                            "tournament": ev.tournament,
-                            "tournament_slug": ev.tournament_slug,
-                        }
+
+            # 1) Kickoff: read from OddsPortal page for THIS match_url (most reliable for scheduling).
+            if not m.get("kickoff_utc"):
+                try:
+                    info = await read_kickoff_from_oddsportal_page(
+                        match_url=u,
+                        storage_state=Path(args.storage_state),
+                        timeout_ms=args.timeout_ms,
                     )
-                else:
-                    m.setdefault("event_id", None)
+                    if info.kickoff_utc:
+                        m["kickoff_utc"] = iso(info.kickoff_utc)
+                        m["kickoff_source"] = info.source
+                        m["kickoff_raw"] = info.raw
+                    else:
+                        m.setdefault("kickoff_utc", "")
+                        m.setdefault("kickoff_source", info.source)
+                        m.setdefault("kickoff_raw", info.raw)
+                except Exception:
                     m.setdefault("kickoff_utc", "")
+
+            # 2) SofaScore event_id: best-effort mapping (for joins). Use kickoff date to narrow search window.
+            if not m.get("event_id"):
+                try:
+                    kdt = _parse_iso(str(m.get("kickoff_utc") or ""))
+                    lookup_start = (kdt.date() if kdt else start_d)
+                    ev = lookup_sofascore_event_for_oddsportal_url(
+                        match_url=u,
+                        start_date=lookup_start,
+                        lookahead_days=(3 if kdt else args.lookahead_days),
+                        cache_path=cache_path,
+                    )
+                    if ev:
+                        m.update(
+                            {
+                                "event_id": ev.event_id,
+                                "home": ev.home,
+                                "away": ev.away,
+                                "tournament": ev.tournament,
+                                "tournament_slug": ev.tournament_slug,
+                            }
+                        )
+                    else:
+                        m.setdefault("event_id", None)
+                except Exception:
+                    m.setdefault("event_id", None)
 
             m.setdefault("done_minutes", [])
             m.setdefault("missed_minutes", [])
