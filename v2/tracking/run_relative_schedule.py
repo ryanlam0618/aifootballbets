@@ -131,20 +131,52 @@ class SofaEvent:
 
 
 def _score_event(url_tokens: list[str], ev_home_toks: list[str], ev_away_toks: list[str]) -> float:
-    """Score how well a SofaScore event matches an OddsPortal URL token sequence."""
-    # Prefer exact contiguous matches for both teams in correct order.
-    h_pos = _find_subseq(url_tokens, ev_home_toks)
-    a_pos = _find_subseq(url_tokens, ev_away_toks)
+    """Score how well a SofaScore event matches an OddsPortal URL token sequence.
+
+    OddsPortal match slugs are often shortened (e.g. "brighton-liverpool") while SofaScore
+    team names can be longer (e.g. "brighton hove albion").
+
+    We therefore consider TWO matching modes:
+    - strict: full token sequence matches contiguously
+    - relaxed: any non-empty SUBSEQUENCE of team tokens matches contiguously (prefer longer)
+
+    We still require correct order: home tokens appear before away tokens.
+    """
+
+    def best_pos_for_team(team_toks: list[str]) -> tuple[int | None, int]:
+        # (start_pos, matched_len)
+        if not team_toks:
+            return None, 0
+        # Try longest-to-shortest contiguous subsequence.
+        for L in range(len(team_toks), 0, -1):
+            for i in range(0, len(team_toks) - L + 1):
+                sub = team_toks[i : i + L]
+                pos = _find_subseq(url_tokens, sub)
+                if pos is not None:
+                    return pos, L
+        return None, 0
+
+    h_pos, h_len = best_pos_for_team(ev_home_toks)
+    a_pos, a_len = best_pos_for_team(ev_away_toks)
+
     if h_pos is None or a_pos is None:
         return 0.0
     if h_pos >= a_pos:
         return 0.0
 
-    # Base score: longer matches are better.
-    score = 10.0 + 2.0 * (len(ev_home_toks) + len(ev_away_toks))
+    # Need at least 1 token per side.
+    if h_len <= 0 or a_len <= 0:
+        return 0.0
 
-    # Penalize large gaps (means boundary ambiguity)
-    gap = a_pos - (h_pos + len(ev_home_toks))
+    # Base score: longer matches are better.
+    score = 10.0 + 3.0 * (h_len + a_len)
+
+    # Prefer when the matched home chunk begins at the start of url_tokens (common in slugs).
+    if h_pos == 0:
+        score += 1.5
+
+    # Penalize gaps between home/away chunks.
+    gap = a_pos - (h_pos + h_len)
     if gap > 0:
         score -= min(3.0, 0.5 * gap)
 
@@ -161,13 +193,61 @@ def lookup_sofascore_event_for_oddsportal_url(
     """Best-effort mapping: OddsPortal match_url -> SofaScore event (id + kickoff).
 
     Strategy:
-    - Fetch SofaScore scheduled-events for [start_date, start_date+lookahead]
-    - Score each event against match_url slug tokens
+    1) Fetch SofaScore scheduled-events for [start_date, start_date+lookahead]
+    2) Score each event against match_url slug tokens
+    3) If no good match is found, fallback to SofaScore search API (often more complete than scheduled list)
+
+    NOTE: We only accept candidates with a strictly positive token match score.
     """
 
     url_tokens, comp_slug, _country = _oddsportal_url_tokens(match_url)
     if not url_tokens:
         return None
+
+    def _pick_best_from_events(events: list[dict[str, Any]]) -> SofaEvent | None:
+        best: tuple[float, SofaEvent] | None = None
+
+        for e in events or []:
+            try:
+                ev_id = int(e.get("id"))
+                ts = int(e.get("startTimestamp"))
+                kickoff = datetime.fromtimestamp(ts, tz=timezone.utc)
+                home = str((e.get("homeTeam") or {}).get("name") or "")
+                away = str((e.get("awayTeam") or {}).get("name") or "")
+                tour = str((e.get("tournament") or {}).get("name") or "")
+                tour_slug = str((e.get("tournament") or {}).get("slug") or "")
+            except Exception:
+                continue
+
+            h_toks = _slug_tokens(home)
+            a_toks = _slug_tokens(away)
+            if not h_toks or not a_toks:
+                continue
+
+            base = _score_event(url_tokens, h_toks, a_toks)
+            if base <= 0:
+                continue
+
+            # Only boost competition AFTER a real token match exists.
+            comp_boost = 0.0
+            if comp_slug and tour_slug:
+                if comp_slug == tour_slug or comp_slug in tour_slug or tour_slug in comp_slug:
+                    comp_boost = 3.0
+
+            score = base + comp_boost
+
+            ev = SofaEvent(
+                event_id=ev_id,
+                kickoff_utc=kickoff,
+                home=home,
+                away=away,
+                tournament=tour,
+                tournament_slug=tour_slug,
+            )
+            if best is None or score > best[0]:
+                best = (score, ev)
+
+        return best[1] if best else None
 
     # Load/refresh cache.
     events: list[dict[str, Any]] = []
@@ -188,50 +268,50 @@ def lookup_sofascore_event_for_oddsportal_url(
             data = _run_node_fetch(url, timeout_sec=25)
             all_events.extend(data.get("events", []) or [])
         cache_path.parent.mkdir(parents=True, exist_ok=True)
-        cache_path.write_text(json.dumps({"generated_at_utc": iso(utc_now()), "events": all_events}, ensure_ascii=False), encoding="utf-8")
+        cache_path.write_text(
+            json.dumps({"generated_at_utc": iso(utc_now()), "events": all_events}, ensure_ascii=False),
+            encoding="utf-8",
+        )
         events = all_events
 
-    best: tuple[float, SofaEvent] | None = None
+    picked = _pick_best_from_events(events)
+    if picked:
+        return picked
 
-    for e in events:
-        try:
-            ev_id = int(e.get("id"))
-            ts = int(e.get("startTimestamp"))
-            kickoff = datetime.fromtimestamp(ts, tz=timezone.utc)
-            home = str((e.get("homeTeam") or {}).get("name") or "")
-            away = str((e.get("awayTeam") or {}).get("name") or "")
-            tour = str((e.get("tournament") or {}).get("name") or "")
-            tour_slug = str((e.get("tournament") or {}).get("slug") or "")
-        except Exception:
-            continue
+    # Fallback: SofaScore search API using tokens (helps when scheduled-events endpoint omits certain events).
+    try:
+        q = " ".join(url_tokens[:4])  # keep query short
+        data = _run_node_fetch(f"https://api.sofascore.com/api/v1/search/all?q={q}", timeout_sec=20)
+        results = data.get("results", []) or []
+        # Filter to football + (optional) competition hint.
+        cand_ids: list[int] = []
+        for r in results:
+            ent = (r or {}).get("entity") or {}
+            eid = ent.get("id")
+            if isinstance(eid, int):
+                tour_slug = str((ent.get("tournament") or {}).get("slug") or "")
+                if comp_slug and tour_slug and comp_slug not in tour_slug:
+                    continue
+                cand_ids.append(eid)
+            if len(cand_ids) >= 8:
+                break
 
-        # Quick comp hint (soft): if we have comp_slug and tour_slug overlaps, boost.
-        comp_boost = 0.0
-        if comp_slug and tour_slug:
-            if comp_slug == tour_slug or comp_slug in tour_slug or tour_slug in comp_slug:
-                comp_boost = 3.0
+        enriched: list[dict[str, Any]] = []
+        for eid in cand_ids:
+            try:
+                ev = _run_node_fetch(f"https://api.sofascore.com/api/v1/event/{eid}", timeout_sec=20).get("event")
+                if ev:
+                    enriched.append(ev)
+            except Exception:
+                continue
 
-        h_toks = _slug_tokens(home)
-        a_toks = _slug_tokens(away)
-        if not h_toks or not a_toks:
-            continue
+        picked2 = _pick_best_from_events(enriched)
+        if picked2:
+            return picked2
+    except Exception:
+        pass
 
-        score = _score_event(url_tokens, h_toks, a_toks) + comp_boost
-        if score <= 0:
-            continue
-
-        ev = SofaEvent(
-            event_id=ev_id,
-            kickoff_utc=kickoff,
-            home=home,
-            away=away,
-            tournament=tour,
-            tournament_slug=tour_slug,
-        )
-        if best is None or score > best[0]:
-            best = (score, ev)
-
-    return best[1] if best else None
+    return None
 
 
 def build_minutes_schedule() -> list[int]:
