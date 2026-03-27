@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Export debug-sampled OddsPortal matches to CSV.
+"""Export debug-sampled OddsPortal matches to CSV (human-readable).
 
 Input: a JSON produced by scripts/oddsportal_debug_sample_days.py
 Output:
   - raw points CSV (one row per decrypted odds point)
   - aggregated median CSV (per match+market+outcome_group+timestamp)
 
+Includes match participants (home/away) so the CSV is interpretable.
 This replays capture via Playwright to discover match-event-history URLs (bookies).
 """
 
@@ -25,6 +26,22 @@ from statistics import median
 from typing import Any, Optional
 
 from playwright.async_api import async_playwright
+
+
+def parse_teams_from_match_url(match_url: str) -> tuple[str, str]:
+    """Best-effort parse of teams from slug: /.../<home>-<away>-<ID>/"""
+    # take last path segment
+    seg = match_url.rstrip('/').split('/')[-1]
+    # remove -<8charid>
+    seg = re.sub(r"-[A-Za-z0-9]{8}$", "", seg)
+    parts = seg.split('-')
+    if len(parts) < 2:
+        return ("", "")
+    # heuristic: split near middle
+    mid = len(parts) // 2
+    home = ' '.join(parts[:mid])
+    away = ' '.join(parts[mid:])
+    return (home, away)
 
 UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
 
@@ -147,7 +164,12 @@ class RawRow:
     match_date_utc: str
     match_url: str
     match_id: str
+    home_team: str
+    away_team: str
     market: str
+    market_label: str
+    line_label: str
+    outcome_label: str
     mehist_url: str
     bookie_id: int
     selection_key: str
@@ -188,12 +210,49 @@ async def main() -> int:
 
     out_dir = Path("/home/openclaw/.openclaw/workspace/tmp/oddsportal_export_artifacts")
 
+    # stable label mapping for 1X2 selection_key -> Home/Draw/Away (per match)
+    # We derive by sorting odds at first timestamp (home/away tend to be shortest; draw often middle).
     for s in samples:
         match_url = s["match_url"]
         match_id = parse_match_id(match_url) or ""
         match_date = s.get("match_date_utc", "")
+        home_team, away_team = parse_teams_from_match_url(match_url)
+
+        # build per-match 1X2 selection label mapping once (if possible)
+        sel_to_label: dict[str, str] = {}
+        try:
+            mehist_urls_1x2 = await capture_mehist_urls(match_url, "1x2")
+            if mehist_urls_1x2:
+                u0 = mehist_urls_1x2[0]
+                bid0 = parse_bookie_id(u0)
+                if bid0 is not None:
+                    d0 = fetch_decrypt_mehist(u0, args.fetch_py, out_dir / match_id / "1x2_label")
+                    back0 = d0["d"]["history"]["back"]
+                    # gather odds at earliest ts
+                    pts = []
+                    for sk, inner in back0.items():
+                        arr = inner.get(str(bid0), [])
+                        if not arr:
+                            continue
+                        odd, _, ts = arr[0]
+                        pts.append((int(ts), float(odd), sk))
+                    if pts:
+                        pts.sort()
+                        # choose earliest timestamp group
+                        t0 = pts[0][0]
+                        same = [(odd, sk) for ts, odd, sk in pts if ts == t0]
+                        same.sort()  # low to high
+                        if len(same) == 3:
+                            # heuristic: lowest odds = favourite (home or away), highest odds = underdog
+                            # we cannot be 100% sure which is home/away without a dedicated mapping, so we label generically.
+                            sel_to_label[same[0][1]] = "fav"
+                            sel_to_label[same[1][1]] = "draw_or_mid"
+                            sel_to_label[same[2][1]] = "dog"
+        except Exception:
+            pass
 
         for market in ("1x2", "ou"):
+            market_label = "1X2" if market == "1x2" else "OU"
             mehist_urls = await capture_mehist_urls(match_url, market)
             for u in mehist_urls:
                 bid = parse_bookie_id(u)
@@ -208,15 +267,32 @@ async def main() -> int:
                     for odd_str, _, ts in pts:
                         side_base = ""
                         line_code = ""
-                        m = OU_KEY_RE.match(sel_key)
-                        if market == "ou" and m:
-                            side_base, line_code, _ = m.groups()
+                        line_label = ""
+                        outcome_label = ""
+
+                        if market == "ou":
+                            m = OU_KEY_RE.match(sel_key)
+                            if m:
+                                side_base, line_code, _ = m.groups()
+                                # side_base maps to Over vs Under by relative odds (not stable). keep explicit key.
+                                line_label = f"lineCode={line_code}"
+                                outcome_label = f"sideBase={side_base}"
+                            else:
+                                outcome_label = sel_key
+                        else:
+                            outcome_label = sel_to_label.get(sel_key, sel_key)
+
                         raw.append(
                             RawRow(
                                 match_date_utc=match_date,
                                 match_url=match_url,
                                 match_id=match_id,
+                                home_team=home_team,
+                                away_team=away_team,
                                 market=market,
+                                market_label=market_label,
+                                line_label=line_label,
+                                outcome_label=outcome_label,
                                 mehist_url=u,
                                 bookie_id=bid,
                                 selection_key=sel_key,
@@ -234,25 +310,27 @@ async def main() -> int:
 
     # aggregated CSV (median per timestamp)
     # grouping:
-    #  - 1x2: by selection_key
-    #  - ou: by ou_side_base (over vs under base)
-    agg_map: dict[tuple[str, str, str, str, int], list[float]] = defaultdict(list)
-    # key: (match_id, market, outcome_group, match_url, ts)
-    meta: dict[tuple[str, str, str, str, int], dict[str, Any]] = {}
+    #  - 1x2: by outcome_label
+    #  - ou: by ou_side_base (acts as Over/Under side id) and line_code kept in line_label
+    agg_map: dict[tuple[str, str, str, str, str, int], list[float]] = defaultdict(list)
+    # key: (match_id, market, outcome_group, line_label, match_url, ts)
+    meta: dict[tuple[str, str, str, str, str, int], dict[str, Any]] = {}
 
     for r in raw:
-        if r.market == "1x2":
-            outcome = r.selection_key
-        else:
-            outcome = r.ou_side_base or r.selection_key
-        key = (r.match_id, r.market, outcome, r.match_url, r.ts)
+        outcome = r.outcome_label
+        line_label = r.line_label
+        key = (r.match_id, r.market, outcome, line_label, r.match_url, r.ts)
         agg_map[key].append(r.odds)
         meta[key] = {
             "match_date_utc": r.match_date_utc,
             "match_url": r.match_url,
             "match_id": r.match_id,
+            "home_team": r.home_team,
+            "away_team": r.away_team,
             "market": r.market,
+            "market_label": r.market_label,
             "outcome_group": outcome,
+            "line_label": line_label,
             "ts": r.ts,
             "ts_utc": r.ts_utc,
         }
@@ -260,13 +338,7 @@ async def main() -> int:
     agg_rows: list[dict[str, Any]] = []
     for key, odds_list in agg_map.items():
         m = meta[key]
-        agg_rows.append(
-            {
-                **m,
-                "odds_median": float(median(odds_list)),
-                "n_sources": len(odds_list),
-            }
-        )
+        agg_rows.append({**m, "odds_median": float(median(odds_list)), "n_sources": len(odds_list)})
 
     # stable sort
     agg_rows.sort(key=lambda x: (x["match_date_utc"], x["match_id"], x["market"], x["outcome_group"], x["ts"]))
