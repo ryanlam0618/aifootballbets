@@ -234,6 +234,10 @@ async def scrape_match_list(
         all_rows: dict[str, dict] = {}
         visited = set()
 
+        # OddsPortal results pages are often a Vue SPA where pagination links have
+        # no href and only change location hash to #/page/N/. We MUST keep the same
+        # pathname and avoid accidental navigation to /matches/.
+
         for _ in range(max_pages):
             cur = page.url
             if cur in visited:
@@ -242,29 +246,23 @@ async def scrape_match_list(
 
             rows = await _collect_rows(page, listing_url)
             for r in rows:
-                # Dedup by match_url (priority requirement)
                 all_rows.setdefault(r["match_url"], r)
 
-            # next-page best effort
+            prev_total = len(all_rows)
             next_clicked = False
-            for sel in [
-                "a[rel='next']",
-                "a:has-text('Next')",
-                "button:has-text('Next')",
-                "a[data-testid='pagination-next']",
-            ]:
-                loc = page.locator(sel).first
-                try:
-                    if await loc.count() and await loc.is_visible():
-                        await loc.click(timeout=2500)
-                        await page.wait_for_timeout(settle_ms)
-                        next_clicked = True
-                        break
-                except Exception:
-                    pass
+
+            # Prefer hash pagination: click "Next" in the pagination bar.
+            try:
+                loc = page.locator("div.pagination a.pagination-link", has_text="Next").first
+                if await loc.count() and await loc.is_visible():
+                    await loc.click(timeout=5000)
+                    await page.wait_for_timeout(settle_ms)
+                    next_clicked = True
+            except Exception:
+                pass
 
             if not next_clicked:
-                # try hash page increment fallback
+                # Fallback: if already on a hash page, increment it via goto.
                 if "#/page/" in page.url:
                     m = re.search(r"#/page/(\d+)", page.url)
                     if m:
@@ -273,8 +271,23 @@ async def scrape_match_list(
                         if nxt_url not in visited:
                             await page.goto(nxt_url, wait_until="domcontentloaded", timeout=120000)
                             await page.wait_for_timeout(settle_ms)
-                            continue
+                            next_clicked = True
+
+            # Stop if we cannot paginate, OR if pagination didn't yield new matches.
+            if not next_clicked:
                 break
+
+            # Extra safety: if the new page fails to add anything, don't loop forever.
+            # (On OddsPortal, this can happen if SPA pagination fails.)
+            # We check on next iteration by comparing totals.
+            if len(all_rows) == prev_total:
+                # The click might still be in-flight; give it one more short wait.
+                await page.wait_for_timeout(1200)
+                rows2 = await _collect_rows(page, listing_url)
+                for r in rows2:
+                    all_rows.setdefault(r["match_url"], r)
+                if len(all_rows) == prev_total:
+                    break
 
         await context.close()
         await browser.close()
