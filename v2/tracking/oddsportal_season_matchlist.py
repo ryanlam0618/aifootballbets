@@ -288,7 +288,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--competition", required=True, help="Competition label (used in metadata/file name)")
     p.add_argument("--max-pages", type=int, default=40)
     p.add_argument("--headless", action="store_true")
-    p.add_argument("--settle-ms", type=int, default=1800)
+    p.add_argument("--settle-ms", type=int, default=6500)
     p.add_argument("--min-match-urls", type=int, default=0, help="Optional sanity threshold. Non-zero exit if count is below this value.")
     p.add_argument("--out-dir", default="data/oddsportal_history")
     return p.parse_args()
