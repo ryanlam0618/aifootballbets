@@ -5,11 +5,14 @@ import argparse
 import asyncio
 import json
 import re
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 from urllib.parse import urljoin, urlparse
 
+import requests
 from playwright.async_api import async_playwright
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -38,12 +41,16 @@ def _normalize_text(s: str) -> str:
 
 
 def _looks_like_match_slug(last_segment: str) -> bool:
-    """
-    OddsPortal match pages usually look like:
-      /football/.../team-a-team-b-0jR7cwU6/
-    We require:
+    """Return True if the last path segment looks like an OddsPortal match slug.
+
+    Examples:
+      - team-a-team-b-0jR7cwU6
+      - newcastle-utd-tottenham-xYXMWvIM
+
+    Note: the trailing id token is often alnum, but it may contain *no digits*.
+    So we only require:
       - hyphenated slug
-      - trailing id token with mixed alnum (at least one letter + one digit)
+      - trailing id token: at least one letter, only [a-z0-9], length>=5
     """
     seg = (last_segment or "").strip().lower()
     if not seg or "-" not in seg:
@@ -61,8 +68,6 @@ def _looks_like_match_slug(last_segment: str) -> bool:
     if len(id_token) < 5:
         return False
     if not re.search(r"[a-z]", id_token):
-        return False
-    if not re.search(r"\d", id_token):
         return False
     if not re.fullmatch(r"[a-z0-9]+", id_token):
         return False
@@ -85,6 +90,14 @@ def listing_context(listing_url: str) -> tuple[str, str]:
         comp = re.sub(r"-\d{4}-\d{2,4}$", "", comp)
         return country, comp
     return "", ""
+
+
+def decrypt_payload(enc: str, decrypt_js: str) -> dict[str, Any]:
+    # Prefer node decrypt (keeps parity with existing scripts).
+    p = subprocess.run(["node", decrypt_js], input=enc, text=True, capture_output=True)
+    if p.returncode != 0:
+        raise RuntimeError(p.stderr.strip() or "decrypt failed")
+    return json.loads(p.stdout)
 
 
 def normalize_match_url(raw_url: str, listing_url: str) -> str | None:
@@ -222,76 +235,164 @@ async def scrape_match_list(
     max_pages: int = 40,
     headless: bool = False,
     settle_ms: int = 1800,
+    decrypt_js: str = "scripts/oddsportal_decrypt_match_event.js",
 ) -> list[dict]:
+    """Scrape match list for a season.
+
+    Approach:
+    - Use Playwright to capture the ajax-sport-country-tournament-archive_ base URL.
+    - Then fetch each archive page via requests (fast/stable), decrypt with node JS,
+      and extract match URLs from the returned rows.
+
+    This avoids fragile SPA pagination / hash routing.
+    """
+
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=headless)
         context = await browser.new_context()
         page = await context.new_page()
 
+        archive_urls: list[str] = []
+
+        async def on_resp(resp):
+            try:
+                if resp.request.resource_type not in ("xhr", "fetch"):
+                    return
+                u = resp.url
+                if "ajax-sport-country-tournament-archive_" in u:
+                    archive_urls.append(u)
+            except Exception:
+                return
+
+        page.on("response", on_resp)
+
         await page.goto(listing_url, wait_until="domcontentloaded", timeout=120000)
         await page.wait_for_timeout(settle_ms)
 
-        all_rows: dict[str, dict] = {}
-        visited = set()
-
-        # OddsPortal results pages are often a Vue SPA where pagination links have
-        # no href and only change location hash to #/page/N/. We MUST keep the same
-        # pathname and avoid accidental navigation to /matches/.
-
-        for _ in range(max_pages):
-            cur = page.url
-            if cur in visited:
-                break
-            visited.add(cur)
-
-            rows = await _collect_rows(page, listing_url)
-            for r in rows:
-                all_rows.setdefault(r["match_url"], r)
-
-            prev_total = len(all_rows)
-            next_clicked = False
-
-            # Prefer hash pagination: click "Next" in the pagination bar.
+        # accept cookie if present
+        for sel in [
+            "#onetrust-accept-btn-handler",
+            "button:has-text('Accept')",
+            "button:has-text('Accept all')",
+            "button:has-text('I Accept')",
+        ]:
             try:
-                loc = page.locator("div.pagination a.pagination-link", has_text="Next").first
+                loc = page.locator(sel).first
                 if await loc.count() and await loc.is_visible():
-                    await loc.click(timeout=5000)
-                    await page.wait_for_timeout(settle_ms)
-                    next_clicked = True
+                    await loc.click(timeout=3000)
+                    await page.wait_for_timeout(1200)
+                    break
             except Exception:
                 pass
 
-            if not next_clicked:
-                # Fallback: if already on a hash page, increment it via goto.
-                if "#/page/" in page.url:
-                    m = re.search(r"#/page/(\d+)", page.url)
-                    if m:
-                        nxt = int(m.group(1)) + 1
-                        nxt_url = re.sub(r"#/page/\d+", f"#/page/{nxt}", page.url)
-                        if nxt_url not in visited:
-                            await page.goto(nxt_url, wait_until="domcontentloaded", timeout=120000)
-                            await page.wait_for_timeout(settle_ms)
-                            next_clicked = True
-
-            # Stop if we cannot paginate, OR if pagination didn't yield new matches.
-            if not next_clicked:
-                break
-
-            # Extra safety: if the new page fails to add anything, don't loop forever.
-            # (On OddsPortal, this can happen if SPA pagination fails.)
-            # We check on next iteration by comparing totals.
-            if len(all_rows) == prev_total:
-                # The click might still be in-flight; give it one more short wait.
-                await page.wait_for_timeout(1200)
-                rows2 = await _collect_rows(page, listing_url)
-                for r in rows2:
-                    all_rows.setdefault(r["match_url"], r)
-                if len(all_rows) == prev_total:
-                    break
+        # trigger archive XHR
+        try:
+            await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+        except Exception:
+            pass
+        await page.wait_for_timeout(2500)
 
         await context.close()
         await browser.close()
-        return list(all_rows.values())
+
+    if not archive_urls:
+        raise RuntimeError("could not capture archive XHR url")
+
+    def _norm_base(x: str) -> str:
+        x = (x or "").split("?_=")[0].rstrip("/")
+        x = re.sub(r"/page/\d+$", "", x)
+        return x
+
+    # We may capture multiple archive URLs; pick the one that yields the largest archive.
+    candidates: list[str] = []
+    seen = set()
+    for u0 in archive_urls:
+        b0 = _norm_base(u0)
+        if b0 and b0 not in seen:
+            seen.add(b0)
+            candidates.append(b0)
+
+    def _fetch_meta(base: str) -> tuple[int, int]:
+        """Return (pageCount, totalRows) best-effort for base using page 1."""
+        try:
+            url = f"{base}/page/1/"
+            r = requests.get(
+                url,
+                headers={
+                    "User-Agent": "Mozilla/5.0",
+                    "X-Requested-With": "XMLHttpRequest",
+                    "Accept-Encoding": "identity",
+                },
+                timeout=30,
+            )
+            r.raise_for_status()
+            j = decrypt_payload(r.text.strip(), decrypt_js)
+            d = j.get("d") or {}
+            pg = d.get("pagination") or {}
+            page_count = int(pg.get("pageCount") or 0) if isinstance(pg, dict) else 0
+            total = int(d.get("total") or 0)
+            # Fallback if total missing
+            if total <= 0:
+                total = len(d.get("rows") or [])
+            return page_count, total
+        except Exception:
+            return 0, 0
+
+    best = candidates[-1]
+    best_meta = (0, 0)
+    for c in candidates:
+        meta = _fetch_meta(c)
+        if meta > best_meta:
+            best = c
+            best_meta = meta
+
+    u = best
+
+    all_rows: dict[str, dict] = {}
+
+    for pn in range(1, max_pages + 1):
+        url = f"{u}/page/{pn}/"
+        r = requests.get(
+            url,
+            headers={
+                "User-Agent": "Mozilla/5.0",
+                "X-Requested-With": "XMLHttpRequest",
+                "Accept-Encoding": "identity",
+            },
+            timeout=30,
+        )
+        r.raise_for_status()
+        j = decrypt_payload(r.text.strip(), decrypt_js)
+
+        rows = (j.get("d") or {}).get("rows") or []
+        if not rows:
+            break
+
+        for row in rows:
+            match_url = row.get("url")
+            if not isinstance(match_url, str):
+                continue
+            normalized = normalize_match_url("https://www.oddsportal.com" + match_url, listing_url)
+            if not normalized:
+                continue
+            all_rows.setdefault(
+                normalized,
+                {
+                    "match_url": normalized,
+                    "date_text": "",
+                    "home_team": _normalize_text(row.get("home-name") or ""),
+                    "away_team": _normalize_text(row.get("away-name") or ""),
+                    "anchor_text": "",
+                    "source_page": listing_url,
+                },
+            )
+
+        # Stop early if pagination says no more.
+        pg = (j.get("d") or {}).get("pagination") or {}
+        if isinstance(pg, dict) and pn >= int(pg.get("pageCount") or 0):
+            break
+
+    return list(all_rows.values())
 
 
 def parse_args() -> argparse.Namespace:
