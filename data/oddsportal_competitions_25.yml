@@ -1,0 +1,323 @@
+# oddsportal_competitions_25.yml
+# Canonical competition list aligned to Kris' SofaScore 25-league/cup list.
+#
+# Goal:
+# - Provide a single canonical key per competition (stable internal name)
+# - Keep aliases for:
+#   - SofaScore source_tournament renames (already observed in appdb)
+#   - OddsPortal listing URL slugs (old/new) (to be filled programmatically)
+#
+# NOTE: OddsPortal alias discovery is pending because web_search is rate-limited.
+# We'll fill oddsportal.url_templates + oddsportal.slug_aliases iteratively.
+
+version: 1
+
+competitions:
+  - key: LA_LIGA
+    canonical_name: "La Liga"
+    sofascore:
+      league: "La Liga"
+      source_tournament_aliases:
+        - "LaLiga"
+    oddsportal:
+      sport_path: "/football/spain/"
+      url_templates: []
+      slug_aliases: []
+
+  - key: EPL
+    canonical_name: "Premier League"
+    sofascore:
+      league: "Premier League"
+      source_tournament_aliases:
+        - "Premier League"
+    oddsportal:
+      sport_path: "/football/england/"
+      url_templates:
+        - "https://www.oddsportal.com/football/england/premier-league-{season}/results/"
+        - "https://www.oddsportal.com/football/england/premier-league/results/"
+      slug_aliases:
+        - "premier-league"
+
+  - key: SERIE_A
+    canonical_name: "Serie A"
+    sofascore:
+      league: "Serie A"
+      source_tournament_aliases:
+        - "Serie A"
+    oddsportal:
+      sport_path: "/football/italy/"
+      url_templates: []
+      slug_aliases: []
+
+  - key: LIGUE_1
+    canonical_name: "Ligue 1"
+    sofascore:
+      league: "Ligue 1"
+      source_tournament_aliases:
+        - "Ligue 1"
+    oddsportal:
+      sport_path: "/football/france/"
+      url_templates: []
+      slug_aliases: []
+
+  - key: J1
+    canonical_name: "J1 League"
+    sofascore:
+      league: "J1 League"
+      source_tournament_aliases:
+        - "J1 League"
+    oddsportal:
+      sport_path: "/football/japan/"
+      url_templates: []
+      slug_aliases: []
+
+  - key: UEL
+    canonical_name: "UEFA Europa League"
+    sofascore:
+      league: "UEFA Europa League"
+      source_tournament_aliases:
+        - "UEFA Europa League"
+    oddsportal:
+      sport_path: "/football/europe/"
+      url_templates:
+        - "https://www.oddsportal.com/football/europe/europa-league-{season}/results/"
+        - "https://www.oddsportal.com/football/europe/europa-league/results/"
+      slug_aliases:
+        - "europa-league"
+
+  - key: BUNDESLIGA
+    canonical_name: "Bundesliga"
+    sofascore:
+      league: "Bundesliga"
+      source_tournament_aliases:
+        - "Bundesliga"
+    oddsportal:
+      sport_path: "/football/germany/"
+      url_templates: []
+      slug_aliases: []
+
+  - key: CSL
+    canonical_name: "Chinese Super League"
+    sofascore:
+      league: "Chinese Super League"
+      source_tournament_aliases:
+        - "Chinese Super League"
+    oddsportal:
+      sport_path: "/football/china/"
+      url_templates: []
+      slug_aliases: []
+
+  - key: K_LEAGUE_1
+    canonical_name: "K League 1"
+    sofascore:
+      league: "K League 1"
+      source_tournament_aliases:
+        - "K League 1"
+    oddsportal:
+      sport_path: "/football/south-korea/"
+      url_templates: []
+      slug_aliases: []
+
+  - key: ACL
+    canonical_name: "AFC Champions League"
+    sofascore:
+      league: "AFC Champions League"
+      source_tournament_aliases:
+        - "AFC Champions League Elite"
+        - "AFC Champions League Two"
+        - "AFC Champions League"
+    oddsportal:
+      sport_path: "/football/asia/"
+      url_templates: []
+      slug_aliases: []
+
+  - key: UCL
+    canonical_name: "UEFA Champions League"
+    sofascore:
+      league: "UEFA Champions League"
+      source_tournament_aliases:
+        - "UEFA Champions League"
+    oddsportal:
+      sport_path: "/football/europe/"
+      url_templates:
+        - "https://www.oddsportal.com/football/europe/champions-league-{season}/results/"
+        - "https://www.oddsportal.com/football/europe/champions-league/results/"
+      slug_aliases:
+        - "champions-league"
+
+  - key: UECL
+    canonical_name: "UEFA Europa Conference League"
+    sofascore:
+      league: "UEFA Europa Conference League"
+      source_tournament_aliases:
+        - "UEFA Conference League"
+        - "UEFA Europa Conference League"
+    oddsportal:
+      sport_path: "/football/europe/"
+      url_templates:
+        - "https://www.oddsportal.com/football/europe/conference-league-{season}/results/"
+        - "https://www.oddsportal.com/football/europe/conference-league/results/"
+        - "https://www.oddsportal.com/football/europe/conference-league/"
+      slug_aliases:
+        - "conference-league"
+        - "europa-conference-league"  # legacy guess; verify
+
+  - key: A_LEAGUE
+    canonical_name: "A-League Men"
+    sofascore:
+      league: "A-League Men"
+      source_tournament_aliases:
+        - "A-League Men"
+    oddsportal:
+      sport_path: "/football/australia/"
+      url_templates: []
+      slug_aliases: []
+
+  - key: FA_CUP
+    canonical_name: "FA Cup"
+    sofascore:
+      league: "FA Cup"
+      source_tournament_aliases:
+        - "FA Cup"
+        - "FA Cup, Qualification"
+    oddsportal:
+      sport_path: "/football/england/"
+      url_templates: []
+      slug_aliases: []
+
+  - key: COPPA_ITALIA
+    canonical_name: "Coppa Italia"
+    sofascore:
+      league: "Coppa Italia"
+      source_tournament_aliases:
+        - "Coppa Italia"
+        - "Coppa Italia Serie C"
+        - "Coppa Italia Serie D"
+        - "Supercoppa Italiana"
+        - "Coppa Italia Femminile"
+    oddsportal:
+      sport_path: "/football/italy/"
+      url_templates: []
+      slug_aliases: []
+
+  - key: COPA_DEL_REY
+    canonical_name: "Copa del Rey"
+    sofascore:
+      league: "Copa del Rey"
+      source_tournament_aliases:
+        - "Copa del Rey"
+        - "Copa Del Rey Juvenil"
+    oddsportal:
+      sport_path: "/football/spain/"
+      url_templates: []
+      slug_aliases: []
+
+  - key: EFL_CUP
+    canonical_name: "EFL Cup"
+    sofascore:
+      league: "EFL Cup"
+      source_tournament_aliases:
+        - "EFL Cup"
+    oddsportal:
+      sport_path: "/football/england/"
+      url_templates: []
+      slug_aliases: []
+
+  - key: J_LEAGUE_CUP
+    canonical_name: "J.League Cup"
+    sofascore:
+      league: "J.League Cup"
+      source_tournament_aliases:
+        - "J. League Cup"
+        - "J.League Cup"
+    oddsportal:
+      sport_path: "/football/japan/"
+      url_templates: []
+      slug_aliases: []
+
+  - key: COUPE_DE_FRANCE
+    canonical_name: "Coupe de France"
+    sofascore:
+      league: "Coupe de France"
+      source_tournament_aliases:
+        - "Coupe de France"
+    oddsportal:
+      sport_path: "/football/france/"
+      url_templates: []
+      slug_aliases: []
+
+  - key: DFB_POKAL
+    canonical_name: "DFB Pokal"
+    sofascore:
+      league: "DFB Pokal"
+      source_tournament_aliases:
+        - "DFB Pokal"
+    oddsportal:
+      sport_path: "/football/germany/"
+      url_templates: []
+      slug_aliases: []
+
+  - key: AUSTRALIA_CUP
+    canonical_name: "Australia Cup"
+    sofascore:
+      league: "Australia Cup"
+      source_tournament_aliases:
+        - "Australia Cup"
+        - "FFA Cup, Preliminary Round, State Queensland"
+        - "FFA Cup, Preliminary Round, State NSW"
+        - "FFA Cup, Preliminary Round, State Victoria"
+        - "FFA Cup, Preliminary Round, State Northern NSW"
+        - "FFA Cup,  Preliminary Round, ACT"
+        - "FFA Cup, Preliminary Round, State South Australia"
+        - "FFA Cup, Preliminary Round, State Brisbane"
+    oddsportal:
+      sport_path: "/football/australia/"
+      url_templates: []
+      slug_aliases: []
+
+  - key: EMPERORS_CUP
+    canonical_name: "Emperor's Cup"
+    sofascore:
+      league: "Emperor's Cup"
+      source_tournament_aliases:
+        - "Emperor Cup"
+        - "Emperor's Cup"
+    oddsportal:
+      sport_path: "/football/japan/"
+      url_templates: []
+      slug_aliases: []
+
+  - key: CFA_CUP
+    canonical_name: "Chinese FA Cup"
+    sofascore:
+      league: "Chinese FA Cup"
+      source_tournament_aliases:
+        - "CFA Cup"
+        - "Chinese FA Cup"
+    oddsportal:
+      sport_path: "/football/china/"
+      url_templates: []
+      slug_aliases: []
+
+  - key: FIFA_CWC
+    canonical_name: "FIFA Club World Cup"
+    sofascore:
+      league: "FIFA Club World Cup"
+      source_tournament_aliases:
+        - "FIFA Club World Cup"
+    oddsportal:
+      sport_path: "/football/world/"
+      url_templates: []
+      slug_aliases: []
+
+  - key: INTERCONTINENTAL_CUP
+    canonical_name: "Intercontinental Cup"
+    sofascore:
+      league: "Intercontinental Cup"
+      source_tournament_aliases:
+        - "FIFA Intercontinental Cup"
+        - "Intercontinental Cup"
+    oddsportal:
+      sport_path: "/football/world/"
+      url_templates: []
+      slug_aliases: []
