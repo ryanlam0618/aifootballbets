@@ -328,7 +328,7 @@ def main() -> int:
                     args.season,
                     mid,
                     match_url,
-                    None,
+                    (row.get("match_date_utc") or None),
                     (row.get("home_team") or None),
                     (row.get("away_team") or None),
                 ),

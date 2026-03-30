@@ -384,11 +384,25 @@ async def scrape_match_list(
             normalized = normalize_match_url("https://www.oddsportal.com" + match_url, listing_url)
             if not normalized:
                 continue
+            # OddsPortal archive rows include a kickoff timestamp we can use for a stable UTC match date.
+            ts = row.get("date-start-timestamp")
+            match_date_utc = ""
+            kickoff_ts_utc = None
+            try:
+                if ts is not None:
+                    kickoff_ts_utc = int(ts)
+                    match_date_utc = datetime.fromtimestamp(kickoff_ts_utc, tz=timezone.utc).date().isoformat()
+            except Exception:
+                kickoff_ts_utc = None
+                match_date_utc = ""
+
             all_rows.setdefault(
                 normalized,
                 {
                     "match_url": normalized,
                     "date_text": "",
+                    "match_date_utc": match_date_utc,
+                    "kickoff_ts_utc": kickoff_ts_utc,
                     "home_team": _normalize_text(row.get("home-name") or ""),
                     "away_team": _normalize_text(row.get("away-name") or ""),
                     "anchor_text": "",
