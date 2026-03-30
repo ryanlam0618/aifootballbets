@@ -92,7 +92,16 @@ def listing_context(listing_url: str) -> tuple[str, str]:
     return "", ""
 
 
+def _resolve_decrypt_js(decrypt_js: str) -> str:
+    # Resolve decrypt JS path against repo root for stability.
+    p = Path(decrypt_js)
+    if not p.is_absolute():
+        p = (_REPO_ROOT / decrypt_js).resolve()
+    return str(p)
+
+
 def decrypt_payload(enc: str, decrypt_js: str) -> dict[str, Any]:
+    decrypt_js = _resolve_decrypt_js(decrypt_js)
     # Prefer node decrypt (keeps parity with existing scripts).
     p = subprocess.run(["node", decrypt_js], input=enc, text=True, capture_output=True)
     if p.returncode != 0:
