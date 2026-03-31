@@ -78,6 +78,25 @@ def iso_utc(ts: int) -> str:
 
 
 def parse_match_id(match_url: str) -> str:
+    """Extract OddsPortal match id.
+
+    Historically we used the trailing token of the match slug, e.g. /team-a-team-b-0jR7cwU6/.
+
+    Newer OddsPortal archive endpoints may return H2H URLs with a hash fragment carrying
+    the match id, e.g. /football/h2h/betis-vJbTeCGP/valencia-CQeaytrD/#KSyQNfht
+
+    We prioritize the fragment if present.
+    """
+    try:
+        p = urlparse(match_url or "")
+        frag = (p.fragment or "").strip()
+        if frag:
+            frag = re.split(r"[^A-Za-z0-9]", frag, maxsplit=1)[0]
+            if frag and len(frag) >= 6:
+                return frag
+    except Exception:
+        pass
+
     seg = (match_url or "").rstrip("/").split("/")[-1]
     return seg.split("-")[-1]
 

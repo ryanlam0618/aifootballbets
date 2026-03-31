@@ -109,6 +109,13 @@ def decrypt_payload(enc: str, decrypt_js: str) -> dict[str, Any]:
     return json.loads(p.stdout)
 
 
+def _normalize_match_id_fragment(fragment: str) -> str:
+    frag = (fragment or "").strip()
+    # OddsPortal uses hash like #KSyQNfht for match id in some endpoints.
+    frag = re.split(r"[^A-Za-z0-9]", frag, maxsplit=1)[0]
+    return frag
+
+
 def normalize_match_url(raw_url: str, listing_url: str) -> str | None:
     full = urljoin("https://www.oddsportal.com", raw_url or "")
     p = urlparse(full)
@@ -122,7 +129,7 @@ def normalize_match_url(raw_url: str, listing_url: str) -> str | None:
     if not path.startswith("/football/"):
         return None
 
-    # Canonical trailing slash and strip query/fragment.
+    # Canonical trailing slash.
     if not path.endswith("/"):
         path = path + "/"
 
@@ -133,6 +140,18 @@ def normalize_match_url(raw_url: str, listing_url: str) -> str | None:
         return None
 
     segments = [s for s in low.split("/") if s]
+    if len(segments) < 3:
+        return None
+
+    # Special-case: archive rows may return /football/h2h/.../#<matchId>
+    # In that case, the match id is carried in the URL fragment.
+    if len(segments) >= 4 and segments[1] == "h2h":
+        mid = _normalize_match_id_fragment(p.fragment)
+        if not mid or len(mid) < 6:
+            return None
+        # Keep the fragment (match id) for downstream parsing/backfill.
+        return f"{p.scheme}://{p.netloc}{path}#{mid}"
+
     # expected at least: football / country / competition / match-slug
     if len(segments) < 4:
         return None
