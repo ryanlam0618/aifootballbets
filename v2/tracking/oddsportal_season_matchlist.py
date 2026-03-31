@@ -332,11 +332,16 @@ async def scrape_match_list(
         return x
 
     # We may capture multiple archive URLs; pick the one that yields the largest archive.
+    # Some pages may fire a 404-ish archive request like .../1//X... (missing token) — ignore those.
     candidates: list[str] = []
     seen = set()
     for u0 in archive_urls:
         b0 = _norm_base(u0)
-        if b0 and b0 not in seen:
+        if not b0:
+            continue
+        if "/ajax-sport-country-tournament-archive_/1//" in b0:
+            continue
+        if b0 not in seen:
             seen.add(b0)
             candidates.append(b0)
 
