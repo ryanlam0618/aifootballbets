@@ -45,6 +45,64 @@ def expand_season_template(url_template: str, season: str) -> str:
     return url_template.replace("{season}", season)
 
 
+def season_year_bounds(season: str) -> tuple[int, int] | None:
+    """Parse 'YYYY-YYYY' -> (YYYY, YYYY). Returns None if not parseable."""
+    try:
+        a, b = season.split("-", 1)
+        y1, y2 = int(a), int(b)
+        if 1900 <= y1 <= 2100 and 1900 <= y2 <= 2100 and y2 >= y1:
+            return (y1, y2)
+    except Exception:
+        pass
+    return None
+
+
+def jsonl_date_range_ok(jsonl_path: Path, season: str) -> bool:
+    """Sanity-check match_date_utc in generated matchlist.
+
+    Guards against using a non-season-specific '/results/' page which returns the
+    latest season but gets labeled as an older season.
+
+    We accept dates where YEAR(match_date_utc) is within [start_year, end_year].
+    If there are no dates present, treat as invalid.
+    """
+    bounds = season_year_bounds(season)
+    if not bounds:
+        return True  # don't block unknown season formats
+    y1, y2 = bounds
+
+    seen = 0
+    bad = 0
+    # sample up to N lines for speed
+    N = 200
+    with jsonl_path.open("r", encoding="utf-8") as f:
+        for i, ln in enumerate(f):
+            if i >= N:
+                break
+            ln = ln.strip()
+            if not ln:
+                continue
+            try:
+                d = json.loads(ln)
+            except Exception:
+                continue
+            md = (d.get("match_date_utc") or "").strip()
+            if not md or len(md) < 4:
+                continue
+            seen += 1
+            try:
+                yy = int(md[:4])
+            except Exception:
+                continue
+            if yy < y1 or yy > y2:
+                bad += 1
+
+    if seen == 0:
+        return False
+    # If more than a small fraction are out of range, reject.
+    return (bad / max(1, seen)) <= 0.05
+
+
 def task_id(comp_key: str, season: str) -> str:
     return f"{comp_key}__{season}".replace("/", "-")
 
@@ -102,6 +160,12 @@ def run_one(
     matchlist_jsonl = None
     for ut in url_templates:
         url = expand_season_template(ut, season)
+
+        # Safety: for historical seasons, do NOT accept the generic '/results/' template.
+        # It often returns the latest season and would poison the season labeling.
+        if "{season}" not in ut and season_year_bounds(season):
+            continue
+
         ml_base = f"{comp_key.lower()}_{season.replace('-', '_')}"
         cmd = [
             sys.executable,
@@ -124,21 +188,26 @@ def run_one(
         ml_log = out_dir / "matchlist.log"
         with ml_log.open("a", encoding="utf-8") as f:
             f.write("\n# URL: " + url + "\n")
+
         rc = subprocess.run(cmd, cwd=str(REPO_ROOT)).returncode
         if rc == 0:
             # meta tells us the exact output path
             meta = matchlist_out_dir / "match_lists" / f"{ml_base}.meta.json"
             if meta.exists():
                 j = json.loads(meta.read_text(encoding="utf-8"))
-                matchlist_jsonl = Path(j["output"])
-                break
+                candidate = Path(j["output"])
+                if candidate.exists() and jsonl_date_range_ok(candidate, season):
+                    matchlist_jsonl = candidate
+                    break
             # Fallback: find any meta for this comp/season (slugify differences).
             for m in (matchlist_out_dir / "match_lists").glob("*.meta.json"):
                 try:
                     jj = json.loads(m.read_text(encoding="utf-8"))
                     if jj.get("competition") == comp_key and jj.get("season") == season and jj.get("count_ok"):
-                        matchlist_jsonl = Path(jj["output"])
-                        break
+                        candidate = Path(jj["output"])
+                        if candidate.exists() and jsonl_date_range_ok(candidate, season):
+                            matchlist_jsonl = candidate
+                            break
                 except Exception:
                     pass
             if matchlist_jsonl:
