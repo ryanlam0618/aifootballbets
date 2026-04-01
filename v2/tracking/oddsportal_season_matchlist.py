@@ -371,6 +371,11 @@ async def scrape_match_list(
         except Exception:
             return 0, 0
 
+    if not candidates:
+        raise RuntimeError(
+            f"No usable archive URLs captured for listing: {listing_url}"
+        )
+
     best = candidates[-1]
     best_meta = (0, 0)
     for c in candidates:
