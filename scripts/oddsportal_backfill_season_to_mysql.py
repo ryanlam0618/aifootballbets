@@ -187,6 +187,8 @@ def make_session() -> requests.Session:
 
 
 def fetch_mehist(session: requests.Session, match_id: str, market_code: str, bookie_id: int, geo: str, lang: str, timeout: int = 30) -> dict[str, Any]:
+    # OddsPortal endpoint signature: /match-event-history/1-<matchId>-<marketCode>-0-<bookieId>/
+    # (Earlier experiments with extra segments return 404.)
     url = f"https://www.oddsportal.com/match-event-history/1-{match_id}-{market_code}-0-{bookie_id}/?geo={geo}&lang={lang}"
     r = session.get(url, timeout=timeout)
     r.raise_for_status()
@@ -328,6 +330,21 @@ def main() -> int:
         mid = parse_match_id(match_url)
         if not mid:
             continue
+
+        # For OddsPortal H2H URLs, the actual event hash/id needed for match-event-history
+        # is carried in the decrypted payload (jsParams.h2hEncodedEventId). The URL fragment
+        # match id may not work for the match-event-history endpoint.
+        if "/football/h2h/" in match_url:
+            try:
+                s0 = _get_session()
+                page0 = decrypt_oddsportal(s0.get(match_url.split("#", 1)[0], timeout=int(args.timeout or 30)).text.strip())
+                js = (page0.get("d") or {}).get("jsParams") or {}
+                eid = (js.get("h2hEncodedEventId") or "").strip()
+                if eid:
+                    mid = eid
+            except Exception:
+                # fall back to parsed mid
+                pass
 
         try:
             # upsert match
