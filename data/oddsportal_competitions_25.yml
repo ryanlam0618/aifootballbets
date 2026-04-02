@@ -155,6 +155,7 @@ competitions:
   oddsportal:
     sport_path: /football/europe/
     url_templates:
+    - https://www.oddsportal.com/football/europe/europa-conference-league-{season}/results/
     - https://www.oddsportal.com/football/europe/conference-league-{season}/results/
     - https://www.oddsportal.com/football/europe/conference-league/results/
     - https://www.oddsportal.com/football/europe/conference-league/
