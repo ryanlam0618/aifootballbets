@@ -101,6 +101,72 @@ def _resolve_decrypt_js(decrypt_js: str) -> str:
     return str(p)
 
 
+def derive_archive_bases_from_ssr_odds_request(odds_req_url: str, listing_url: str, token: str = "") -> list[str]:
+    """Given SSR oddsRequest.url (often '/ajax-sport-country-tournament-archive_/1/<id>/'),
+    try to derive candidate archive bases.
+
+    Some seasons require an additional token after <id> (captured by the browser in XHR).
+    When the token isn't available, we can sometimes derive it by calling the base itself;
+    OddsPortal returns a text line like:
+      'URL:/ajax-sport-country-tournament-archive_/1/<id>/page/1/ Status: 404'
+    which reveals the required path if present.
+
+    Returns list of base URLs (without '/page/N/').
+    """
+    out: list[str] = []
+    b = (odds_req_url or "").strip().strip('"')
+    if not b:
+        return out
+    if b.startswith("/"):
+        b = "https://www.oddsportal.com" + b
+    b = b.rstrip("/")
+
+    # If it already looks like it has 2 segments after /1/, accept it.
+    try:
+        tail = b.split("ajax-sport-country-tournament-archive_", 1)[-1]
+        if "/1/" in tail:
+            segs = [s for s in tail.split("/1/", 1)[-1].split("/") if s]
+            if len(segs) >= 2:
+                out.append(b)
+                return out
+    except Exception:
+        pass
+
+    # If we have a token (meta token in <meta name="token" ...>), try to form
+    # a 2-segment base: .../1/<id>/<token>
+    if token:
+        out.append(b + "/" + token)
+
+    # Try to probe the base to see if it reveals the real URL.
+    try:
+        r = requests.get(
+            b + "/page/1/",
+            headers={
+                "User-Agent": "Mozilla/5.0",
+                "X-Requested-With": "XMLHttpRequest",
+                "Accept-Encoding": "identity",
+                "Referer": listing_url,
+            },
+            timeout=30,
+        )
+        txt = (r.text or "").strip()
+        # If response starts with 'URL:' parse it.
+        if txt.startswith("URL:"):
+            # take path after URL:
+            path = txt.split("URL:", 1)[-1].split("Status:", 1)[0].strip()
+            if path.startswith("/"):
+                # remove /page/1/ suffix
+                path = re.sub(r"/page/\d+/?$", "", path.rstrip("/"))
+                out.append("https://www.oddsportal.com" + path)
+    except Exception:
+        pass
+
+    # Fallback: return the original base (may still work for some pages)
+    if b not in out:
+        out.append(b)
+    return out
+
+
 def decrypt_payload(enc: str, decrypt_js: str) -> dict[str, Any]:
     decrypt_js = _resolve_decrypt_js(decrypt_js)
     # Prefer node decrypt (keeps parity with existing scripts).
@@ -344,27 +410,35 @@ async def scrape_match_list(
         # Also try to derive the archive base directly from the SSR JSON embedded in
         # <tournament-component :sport-data="..."> (more reliable than waiting for XHR).
         odds_req_base = ""
+        page_token = ""
 
         await page.goto(listing_url, wait_until="domcontentloaded", timeout=120000)
         await page.wait_for_timeout(settle_ms)
 
-        # Derive archive base from SSR sport-data if present
+        # Derive archive base + page token from SSR.
+        # The SSR markup differs across pages; prefer parsing from the already captured HTML.
+        odds_req_base = ""
+        page_token = ""
         try:
-            odds_req_base = await page.evaluate(
-                """() => {
-                  const el = document.querySelector('tournament-component');
-                  if (!el) return '';
-                  const s = el.getAttribute(':sport-data');
-                  if (!s) return '';
-                  try {
-                    const d = JSON.parse(s);
-                    const u = (d.oddsRequest && d.oddsRequest.url) ? d.oddsRequest.url : '';
-                    return (typeof u === 'string') ? u : '';
-                  } catch(e) { return ''; }
-                }"""
-            )
+            if page_html:
+                import html as _html
+                import json as _json
+                import re as _re
+                # meta token
+                m = _re.search(r'<meta[^>]+name="token"[^>]+content="([A-Za-z0-9]+)"', page_html)
+                if m:
+                    page_token = m.group(1)
+                # oddsRequest.url inside <tournament-component :sport-data="...">
+                m2 = _re.search(r'<tournament-component[^>]+:sport-data="([^"]+)"', page_html)
+                if m2:
+                    raw = _html.unescape(m2.group(1))
+                    d = _json.loads(raw)
+                    u = (d.get('oddsRequest') or {}).get('url')
+                    if isinstance(u, str):
+                        odds_req_base = u
         except Exception:
-            odds_req_base = ""
+            odds_req_base = odds_req_base or ""
+            page_token = page_token or ""
 
         # accept cookie if present
         for sel in [
@@ -404,10 +478,8 @@ async def scrape_match_list(
     # parsing match links directly from the rendered /results/ page.
     if not archive_urls:
         if odds_req_base:
-            b = odds_req_base.strip().strip('"')
-            if b.startswith("/"):
-                b = "https://www.oddsportal.com" + b
-            archive_urls.append(b)
+            for b in derive_archive_bases_from_ssr_odds_request(odds_req_base, listing_url, token=page_token):
+                archive_urls.append(b)
 
     if not archive_urls:
         if page_html:
@@ -431,6 +503,14 @@ async def scrape_match_list(
             continue
         if "/ajax-sport-country-tournament-archive_/1//" in b0:
             continue
+        # Some sources provide the archive base without the required tournament token.
+        # We need at least ...archive_/1/<token>/<id>
+        tail = b0.split("ajax-sport-country-tournament-archive_", 1)[-1]
+        # crude check: after ...archive_/1/ there should be two path segments
+        if "/1/" in tail:
+            segs = [s for s in tail.split("/1/", 1)[-1].split("/") if s]
+            if len(segs) < 2:
+                continue
         if b0 not in seen:
             seen.add(b0)
             candidates.append(b0)
