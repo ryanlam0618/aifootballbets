@@ -13,6 +13,7 @@ from typing import Any
 from urllib.parse import urljoin, urlparse
 
 import requests
+from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -114,6 +115,52 @@ def _normalize_match_id_fragment(fragment: str) -> str:
     # OddsPortal uses hash like #KSyQNfht for match id in some endpoints.
     frag = re.split(r"[^A-Za-z0-9]", frag, maxsplit=1)[0]
     return frag
+
+
+def extract_matches_from_results_html(html: str, listing_url: str) -> list[dict]:
+    """Fallback extractor for match urls from the /results/ page HTML.
+
+    Returns rows in the same shape as the archive-based extractor (subset).
+    match_date_utc/kickoff_ts_utc are best-effort and may be empty.
+    """
+    out: list[dict] = []
+    soup = BeautifulSoup(html, "html.parser")
+
+    for a in soup.select("a[href]"):
+        href = a.get("href") or ""
+        if not isinstance(href, str):
+            continue
+        if "/football/h2h/" not in href and "/football/" not in href:
+            continue
+        full = href
+        if full.startswith("/"):
+            full = "https://www.oddsportal.com" + full
+        normalized = normalize_match_url(full, listing_url)
+        if not normalized:
+            continue
+        out.append(
+            {
+                "match_url": normalized,
+                "match_date_utc": "",
+                "kickoff_ts_utc": None,
+                "date_text": "",
+                "home_team": "",
+                "away_team": "",
+                "anchor_text": _normalize_text(a.get_text(" ") or ""),
+                "source_page": listing_url,
+            }
+        )
+
+    # de-dup preserve order
+    seen: set[str] = set()
+    dedup: list[dict] = []
+    for r in out:
+        u = str(r.get("match_url") or "")
+        if not u or u in seen:
+            continue
+        seen.add(u)
+        dedup.append(r)
+    return dedup
 
 
 def normalize_match_url(raw_url: str, listing_url: str) -> str | None:
@@ -294,8 +341,30 @@ async def scrape_match_list(
 
         page.on("response", on_resp)
 
+        # Also try to derive the archive base directly from the SSR JSON embedded in
+        # <tournament-component :sport-data="..."> (more reliable than waiting for XHR).
+        odds_req_base = ""
+
         await page.goto(listing_url, wait_until="domcontentloaded", timeout=120000)
         await page.wait_for_timeout(settle_ms)
+
+        # Derive archive base from SSR sport-data if present
+        try:
+            odds_req_base = await page.evaluate(
+                """() => {
+                  const el = document.querySelector('tournament-component');
+                  if (!el) return '';
+                  const s = el.getAttribute(':sport-data');
+                  if (!s) return '';
+                  try {
+                    const d = JSON.parse(s);
+                    const u = (d.oddsRequest && d.oddsRequest.url) ? d.oddsRequest.url : '';
+                    return (typeof u === 'string') ? u : '';
+                  } catch(e) { return ''; }
+                }"""
+            )
+        except Exception:
+            odds_req_base = ""
 
         # accept cookie if present
         for sel in [
@@ -320,10 +389,31 @@ async def scrape_match_list(
             pass
         await page.wait_for_timeout(2500)
 
+        # capture the rendered DOM before closing (for fallback parsing)
+        page_html = ""
+        try:
+            page_html = await page.content()
+        except Exception:
+            page_html = ""
+
         await context.close()
         await browser.close()
 
+    # Sometimes OddsPortal does not fire the archive XHR (or Playwright misses it).
+    # Try to use the SSR-derived base first; if still not available, fall back to
+    # parsing match links directly from the rendered /results/ page.
     if not archive_urls:
+        if odds_req_base:
+            b = odds_req_base.strip().strip('"')
+            if b.startswith("/"):
+                b = "https://www.oddsportal.com" + b
+            archive_urls.append(b)
+
+    if not archive_urls:
+        if page_html:
+            rows = extract_matches_from_results_html(page_html, listing_url)
+            if rows:
+                return rows
         raise RuntimeError("could not capture archive XHR url")
 
     def _norm_base(x: str) -> str:
