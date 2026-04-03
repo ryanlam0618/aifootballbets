@@ -196,14 +196,29 @@ def extract_matches_from_results_html(html: str, listing_url: str) -> list[dict]
         href = a.get("href") or ""
         if not isinstance(href, str):
             continue
-        if "/football/h2h/" not in href and "/football/" not in href:
+        if "/football/" not in href:
             continue
+        if "/football/h2h/" in href:
+            continue
+
         full = href
         if full.startswith("/"):
             full = "https://www.oddsportal.com" + full
+
+        # Quick prefilter: require a match-like last segment.
+        try:
+            p = urlparse(full)
+            segs = [s for s in (p.path or "").split("/") if s]
+            last = (segs[-1] if segs else "")
+            if not _looks_like_match_slug(last):
+                continue
+        except Exception:
+            pass
+
         normalized = normalize_match_url(full, listing_url)
         if not normalized:
             continue
+
         out.append(
             {
                 "match_url": normalized,
@@ -395,16 +410,35 @@ async def scrape_match_list(
 
         archive_urls: list[str] = []
 
-        async def on_resp(resp):
+        _ARCHIVE_RE = re.compile(r"ajax-sport-country-tournament-archive_", re.I)
+
+        async def _maybe_capture(url: str, resource_type: str = "") -> None:
             try:
-                if resp.request.resource_type not in ("xhr", "fetch"):
+                if resource_type and resource_type not in ("xhr", "fetch"):
                     return
-                u = resp.url
-                if "ajax-sport-country-tournament-archive_" in u:
+                u = str(url or "")
+                if not u:
+                    return
+                if "oddsportal.com" not in u:
+                    return
+                if _ARCHIVE_RE.search(u):
                     archive_urls.append(u)
             except Exception:
                 return
 
+        def on_req(req):
+            try:
+                _ = asyncio.create_task(_maybe_capture(req.url, req.resource_type))
+            except Exception:
+                return
+
+        async def on_resp(resp):
+            try:
+                _ = asyncio.create_task(_maybe_capture(resp.url, resp.request.resource_type))
+            except Exception:
+                return
+
+        page.on("request", on_req)
         page.on("response", on_resp)
 
         # Also try to derive the archive base directly from the SSR JSON embedded in
@@ -415,8 +449,15 @@ async def scrape_match_list(
         await page.goto(listing_url, wait_until="domcontentloaded", timeout=120000)
         await page.wait_for_timeout(settle_ms)
 
+        # Capture HTML early so SSR parsing actually has content.
+        page_html = ""
+        try:
+            page_html = await page.content()
+        except Exception:
+            page_html = ""
+
         # Derive archive base + page token from SSR.
-        # The SSR markup differs across pages; prefer parsing from the already captured HTML.
+        # The SSR markup differs across pages; prefer parsing from the captured HTML.
         odds_req_base = ""
         page_token = ""
         try:
@@ -424,16 +465,18 @@ async def scrape_match_list(
                 import html as _html
                 import json as _json
                 import re as _re
+
                 # meta token
                 m = _re.search(r'<meta[^>]+name="token"[^>]+content="([A-Za-z0-9]+)"', page_html)
                 if m:
                     page_token = m.group(1)
+
                 # oddsRequest.url inside <tournament-component :sport-data="...">
                 m2 = _re.search(r'<tournament-component[^>]+:sport-data="([^"]+)"', page_html)
                 if m2:
                     raw = _html.unescape(m2.group(1))
                     d = _json.loads(raw)
-                    u = (d.get('oddsRequest') or {}).get('url')
+                    u = (d.get("oddsRequest") or {}).get("url")
                     if isinstance(u, str):
                         odds_req_base = u
         except Exception:
@@ -463,12 +506,11 @@ async def scrape_match_list(
             pass
         await page.wait_for_timeout(2500)
 
-        # capture the rendered DOM before closing (for fallback parsing)
-        page_html = ""
+        # refresh HTML after scroll (for fallback parsing)
         try:
             page_html = await page.content()
         except Exception:
-            page_html = ""
+            pass
 
         await context.close()
         await browser.close()
