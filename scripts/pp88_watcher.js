@@ -3,10 +3,64 @@
 
 const fs = require("fs");
 const path = require("path");
-const { execFileSync } = require("child_process");
+
+const mysql = require("mysql2/promise");
 
 const DEFAULT_LIST_ENDPOINTS = ["popularRecommendPB", "getAddedOddsMatchesPB"];
 const DETAIL_ENDPOINT = "getMatchDetailPB";
+
+function asRequestTemplate(raw) {
+  // Our raw_network_events schema stores a JSON blob in payload_json.
+  // It can be either:
+  // - { request: {...}, response: {...} }
+  // - { ts, msg, code, data: "H4sI..." } (response-only)
+  // - plain request-only entries
+  let pj = null;
+  try {
+    pj = raw && raw.payload_json ? JSON.parse(String(raw.payload_json)) : null;
+  } catch {
+    pj = null;
+  }
+
+  const req = pj && pj.request && typeof pj.request === "object" ? pj.request : null;
+
+  const request_url = (req && req.url) || raw.url || raw.request_url || "";
+  const request_method = (req && req.method) || raw.method || raw.request_method || "GET";
+  const request_headers = (req && req.headers && typeof req.headers === "object")
+    ? JSON.stringify(req.headers)
+    : (raw.request_headers || raw.headers || "{}");
+  const request_body = (req && req.postData) || (req && req.body) || raw.payload_text || raw.request_body || "";
+
+  // Prefer response-only payloads that contain {data:"H4sI..."} as response_body.
+  const response_body = (pj && typeof pj.data === "string")
+    ? JSON.stringify({ ts: pj.ts, msg: pj.msg, code: pj.code, data: pj.data })
+    : (raw.response_body || raw.response || raw.response_text || "");
+
+  return { request_url, request_method, request_headers, request_body, response_body };
+}
+
+function extractResponsePayloadFromTemplate(tpl) {
+  // If we have a response body containing {data:"H4sI..."}, decode it directly (faster and avoids network).
+  if (!tpl || !tpl.response_body) return null;
+  let obj = null;
+  try {
+    obj = JSON.parse(String(tpl.response_body));
+  } catch {
+    return null;
+  }
+  if (!obj || typeof obj !== "object") return null;
+  const data = obj.data;
+  if (typeof data !== "string" || !data.trim().startsWith("H4sI")) return null;
+
+  const zlib = require("zlib");
+  const b64 = data.replace(/\\n/g, "\n").trim();
+  try {
+    const txt = zlib.gunzipSync(Buffer.from(b64, "base64")).toString("utf8");
+    return parseMaybeJson(txt, null);
+  } catch {
+    return null;
+  }
+}
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -27,12 +81,8 @@ function slug(v) {
 
 function csvEscape(v) {
   const s = String(v ?? "");
-  if (/[,"\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  if (/[,\"\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
-}
-
-function shellArg(v) {
-  return `'${String(v).replace(/'/g, `'"'"'`)}'`;
 }
 
 function requiredEnv(name) {
@@ -41,36 +91,43 @@ function requiredEnv(name) {
   return v;
 }
 
-function mysqlExec(sql) {
+function getMysqlConfig() {
   const host = requiredEnv("DB_HOST");
-  const port = process.env.DB_PORT || "3306";
+  const port = Number(process.env.DB_PORT || "3306");
   const user = requiredEnv("DB_USER");
-  const pass = process.env.DB_PASSWORD || process.env.DB_PASS || "";
-  const db = requiredEnv("DB_NAME");
-
-  // Use shell so MYSQL_PWD is not shown in process args.
-  const cmd =
-    `MYSQL_PWD=${shellArg(pass)} mysql -h ${shellArg(host)} -P ${shellArg(port)} ` +
-    `-u ${shellArg(user)} ${shellArg(db)} --batch --raw --skip-column-names -e ${shellArg(sql)}`;
-
-  return execFileSync("bash", ["-lc", cmd], { encoding: "utf8" });
+  const password = process.env.DB_PASSWORD || process.env.DB_PASS || "";
+  const database = requiredEnv("DB_NAME");
+  return {
+    host,
+    port,
+    user,
+    password,
+    database,
+    connectTimeout: Number(process.env.DB_CONNECT_TIMEOUT_MS || "5000"),
+    charset: "utf8mb4",
+  };
 }
 
-function getColumns(table) {
+async function mysqlQuery(sql, params = []) {
+  const cfg = getMysqlConfig();
+  const conn = await mysql.createConnection(cfg);
+  try {
+    const [rows] = await conn.execute(sql, params);
+    return rows;
+  } finally {
+    await conn.end();
+  }
+}
+
+async function getColumns(table) {
   const db = requiredEnv("DB_NAME");
-  const sql = `
-SELECT COLUMN_NAME
-FROM INFORMATION_SCHEMA.COLUMNS
-WHERE TABLE_SCHEMA='${db.replace(/'/g, "''")}'
-  AND TABLE_NAME='${table.replace(/'/g, "''")}';
-`.trim();
-  const out = mysqlExec(sql);
-  return new Set(
-    out
-      .split(/\r?\n/)
-      .map((s) => s.trim())
-      .filter(Boolean)
+  const rows = await mysqlQuery(
+    `SELECT COLUMN_NAME AS name
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA=? AND TABLE_NAME=?`,
+    [db, table]
   );
+  return new Set(rows.map((r) => String(r.name)));
 }
 
 function pickFirst(cols, candidates) {
@@ -79,54 +136,21 @@ function pickFirst(cols, candidates) {
 }
 
 function quoteId(id) {
-  return `\`${id.replace(/`/g, "``")}\``;
+  return `\`${String(id).replace(/`/g, "``")}\``;
 }
 
-function fetchTemplatesByEndpoint(endpointKeyword, limit = 25) {
-  const table = "raw_network_events";
-  const cols = getColumns(table);
-
-  const urlCol = pickFirst(cols, ["request_url", "url", "endpoint"]);
-  const methodCol = pickFirst(cols, ["request_method", "method"]);
-  const headersCol = pickFirst(cols, ["request_headers", "headers"]);
-  const bodyCol = pickFirst(cols, ["request_body", "body", "payload"]);
-  const respCol = pickFirst(cols, ["response_body", "response", "response_text"]);
-  const tsCol = pickFirst(cols, ["created_at", "createdAt", "ts", "timestamp", "id"]);
-
-  if (!urlCol || !methodCol || !headersCol || !bodyCol) {
-    throw new Error(
-      `raw_network_events missing required columns. Found: ${Array.from(cols).join(", ")}`
-    );
-  }
-
-  const selectCols = [urlCol, methodCol, headersCol, bodyCol];
-  if (respCol) selectCols.push(respCol);
-
+async function fetchTemplatesByEndpoint(endpointKeyword, limit = 25) {
   const sql = `
-SELECT ${selectCols.map(quoteId).join(",")}
-FROM ${quoteId(table)}
-WHERE ${quoteId(urlCol)} LIKE '%${endpointKeyword.replace(/'/g, "''")}%'
-ORDER BY ${quoteId(tsCol || urlCol)} DESC
+SELECT url, method, payload_json, payload_text
+FROM raw_network_events
+WHERE url LIKE ?
+ORDER BY id DESC
 LIMIT ${Number(limit) || 25};
 `.trim();
 
-  const out = mysqlExec(sql);
-  if (!out.trim()) return [];
-
-  return out
-    .split(/\r?\n/)
-    .filter(Boolean)
-    .map((line) => {
-      const parts = line.split("\t");
-      const obj = {
-        request_url: parts[0] || "",
-        request_method: parts[1] || "POST",
-        request_headers: parts[2] || "",
-        request_body: parts[3] || "",
-      };
-      if (respCol) obj.response_body = parts[4] || "";
-      return obj;
-    });
+  const rows = await mysqlQuery(sql, [`%${endpointKeyword}%`]);
+  if (!rows || rows.length === 0) return [];
+  return rows.map(asRequestTemplate);
 }
 
 function parseMaybeJson(v, fallback = null) {
@@ -192,6 +216,19 @@ function injectMidIntoBody(body, mid) {
 }
 
 async function replayTemplate(template, { query, mid } = {}) {
+  // Fast-path: if we already have a captured (compressed) response, decode it locally.
+  const decoded = extractResponsePayloadFromTemplate(template);
+  if (decoded) {
+    return {
+      ok: true,
+      status: 200,
+      url: template.request_url,
+      text: "",
+      json: decoded,
+      fromCache: true,
+    };
+  }
+
   const urlObj = new URL(template.request_url);
   if (query) {
     if (urlObj.searchParams.has("query")) urlObj.searchParams.set("query", query);
@@ -267,7 +304,6 @@ function extractTeamPair(json) {
       return;
     }
 
-    // fallback: teams array/object with names
     if (obj.homeTeam && obj.awayTeam) {
       const h = obj.homeTeam.name || obj.homeTeam.teamName || obj.homeTeam.en || obj.homeTeam.zh;
       const a = obj.awayTeam.name || obj.awayTeam.teamName || obj.awayTeam.en || obj.awayTeam.zh;
@@ -364,21 +400,12 @@ function writeCsvReport({ rows, mid, home, away }) {
   return file;
 }
 
-async function findMidAndOdds({
-  homeNeedle,
-  awayNeedle,
-  query,
-  allMarkets,
-  listEndpoint,
-}) {
-  const endpoints = listEndpoint
-    ? [String(listEndpoint)]
-    : [...DEFAULT_LIST_ENDPOINTS];
-
+async function findMidAndOdds({ homeNeedle, awayNeedle, query, allMarkets, listEndpoint }) {
+  const endpoints = listEndpoint ? [String(listEndpoint)] : [...DEFAULT_LIST_ENDPOINTS];
   const mids = new Set();
 
   for (const ep of endpoints) {
-    const templates = fetchTemplatesByEndpoint(ep, 25);
+    const templates = await fetchTemplatesByEndpoint(ep, 25);
     for (const tpl of templates) {
       try {
         const rs = await replayTemplate(tpl, { query });
@@ -386,19 +413,15 @@ async function findMidAndOdds({
         if (!payload) continue;
         for (const m of extractMids(payload)) mids.add(m);
       } catch {
-        // continue next template
+        // continue
       }
     }
   }
 
-  if (!mids.size) {
-    return { found: false, reason: "no mids from list endpoints" };
-  }
+  if (!mids.size) return { found: false, reason: "no mids from list endpoints" };
 
-  const detailTemplates = fetchTemplatesByEndpoint(DETAIL_ENDPOINT, 40);
-  if (!detailTemplates.length) {
-    return { found: false, reason: "no getMatchDetailPB template found" };
-  }
+  const detailTemplates = await fetchTemplatesByEndpoint(DETAIL_ENDPOINT, 40);
+  if (!detailTemplates.length) return { found: false, reason: "no getMatchDetailPB template found" };
 
   for (const mid of mids) {
     for (const tpl of detailTemplates) {
@@ -411,16 +434,9 @@ async function findMidAndOdds({
         if (!teamMatches(team, homeNeedle, awayNeedle, query)) continue;
 
         const rows = uniqueRows(extractOddsRows(payload, { allMarkets }));
-        return {
-          found: true,
-          mid,
-          home: team.home,
-          away: team.away,
-          oddsRows: rows,
-          payload,
-        };
+        return { found: true, mid, home: team.home, away: team.away, oddsRows: rows, payload };
       } catch {
-        // next template
+        // continue
       }
     }
   }
@@ -428,9 +444,6 @@ async function findMidAndOdds({
   return { found: false, reason: "matched mid not found from detail endpoint" };
 }
 
-/**
- * Watch PP88 match odds by replaying captured request templates from MySQL raw_network_events.
- */
 async function watchMatchOdds({
   homeNeedle,
   awayNeedle,
@@ -442,22 +455,14 @@ async function watchMatchOdds({
   listEndpoint = "",
   dryRun = false,
 } = {}) {
-  if (!homeNeedle || !awayNeedle) {
-    throw new Error("homeNeedle and awayNeedle are required");
-  }
+  if (!homeNeedle || !awayNeedle) throw new Error("homeNeedle and awayNeedle are required");
 
   const started = Date.now();
   const intervalMs = Math.max(1, Number(intervalSec || 30)) * 1000;
   const timeoutMs = Math.max(1, Number(timeoutSec || 1800)) * 1000;
 
   do {
-    const result = await findMidAndOdds({
-      homeNeedle,
-      awayNeedle,
-      query,
-      allMarkets,
-      listEndpoint,
-    });
+    const result = await findMidAndOdds({ homeNeedle, awayNeedle, query, allMarkets, listEndpoint });
 
     if (result.found) {
       const meta = {
@@ -474,9 +479,7 @@ async function watchMatchOdds({
       }
 
       if (!result.oddsRows || result.oddsRows.length === 0) {
-        if (once) {
-          return { ...meta, ok: false, reason: "mid resolved but no odds rows available" };
-        }
+        if (once) return { ...meta, ok: false, reason: "mid resolved but no odds rows available" };
       } else {
         const reportPath = writeCsvReport({
           rows: result.oddsRows,
@@ -489,19 +492,9 @@ async function watchMatchOdds({
       }
     }
 
-    if (once) {
-      return {
-        ok: false,
-        reason: "not found on single pass",
-      };
-    }
+    if (once) return { ok: false, reason: "not found on single pass" };
 
-    if (Date.now() - started >= timeoutMs) {
-      return {
-        ok: false,
-        reason: "timeout",
-      };
-    }
+    if (Date.now() - started >= timeoutMs) return { ok: false, reason: "timeout" };
 
     await sleep(intervalMs);
   } while (true);
