@@ -143,7 +143,7 @@ def run(matches: List[str], bankroll: float | None, default_league_key: str = "s
     print(f"[OK] realtime snapshot rows (The Odds API): {len(snap_df)}")
 
     odds_24h_df = build_odds_24h_csv(fixtures_df, odds_24h_csv)
-    print(f"[OK] odds 24h rows (OddsPortal/OddsHarvester): {len(odds_24h_df)} -> {odds_24h_csv}")
+    print(f"[OK] odds 24h rows (local odds history): {len(odds_24h_df)} -> {odds_24h_csv}")
 
     # 3) lineup + injuries + grok (T-60 gate)
     injury_all_rows = []
@@ -224,17 +224,10 @@ def run(matches: List[str], bankroll: float | None, default_league_key: str = "s
     if not market_odds:
         market_odds = current_market_snapshot_by_teams(fixtures_df, snapshot_db)
 
-    # If The Odds API has no coverage (quota/exhausted), fallback to OddsPortal tracker sqlite.
+    # If The Odds API has no coverage (quota/exhausted), fallback to tracker sqlite.
+    # NOTE: OddsPortal integration removed; keep hook for future alternative sources.
     if not market_odds:
-        try:
-            from v2.ingest.oddsportal_tracker import load_latest_quotes
-
-            tracker_db = data_root / "tracking" / "odds_tracker_24h.sqlite"
-            market_odds = load_latest_quotes(tracker_db, fixtures_df)
-            if market_odds:
-                print(f"[OK] market odds fallback: loaded {len(market_odds)} quotes from OddsPortal tracker")
-        except Exception as e:
-            print(f"[WARN] OddsPortal tracker fallback failed: {e}")
+        pass
 
     pred_df = predict_markets(features_df, market_odds)
 

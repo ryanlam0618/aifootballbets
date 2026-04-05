@@ -91,45 +91,16 @@ READY 檢查清單請見：`v2/paper/README.md`
 
 ---
 
-## Kickoff Tracker（OddsPortal）
+## Odds Sources
 
-`v2/tracking/run_until_kickoff.py` 會每輪抓取 1X2 / OU / AH，直到解析到的 kickoff 時間為止（或達到 fallback / 測試上限）。
+此 repo 目前使用：
+- SofaScore（fixtures/results/features）
+- The Odds API（realtime odds）
 
-### 基本用法
+> ✅ OddsPortal 相關 kickoff tracker / 歷史回填 / mysql schema / scripts 已全面移除。
 
-```bash
-python -m v2.tracking.run_until_kickoff \
-  --base-url "https://www.oddsportal.com/football/england/premier-league/brentford-wolves-0jR7cwU6/" \
-  --sample-every-min 10 \
-  --sqlite data/v2/tracking/brentford_wolves_until_kickoff.sqlite \
-  --jsonl data/v2/tracking/brentford_wolves_until_kickoff.jsonl
-```
-
-### PinchTab 驗證（可選）
-
-啟用 `--pinchtab-verify` 後，**每個成功 snapshot** 都會做輕量驗證：
-1. 呼叫 PinchTab `/navigate` 到相同 URL
-2. 呼叫 `/tabs`，確認 active tab URL 與 snapshot URL 一致
-3. 驗證標題包含 OddsPortal（以及市場關鍵詞）
-
-JSONL 每筆會附帶：
-- `verified`（bool）
-- `verify_error`（失敗原因）
-- `pinchtab_title`
-- `pinchtab_tab_id`
-
-Token 請用環境變數（建議）或 CLI 傳入，不要硬編碼。
-
-```bash
-export PINCHTAB_TOKEN="<your_token>"
-python -m v2.tracking.run_until_kickoff \
-  --base-url "https://www.oddsportal.com/football/england/premier-league/brentford-wolves-0jR7cwU6/" \
-  --pinchtab-verify \
-  --pinchtab-base-url "http://pinchtabd:9867"
-
-# 或者（不建議長期）
-python -m v2.tracking.run_until_kickoff --pinchtab-verify --pinchtab-token "<your_token>"
-```
+# (OddsPortal tracker removed)
+# (This section kept only as a placeholder for future odds tracking integrations)
 
 ## PP88 Match Watcher（MySQL 模板重播）
 
@@ -196,27 +167,20 @@ node scripts/pp88_watch_cli.js
 - `TakeData/sofa_score/shotmap_detail_backfill.py`
 - `TakeData/sofa_score/backfill_event_odds_10y.py`
 - `TakeData/sofa_score/run_sofascore_season_backfill.py`（新增：按賽季一鍵 backfill）
-- `v2/tracking/oddsportal_season_matchlist.py`（新增：按聯賽/賽季抓 match list）
-- `v2/tracking/oddsportal_history_backfill.py`（新增：按 match list 回填 OddsPortal 歷史賠率）
-- `TakeData/odds_batch_scraper.py`
+- `TakeData/odds_batch_scraper.py`（已停用/可選：如需請另接入合法來源）
 
 ---
 
-## Season-by-season 歷史回填（SofaScore + OddsPortal）
+## Season-by-season 歷史回填（SofaScore）
+
+（已移除 OddsPortal 歷史回填/追蹤；如需歷史 odds，建議接入合規 API 或自有數據源。）
 
 ### 前置需求
 
 1. Python 3.9+（建議用專案 `.venv`）
 2. `pip install -r requirements.txt`
-3. Playwright（OddsPortal 需要）
-   ```bash
-   python3 -m playwright install chromium
-   ```
-4. （OddsPortal）先準備 storage state，避免每次都卡 cookie/captcha
-   - 預設路徑：`/tmp/oddsportal_storage.json`
-   - 建議先用非 headless 手動過一次 consent/challenge
 
-### A) SofaScore：單賽季一鍵回填
+### SofaScore：單賽季一鍵回填
 
 以 `2015-2016` 為例（預設賽季區間 `08-01` 到隔年 `07-31`）：
 
@@ -240,60 +204,6 @@ python3 TakeData/sofa_score/run_sofascore_season_backfill.py \
 另外 `backfill_10y_leagues_cups.py` 會輸出 raw dumps（可關閉）：
 - `data/backfill_sofascore_10y/raw/scheduled-events/YYYY-MM-DD.json`
 - `data/backfill_sofascore_10y/raw/lineups/<event_id>.json`（best-effort，僅 200 時落檔）
-
-### B) OddsPortal：單賽季歷史回填
-
-#### Step 1) 先抓 match list（由聯賽/杯賽 listing URL + season）
-
-```bash
-python3 -m v2.tracking.oddsportal_season_matchlist \
-  --competition "Premier League" \
-  --season 2015-2016 \
-  --url-template "https://www.oddsportal.com/football/england/premier-league-{season}/results/" \
-  --min-match-urls 50
-```
-
-會輸出：
-- `data/oddsportal_history/match_lists/premier_league_2015_2016.jsonl`
-- `data/oddsportal_history/match_lists/premier_league_2015_2016.meta.json`
-
-`--min-match-urls` 可做 sanity check（若抓到的 match_url 數量低於門檻，程式會以非 0 code 結束，並在 meta 標記 `count_ok=false`）。
-
-#### Step 2) 用 match list 回填 1X2 / OU / AH
-
-```bash
-python3 -m v2.tracking.oddsportal_history_backfill \
-  --match-list data/oddsportal_history/match_lists/premier_league_2015_2016.jsonl \
-  --markets 1X2,OU,AH \
-  --top-lines 2 \
-  --adjacent-delta 0.5 \
-  --storage-state /tmp/oddsportal_storage.json \
-  --sqlite data/oddsportal_history/oddsportal_history.sqlite
-```
-
-說明：
-- OU/AH 會在單次擷取內保留 `top_lines` 主線，並額外包含每條主線的 `±0.5` 相鄰盤（`adjacent_delta`）
-- 資料寫入 `schema_odds_tracker_v2.sql` 結構（`odds_match/odds_snapshot/odds_quote`）
-- `odds_match` 會帶 `competition/season/label` 方便分季切分
-
-### 主要輸出路徑
-
-- SofaScore：`data/backfill_sofascore_10y/`
-  - `backfill_10y.sqlite`
-  - `event_odds_10y.sqlite`
-  - `history_data_10y_leagues_cups.csv`
-  - `raw/scheduled-events/*.json`
-  - `raw/lineups/*.json`
-- OddsPortal：`data/oddsportal_history/`
-  - `match_lists/*.jsonl`
-  - `oddsportal_history.sqlite`
-  - `state_oddsportal_history.json`
-
-### Caveats
-
-- OddsPortal 可能出現 blocking / captcha / challenge，建議先 `--headless` 關閉（可見瀏覽器）做初始化。
-- `storage_state` 路徑必須可寫且可重用（建議固定檔案，不要每次新建）。
-- 大規模回填時請分賽季/分聯賽跑，避免一次拉滿造成失敗率上升。
 
 ---
 

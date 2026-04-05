@@ -581,7 +581,8 @@ def build_odds_24h_csv(fixtures_df: pd.DataFrame, out_csv: Path, source_dir: Opt
         df = df[ts >= cutoff]
         df = df.sort_values("timestamp_utc")
         df["implied_prob"] = (1.0 / df["decimal_odds"]).round(6)
-        df["source"] = "oddsportal_oddsharvester"
+    # NOTE: OddsPortal integration removed.
+    df["source"] = "local_odds_history"
 
         # schema quality stats
         needs_line = df[df["market"].isin(["Over/Under", "Asian Handicap"])]
