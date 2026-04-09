@@ -13,7 +13,6 @@ from v2.paper.ledger import append_selected_bets, bankroll_before_day
 from v2.paper.models import CandidateBet, MatchInfo
 from v2.paper.providers import (
     JsonFileOddsProvider,
-    OddsApiEspnPlaceholderProvider,
     OddsProvider,
     SofaScoreFixturesResultsProvider,
 )

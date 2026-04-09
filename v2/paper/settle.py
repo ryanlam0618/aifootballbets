@@ -12,8 +12,6 @@ from v2.paper.clv import compute_clv
 from v2.paper.ledger import bankroll_before_day, open_unsettled_bets_for_day, settle_bet
 from v2.paper.models import MatchInfo
 from v2.paper.providers import (
-    EspnOddsFixturesProvider,
-    EspnResultsProvider,
     JsonFileResultsProvider,
     ResultsProvider,
     SofaScoreFixturesResultsProvider,
@@ -240,7 +238,7 @@ def _fetch_closing_odds_map(day: date, unsettled_rows: list, league_keys: List[s
     if not matches:
         return {}
 
-    odds_provider = EspnOddsFixturesProvider()
+    odds_provider = SofaScoreFixturesResultsProvider()
     fetch_meta = getattr(odds_provider, "fetch_market_odds_with_meta", None)
     if not callable(fetch_meta):
         return {}
@@ -254,7 +252,7 @@ def run_settlement(
     provider: ResultsProvider | None = None,
     closing_odds_tracker_sqlite: Path | None = None,
 ) -> int:
-    provider = provider or EspnResultsProvider()
+    provider = provider or SofaScoreFixturesResultsProvider()
     score_map, score_map_ids = _scores_with_ids(provider=provider, day=day, league_keys=LEAGUE_UNIVERSE)
 
     unsettled = open_unsettled_bets_for_day(db_path, day)
@@ -365,7 +363,7 @@ def _build_results_provider(name: str | None, provider_json: str | None = None) 
     provider_name = str(name or "sofascore").strip().lower()
     if provider_name == "sofascore":
         return SofaScoreFixturesResultsProvider()
-    return EspnResultsProvider()
+    raise ValueError(f"Unsupported results provider: {provider_name}")
 
 
 def main() -> None:

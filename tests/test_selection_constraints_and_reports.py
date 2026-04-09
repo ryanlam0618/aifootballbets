@@ -131,7 +131,7 @@ class TestSelectionConstraintsAndReports(unittest.TestCase):
                             "ut",
                             "ut",
                             "real_odds",
-                            "espn",
+                            "sofascore",
                         ),
                     )
                     conn.commit()
@@ -277,7 +277,7 @@ class TestSelectionConstraintsAndReports(unittest.TestCase):
                         "ut",
                         "ut",
                         "real_odds",
-                        "espn",
+                        "sofascore",
                         2.0,
                         -0.1,
                         -4.7619047619,
