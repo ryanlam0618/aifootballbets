@@ -169,7 +169,7 @@ def _ensure_tracking_schema(conn: sqlite3.Connection) -> None:
             profit REAL,
             bankroll REAL,
             notes TEXT,
-            source_book TEXT NOT NULL DEFAULT 'sport pp88',
+            source_book TEXT NOT NULL DEFAULT 'sportsbook',
             source_file TEXT,
             run_id TEXT,
             odds_close REAL,
@@ -213,7 +213,7 @@ def _market_type_and_line(market: object, line: object) -> tuple[str, Optional[s
 def append_recommendations_to_tracking_sqlite(
     reco_df: pd.DataFrame,
     sqlite_path: Path,
-    source_book: str = "sport pp88",
+    source_book: str = "sportsbook",
     run_id: Optional[str] = None,
 ) -> int:
     """

@@ -352,7 +352,7 @@ def main() -> None:
     parser.add_argument("--out-csv", default="", help="Optional normalized CSV output")
     parser.add_argument("--sqlite", default="", help="Optional sqlite db output")
     parser.add_argument("--schema", default="v2/tracking/schema.sql", help="SQLite schema path")
-    parser.add_argument("--source-book", default="sport pp88", help="Default sportsbook label")
+    parser.add_argument("--source-book", default="sportsbook", help="Default sportsbook label")
     parser.add_argument("--run-id", default="", help="Optional run id")
     args = parser.parse_args()
 

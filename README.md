@@ -105,8 +105,6 @@ READY 檢查清單請見：`v2/paper/README.md`
 ## PP88 Match Watcher（MySQL 模板重播）
 
 新增腳本：
-- `scripts/pp88_watcher.js`：匯出 `watchMatchOdds({...})`
-- `scripts/pp88_watch_cli.js`：CLI wrapper（由 env 控制）
 
 ### 支援 env 參數
 
@@ -135,11 +133,9 @@ DB_PORT=3306 \
 DB_USER=myuser \
 DB_PASSWORD=mypass \
 DB_NAME=odds_capture \
-node scripts/pp88_watch_cli.js
 ```
 
 成功後會輸出 CSV 到：
-- `reports/pp88/<timestamp>_<home>_vs_<away>.csv`
 
 ### Smoke / dry-run
 
@@ -152,11 +148,9 @@ DB_HOST=127.0.0.1 \
 DB_USER=myuser \
 DB_PASSWORD=mypass \
 DB_NAME=odds_capture \
-node scripts/pp88_watch_cli.js
 ```
 
 若成功解析，會輸出類似：
-- `[pp88 dry-run] resolved MID=123456 :: Arsenal vs Chelsea`
 
 ---
 
