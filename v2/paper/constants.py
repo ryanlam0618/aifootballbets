@@ -45,6 +45,11 @@ FIXTURES_LEAGUE_UNIVERSE = [
 # Matching order in provider:
 # 1) tournament uniqueTournament.id (if listed)
 # 2) normalized tournament.name aliases within category aliases
+#
+# Notes:
+# - High-confidence competitions with verified SofaScore ids can keep tournament_ids.
+# - For domestic / lower-frequency cups where ids were not re-verified in current cleanup,
+#   prefer name+category matching over guessed ids to avoid false positives.
 SOFASCORE_LEAGUE_MAP = {
     "soccer_epl": {
         "tournament_ids": [17],
@@ -125,37 +130,37 @@ SOFASCORE_LEAGUE_MAP = {
         "league_name": "AFC Champions League",
     },
     "soccer_england_fa_cup": {
-        "tournament_ids": [19],
+        "tournament_ids": [],
         "category_aliases": ["england"],
         "tournament_aliases": ["fa cup"],
         "league_name": "FA Cup",
     },
     "soccer_england_efl_cup": {
-        "tournament_ids": [18],
+        "tournament_ids": [],
         "category_aliases": ["england"],
         "tournament_aliases": ["efl cup", "league cup", "carabao cup"],
         "league_name": "EFL Cup",
     },
     "soccer_spain_copa_del_rey": {
-        "tournament_ids": [9],
+        "tournament_ids": [],
         "category_aliases": ["spain"],
         "tournament_aliases": ["copa del rey"],
         "league_name": "Copa del Rey",
     },
     "soccer_italy_coppa_italia": {
-        "tournament_ids": [31],
+        "tournament_ids": [],
         "category_aliases": ["italy"],
         "tournament_aliases": ["coppa italia"],
         "league_name": "Coppa Italia",
     },
     "soccer_france_coupe_de_france": {
-        "tournament_ids": [36],
+        "tournament_ids": [],
         "category_aliases": ["france"],
         "tournament_aliases": ["coupe de france"],
         "league_name": "Coupe de France",
     },
     "soccer_germany_dfb_pokal": {
-        "tournament_ids": [54],
+        "tournament_ids": [],
         "category_aliases": ["germany"],
         "tournament_aliases": ["dfb pokal"],
         "league_name": "DFB Pokal",
@@ -167,31 +172,31 @@ SOFASCORE_LEAGUE_MAP = {
         "league_name": "J.League Cup",
     },
     "soccer_japan_emperors_cup": {
-        "tournament_ids": [638],
+        "tournament_ids": [],
         "category_aliases": ["japan"],
         "tournament_aliases": ["emperor's cup", "emperors cup"],
         "league_name": "Emperor's Cup",
     },
     "soccer_australia_cup": {
-        "tournament_ids": [1026],
+        "tournament_ids": [],
         "category_aliases": ["australia"],
         "tournament_aliases": ["australia cup", "ffa cup"],
         "league_name": "Australia Cup",
     },
     "soccer_china_fa_cup": {
-        "tournament_ids": [646],
+        "tournament_ids": [],
         "category_aliases": ["china"],
-        "tournament_aliases": ["fa cup", "chinese fa cup", "china fa cup"],
+        "tournament_aliases": ["chinese fa cup", "china fa cup"],
         "league_name": "Chinese FA Cup",
     },
     "soccer_fifa_club_world_cup": {
-        "tournament_ids": [357],
+        "tournament_ids": [],
         "category_aliases": ["world"],
         "tournament_aliases": ["fifa club world cup"],
         "league_name": "FIFA Club World Cup",
     },
     "soccer_intercontinental_cup": {
-        "tournament_ids": [1098],
+        "tournament_ids": [],
         "category_aliases": ["world"],
         "tournament_aliases": ["intercontinental cup"],
         "league_name": "Intercontinental Cup",
