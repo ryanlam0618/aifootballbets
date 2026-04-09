@@ -169,7 +169,8 @@ class EspnOddsFixturesProvider(OddsProvider):
     """
     Primary stdlib-only provider:
     - Fixtures: ESPN scoreboard
-    - Odds: ESPN scoreboard competition odds (if available)
+    - Odds: SofaScore-first for the 3 supported market families (1X2 / OU / AH)
+    - ESPN odds used when available
     - Optional fallback odds: The Odds API (only when ODDS_API_KEY configured)
     """
 
@@ -481,7 +482,8 @@ class EspnOddsFixturesProvider(OddsProvider):
                     out[k] = v
                     meta[k] = {"source": "espn", "is_real": True}
 
-        # SofaScore real-odds fallback for missing tuples
+        # SofaScore primary source for missing or unmatched tuples inside the
+        # supported market families (1X2 / Over/Under / Asian Handicap)
         sofa_events = self._sofascore_events_for_day(day)
         sofa_match_to_event: Dict[str, str] = {}
         for ev in sofa_events:
@@ -504,7 +506,7 @@ class EspnOddsFixturesProvider(OddsProvider):
                     out[k] = v
                     meta[k] = {"source": "sofascore", "is_real": True}
 
-        # The Odds API fallback for still-missing tuples (only if key exists)
+        # Optional The Odds API fallback for still-missing tuples (only if key exists)
         if settings_v2.odds_api_key:
             for lk in league_keys:
                 events = self._oddsapi_events(lk)
@@ -539,17 +541,18 @@ class OddsApiEspnPlaceholderProvider(EspnOddsFixturesProvider):
 
 class SofaScoreFixturesResultsProvider(OddsProvider, ResultsProvider):
     """
-    SofaScore fixtures + results provider (stdlib-only urllib JSON fetches).
+    SofaScore fixtures + results + odds provider (stdlib-only urllib JSON fetches).
 
     Endpoints:
     - /sport/football/scheduled-events/{date}
     - /event/{event_id}
+    - /event/{event_id}/odds/{provider_id}/all
 
     Notes:
     - date input is interpreted in Asia/Shanghai day context.
     - 09:00->09:00 Asia/Shanghai window is enforced by fetching adjacent dates and filtering by timestamp.
-    - Market odds endpoint is intentionally not used for paper selection yet; this provider returns {} for odds,
-      allowing run_day results-only synthetic fallback when external odds are absent.
+    - This repo currently normalizes only 3 market families from SofaScore odds:
+      1X2 / Over-Under / Asian Handicap.
     """
 
     BASE_URL = "https://www.sofascore.com/api/v1"

@@ -93,64 +93,38 @@ READY 檢查清單請見：`v2/paper/README.md`
 
 ## Odds Sources
 
-此 repo 目前使用：
-- SofaScore（fixtures/results/features）
-- The Odds API（realtime odds）
+此 repo 目前採用 **SofaScore-first** odds 流程：
+- **SofaScore**（fixtures / results / odds）
+- The Odds API（可選 fallback；非主源）
 
+目前 betting / tracking / normalizer 只聚焦 3 個主盤：
+- `1X2`
+- `Over/Under`
+- `Asian Handicap`
+
+> ✅ 已放棄 PP88 / youbaokun 方向。
 > ✅ OddsPortal 相關 kickoff tracker / 歷史回填 / mysql schema / scripts 已全面移除。
 
 # (OddsPortal tracker removed)
 # (This section kept only as a placeholder for future odds tracking integrations)
 
-## PP88 Match Watcher（MySQL 模板重播）
+## SofaScore 主源盤口
 
-新增腳本：
+以目前流程為準，主源只處理以下 3 個盤口：
+- `1X2`
+- `Over/Under`
+- `Asian Handicap`
 
-### 支援 env 參數
+SofaScore 公開 odds endpoint 對部分賽事可能只提供主盤（例如單一 AH line），
+因此目前策略是：**只吃主盤，不追全盤口深度**。
 
-- `HOME_NEEDLE`（必要）
-- `AWAY_NEEDLE`（必要）
-- `QUERY`（可選，額外關鍵字）
-- `INTERVAL_SEC`（預設 30）
-- `TIMEOUT_SEC`（預設 1800）
-- `LIST_ENDPOINT`（可選：預設會依序嘗試 `popularRecommendPB`、`getAddedOddsMatchesPB`）
-- `ALL_MARKETS`（`1` 開啟全部市場）
-- `DRY_RUN`（`1`：只印出解析到的 MID 並結束）
-- `ONCE`（`1`：單次掃描，不輪詢）
-- `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`（或 `DB_PASS`）, `DB_NAME`
+## PP88 Match Watcher（已移除）
 
-### 執行方式
+PP88 / youbaokun 相關 watcher、ingest、capture 腳本已從 repo 移除，
+此段僅保留作為遷移說明，不再屬於現行流程。
 
-```bash
-HOME_NEEDLE="Arsenal" \
-AWAY_NEEDLE="Chelsea" \
-QUERY="premier league" \
-INTERVAL_SEC=20 \
-TIMEOUT_SEC=900 \
-ALL_MARKETS=1 \
-DB_HOST=127.0.0.1 \
-DB_PORT=3306 \
-DB_USER=myuser \
-DB_PASSWORD=mypass \
-DB_NAME=odds_capture \
-```
-
-成功後會輸出 CSV 到：
-
-### Smoke / dry-run
-
-```bash
-HOME_NEEDLE="Arsenal" \
-AWAY_NEEDLE="Chelsea" \
-DRY_RUN=1 \
-ONCE=1 \
-DB_HOST=127.0.0.1 \
-DB_USER=myuser \
-DB_PASSWORD=mypass \
-DB_NAME=odds_capture \
-```
-
-若成功解析，會輸出類似：
+# (PP88 watcher removed)
+# (This section kept only as a migration note; current workflow is SofaScore-first)
 
 ---
 

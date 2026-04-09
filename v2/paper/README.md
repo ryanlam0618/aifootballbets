@@ -5,10 +5,14 @@ Lightweight stdlib-first paper trading flow for football value betting.
 ## What it supports
 
 - Real fixtures from ESPN Scoreboard for league universe.
-- Real odds fallback chain (default `--odds-provider espn`):
-  1. **ESPN odds** (preferred)
-  2. **SofaScore odds** (event odds endpoint)
+- Real odds flow (repo direction: `--odds-provider sofascore`):
+  1. **SofaScore odds** (primary)
+  2. **ESPN odds** (secondary when available)
   3. **The Odds API** (only if `ODDS_API_KEY` is configured)
+- Strictly scoped market support:
+  - `1X2`
+  - `Over/Under`
+  - `Asian Handicap`
 - Deterministic replay via one JSON file (`--provider-json`) containing:
   - `matches` (fixtures)
   - `odds` (selection odds + source metadata)
@@ -55,6 +59,7 @@ PAPER_FLAT_STAKE_FRACTION=0.02
 PAPER_DEVIG_ENABLED=1
 PAPER_CLOSING_ODDS_TRACKER_SQLITE=
 # Optional: ODDS_API_KEY=...
+# Recommended: use SofaScore as primary odds source for 1X2 / OU / AH only.
 ```
 
 ## One-command 7-day simulation (primary deliverable)
@@ -69,7 +74,7 @@ python3 scripts/paper_run_7d.py \
 Default behavior:
 - runs 7 days ending yesterday in `Asia/Shanghai`
 - starts from bankroll `2000` by default (override with `--bankroll`)
-- uses real odds only
+- use `--odds-provider sofascore` to follow the current primary source direction
 
 ### Deterministic replay command
 
@@ -120,4 +125,5 @@ python3 scripts/paper_one_day.py \
 - [ ] Final summary markdown/json present with PnL/ROI/drawdown/winrate.
 - [ ] Decision JSONL contains required fields.
 - [ ] Synthetic odds are disabled unless explicitly requested.
+- [ ] Primary run path verified with SofaScore odds for 1X2 / OU / AH.
 ed.

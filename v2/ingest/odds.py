@@ -61,7 +61,9 @@ def _init_db(db_path: Path) -> None:
 
 
 # ============================================================
-# A) The Odds API: realtime only (token saving)
+# A) Optional realtime fallback: The Odds API
+#    Primary repo direction is SofaScore-first; supported markets stay limited to
+#    1X2 / Over/Under / Asian Handicap.
 # ============================================================
 
 def _request_odds(league_key: str) -> list[dict]:
@@ -177,8 +179,9 @@ def collect_and_store_snapshot(
     fixtures_df: Optional[pd.DataFrame] = None,
 ) -> pd.DataFrame:
     """
-    Realtime odds only (The Odds API). No 24h history reliance here.
-    Token-saving behavior:
+    Optional realtime fallback only (The Odds API). No 24h history reliance here.
+    Primary repo direction is SofaScore-first, and this collector only normalizes
+    the 3 supported market families: 1X2 / Over/Under / Asian Handicap.
     - fetch only requested leagues
     - cap leagues per run with ODDS_API_MAX_LEAGUES_PER_RUN
     - keep only events matching target fixtures (if provided)
@@ -529,8 +532,8 @@ def validate_and_normalize_24h_schema(df: pd.DataFrame) -> pd.DataFrame:
 
 def build_odds_24h_csv(fixtures_df: pd.DataFrame, out_csv: Path, source_dir: Optional[Path] = None) -> pd.DataFrame:
     """
-    Build 24h odds history from OddsPortal/OddsHarvester JSON outputs.
-    This replaces The Odds API history usage.
+    Build 24h odds history from local normalized JSON outputs.
+    Supported market families remain limited to 1X2 / Over/Under / Asian Handicap.
     """
     src = source_dir or Path(settings_v2.oddsharvester_data_dir)
     maybe_run_oddsharvester_refresh()
@@ -582,7 +585,7 @@ def build_odds_24h_csv(fixtures_df: pd.DataFrame, out_csv: Path, source_dir: Opt
         df = df.sort_values("timestamp_utc")
         df["implied_prob"] = (1.0 / df["decimal_odds"]).round(6)
     # NOTE: OddsPortal integration removed.
-    df["source"] = "local_odds_history"
+    df["source"] = "sofascore_first_local_history"
 
         # schema quality stats
         needs_line = df[df["market"].isin(["Over/Under", "Asian Handicap"])]
@@ -601,7 +604,7 @@ def build_odds_24h_csv(fixtures_df: pd.DataFrame, out_csv: Path, source_dir: Opt
 
 
 # ============================================================
-# C) Realtime market map for model pricing (from The Odds API snapshots)
+# C) Realtime market map for model pricing (normalized 1X2 / OU / AH only)
 # ============================================================
 
 def current_market_snapshot(match_ids: list[str], db_path: Path) -> Dict[Tuple[str, str, str], float]:
