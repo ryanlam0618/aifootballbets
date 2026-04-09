@@ -22,5 +22,8 @@
   "homepage": "https://github.com/ryanlam0618/aifootballbets#readme",
   "dependencies": {
     "mysql2": "^3.20.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.59.1"
   }
 }
