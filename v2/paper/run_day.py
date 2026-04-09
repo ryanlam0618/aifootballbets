@@ -112,7 +112,7 @@ def run_for_day(
     decision_log_path: Path | None = None,
 ) -> dict:
     _ = snapshot_db  # reserved for future optional snapshot integration
-    provider = provider or OddsApiEspnPlaceholderProvider()
+    provider = provider or SofaScoreFixturesResultsProvider()
     allow_synthetic = settings_v2.paper_allow_synthetic_odds if allow_synthetic_odds is None else bool(allow_synthetic_odds)
 
     matches = provider.fetch_matches(day=day, league_keys=LEAGUE_UNIVERSE)
