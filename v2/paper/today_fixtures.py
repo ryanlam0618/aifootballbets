@@ -6,13 +6,13 @@ from collections import defaultdict
 from datetime import date, datetime
 from typing import Any, Dict, List
 
-from v2.paper.constants import LEAGUE_UNIVERSE, SOFASCORE_LEAGUE_MAP
+from v2.paper.constants import FIXTURES_LEAGUE_UNIVERSE, LEAGUE_UNIVERSE, SOFASCORE_LEAGUE_MAP
 from v2.paper.providers import SofaScoreFixturesResultsProvider
 
 
 def list_fixtures_for_day(day: date, league_keys: List[str] | None = None) -> Dict[str, Any]:
     provider = SofaScoreFixturesResultsProvider()
-    leagues = list(league_keys or LEAGUE_UNIVERSE)
+    leagues = list(league_keys or FIXTURES_LEAGUE_UNIVERSE)
     matches = provider.fetch_matches(day=day, league_keys=leagues)
 
     by_league: Dict[str, List[dict]] = defaultdict(list)
@@ -64,14 +64,16 @@ def render_text_summary(payload: Dict[str, Any], only_with_matches: bool = False
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="List today's SofaScore fixtures for tracked leagues")
+    parser = argparse.ArgumentParser(description="List today's SofaScore fixtures for tracked leagues and cups")
     parser.add_argument("--date", default="", help="YYYY-MM-DD (default: today UTC)")
     parser.add_argument("--json", action="store_true", help="output JSON instead of text")
     parser.add_argument("--only-with-matches", action="store_true", help="hide leagues with 0 matches")
+    parser.add_argument("--paper-only", action="store_true", help="use paper-trading league universe only")
     args = parser.parse_args()
 
     day = datetime.strptime(args.date, "%Y-%m-%d").date() if str(args.date).strip() else datetime.utcnow().date()
-    payload = list_fixtures_for_day(day)
+    league_keys = LEAGUE_UNIVERSE if args.paper_only else FIXTURES_LEAGUE_UNIVERSE
+    payload = list_fixtures_for_day(day, league_keys=league_keys)
 
     if args.json:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
