@@ -362,7 +362,7 @@ def _build_results_provider(name: str | None, provider_json: str | None = None) 
     if pjson:
         return JsonFileResultsProvider(Path(pjson))
 
-    provider_name = str(name or "espn").strip().lower()
+    provider_name = str(name or "sofascore").strip().lower()
     if provider_name == "sofascore":
         return SofaScoreFixturesResultsProvider()
     return EspnResultsProvider()
@@ -378,9 +378,9 @@ def main() -> None:
     )
     parser.add_argument(
         "--results-provider",
-        choices=["espn", "sofascore"],
-        default="espn",
-        help="results provider to use (default: espn)",
+        choices=["sofascore"],
+        default="sofascore",
+        help="results provider to use (default: sofascore)",
     )
     parser.add_argument(
         "--provider-json",

@@ -34,8 +34,8 @@ def main() -> None:
         default="",
         help="optional deterministic fixture for local testing (fixtures+odds+results)",
     )
-    parser.add_argument("--odds-provider", choices=["espn", "sofascore"], default="espn")
-    parser.add_argument("--results-provider", choices=["espn", "sofascore"], default="espn")
+    parser.add_argument("--odds-provider", choices=["sofascore"], default="sofascore")
+    parser.add_argument("--results-provider", choices=["sofascore"], default="sofascore")
     parser.add_argument("--allow-synthetic-odds", action="store_true")
     parser.add_argument("--decision-log", default="")
     parser.add_argument(

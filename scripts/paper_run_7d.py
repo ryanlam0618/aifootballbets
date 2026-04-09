@@ -25,8 +25,8 @@ def main() -> None:
     parser.add_argument("--sqlite", default="data/v2/tracking/bets.sqlite")
     parser.add_argument("--snapshot-db", default="data/v2/odds_snapshots.sqlite")
     parser.add_argument("--run-prefix", default="paper7d")
-    parser.add_argument("--odds-provider", choices=["espn", "sofascore"], default="espn")
-    parser.add_argument("--results-provider", choices=["espn", "sofascore"], default="espn")
+    parser.add_argument("--odds-provider", choices=["sofascore"], default="sofascore")
+    parser.add_argument("--results-provider", choices=["sofascore"], default="sofascore")
     parser.add_argument("--provider-json", default="", help="deterministic fixtures+odds+results JSON")
     parser.add_argument("--allow-synthetic-odds", action="store_true")
     parser.add_argument(

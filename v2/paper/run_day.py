@@ -323,7 +323,7 @@ def _build_odds_provider(name: str | None, provider_json: str | None) -> OddsPro
     if pjson:
         return JsonFileOddsProvider(Path(pjson))
 
-    pname = str(name or "espn").strip().lower()
+    pname = str(name or "sofascore").strip().lower()
     if pname == "sofascore":
         return SofaScoreFixturesResultsProvider()
     return None
@@ -360,9 +360,9 @@ def main() -> None:
     )
     parser.add_argument(
         "--odds-provider",
-        choices=["espn", "sofascore"],
-        default="espn",
-        help="fixtures/odds provider (default: espn; fallback chain inside espn: ESPN -> SofaScore -> Odds API)",
+        choices=["sofascore"],
+        default="sofascore",
+        help="fixtures/odds provider (default: sofascore)",
     )
     args = parser.parse_args()
 

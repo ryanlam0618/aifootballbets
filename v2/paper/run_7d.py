@@ -27,8 +27,8 @@ def run_7d(
     db_path: Path,
     snapshot_db: Path,
     run_prefix: str,
-    odds_provider_name: str = "espn",
-    results_provider_name: str = "espn",
+    odds_provider_name: str = "sofascore",
+    results_provider_name: str = "sofascore",
     provider_json: str = "",
     allow_synthetic_odds: bool = False,
     decision_log_dir: Path | None = None,
@@ -303,8 +303,8 @@ def run_walkforward(
     db_path: Path,
     snapshot_db: Path,
     run_prefix: str,
-    odds_provider_name: str = "espn",
-    results_provider_name: str = "espn",
+    odds_provider_name: str = "sofascore",
+    results_provider_name: str = "sofascore",
     provider_json: str = "",
     allow_synthetic_odds: bool = False,
     decision_log_dir: Path | None = None,
@@ -471,15 +471,15 @@ def main() -> None:
     )
     parser.add_argument(
         "--odds-provider",
-        choices=["espn", "sofascore"],
-        default="espn",
-        help="fixtures/odds provider used in run_day",
+        choices=["sofascore"],
+        default="sofascore",
+        help="fixtures/odds provider used in run_day (default: sofascore)",
     )
     parser.add_argument(
         "--results-provider",
-        choices=["espn", "sofascore"],
-        default="espn",
-        help="results provider used in settle",
+        choices=["sofascore"],
+        default="sofascore",
+        help="results provider used in settle (default: sofascore)",
     )
     parser.add_argument(
         "--bankroll",
