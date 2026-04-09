@@ -7,7 +7,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Dict, Iterable, Tuple
 
-from v2.config import BASE_DIR
+from v2.config import BASE_DIR, settings_v2
 from v2.paper.constants import SOFASCORE_LEAGUE_MAP
 from v2.paper.providers import normalize_team
 
@@ -20,6 +20,15 @@ DEFAULT_LOOKBACK_MATCHES = 10
 DEFAULT_SHRINK_MATCHES = 12.0
 DEFAULT_STRENGTH_CLAMP = (0.65, 1.35)
 DEFAULT_MU_CLAMP = (0.2, 4.5)
+
+
+@dataclass(frozen=True)
+class TeamRecentStats:
+    matches: int
+    goals_for_avg: float
+    goals_against_avg: float
+    xg_for_avg: float | None
+    xg_against_avg: float | None
 
 
 @dataclass(frozen=True)
@@ -112,6 +121,8 @@ def _load_history_index(history_csv_str: str) -> dict:
             "away_team": away,
             "home_goals": hg,
             "away_goals": ag,
+            "home_xg": _safe_float(row.get("home_xg_total")),
+            "away_xg": _safe_float(row.get("away_xg_total")),
         }
 
         league_rows.setdefault(normalize_team(league), []).append(item)
@@ -152,6 +163,39 @@ def _league_baseline(index: dict, league_names: list[str], ref_day: date) -> Lea
     return LeagueBaseline(league_names[0] if league_names else rows[0]["league"], home_avg, away_avg, len(rows))
 
 
+def _team_recent_stats(index: dict, team_name: str, ref_day: date, lookback_matches: int) -> TeamRecentStats:
+    team_key = normalize_team(team_name)
+    rows = [r for r in index["team_rows"].get(team_key, []) if r["date"] < ref_day.isoformat()]
+    rows = rows[-lookback_matches:]
+
+    if not rows:
+        return TeamRecentStats(matches=0, goals_for_avg=0.0, goals_against_avg=0.0, xg_for_avg=None, xg_against_avg=None)
+
+    gf = ga = 0.0
+    xgf_values = []
+    xga_values = []
+    for r in rows:
+        is_home = normalize_team(r["home_team"]) == team_key
+        gf += float(r["home_goals"] if is_home else r["away_goals"])
+        ga += float(r["away_goals"] if is_home else r["home_goals"])
+
+        xgf = r.get("home_xg") if is_home else r.get("away_xg")
+        xga = r.get("away_xg") if is_home else r.get("home_xg")
+        if xgf is not None:
+            xgf_values.append(float(xgf))
+        if xga is not None:
+            xga_values.append(float(xga))
+
+    n = len(rows)
+    return TeamRecentStats(
+        matches=n,
+        goals_for_avg=gf / n,
+        goals_against_avg=ga / n,
+        xg_for_avg=(sum(xgf_values) / len(xgf_values)) if xgf_values else None,
+        xg_against_avg=(sum(xga_values) / len(xga_values)) if xga_values else None,
+    )
+
+
 def _team_strength(
     index: dict,
     team_name: str,
@@ -159,27 +203,16 @@ def _team_strength(
     baseline: LeagueBaseline,
     lookback_matches: int,
     shrink_matches: float,
+    use_xg: bool,
 ) -> TeamStrength:
-    team_key = normalize_team(team_name)
-    rows = [r for r in index["team_rows"].get(team_key, []) if r["date"] < ref_day.isoformat()]
-    rows = rows[-lookback_matches:]
+    recent = _team_recent_stats(index, team_name, ref_day, lookback_matches)
 
-    if not rows:
+    if not recent.matches:
         return TeamStrength(team=team_name, matches=0, attack=1.0, defense=1.0)
 
-    gf = 0.0
-    ga = 0.0
-    for r in rows:
-        if normalize_team(r["home_team"]) == team_key:
-            gf += float(r["home_goals"])
-            ga += float(r["away_goals"])
-        else:
-            gf += float(r["away_goals"])
-            ga += float(r["home_goals"])
-
-    n = len(rows)
-    gf_avg = gf / n
-    ga_avg = ga / n
+    n = recent.matches
+    gf_avg = recent.xg_for_avg if (use_xg and recent.xg_for_avg is not None) else recent.goals_for_avg
+    ga_avg = recent.xg_against_avg if (use_xg and recent.xg_against_avg is not None) else recent.goals_against_avg
     shrink = n / (n + shrink_matches) if shrink_matches > 0 else 1.0
 
     base_scored = max(0.2, (baseline.home_goals_avg + baseline.away_goals_avg) / 2.0)
@@ -208,14 +241,19 @@ def estimate_match_goal_model(
     league_names = _league_names_for_key(league_key, fallback_name=league_name)
     baseline = _league_baseline(index, league_names=league_names, ref_day=day)
 
-    home_strength = _team_strength(index, home_team, day, baseline, lookback_matches, shrink_matches)
-    away_strength = _team_strength(index, away_team, day, baseline, lookback_matches, shrink_matches)
+    model_lookback_matches = int(lookback_matches or settings_v2.paper_model_lookback_matches)
+    model_shrink_matches = float(shrink_matches or settings_v2.paper_model_shrink_matches)
+    model_home_advantage_goals = float(home_advantage_goals if home_advantage_goals is not None else settings_v2.paper_model_home_advantage_goals)
+    use_xg = bool(settings_v2.paper_model_use_xg)
+
+    home_strength = _team_strength(index, home_team, day, baseline, model_lookback_matches, model_shrink_matches, use_xg)
+    away_strength = _team_strength(index, away_team, day, baseline, model_lookback_matches, model_shrink_matches, use_xg)
 
     mu_home = baseline.home_goals_avg * home_strength.attack * away_strength.defense
     mu_away = baseline.away_goals_avg * away_strength.attack * home_strength.defense
 
     # Apply a small additive home edge after multiplicative strength terms.
-    mu_home += home_advantage_goals
+    mu_home += model_home_advantage_goals
 
     mu_lo, mu_hi = DEFAULT_MU_CLAMP
     mu_home = _clamp(mu_home, mu_lo, mu_hi)

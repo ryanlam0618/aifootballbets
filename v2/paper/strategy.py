@@ -137,7 +137,9 @@ def generate_candidates_for_match(
     mu_home: float | None = None,
     mu_away: float | None = None,
     kelly_fraction: Optional[float] = None,
+    model_name: str | None = None,
 ) -> List[CandidateBet]:
+    _ = model_name
     k_frac = settings_v2.kelly_fraction if kelly_fraction is None else kelly_fraction
 
     if mu_home is None or mu_away is None:

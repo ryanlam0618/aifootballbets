@@ -84,6 +84,13 @@ class V2Settings:
     # token saving: limit leagues fetched from The Odds API per run
     odds_api_max_leagues_per_run: int = int(os.getenv("ODDS_API_MAX_LEAGUES_PER_RUN", "4"))
 
+    # Paper model parameters
+    paper_model_name: str = os.getenv("PAPER_MODEL_NAME", "team_strength")
+    paper_model_lookback_matches: int = int(os.getenv("PAPER_MODEL_LOOKBACK_MATCHES", "10"))
+    paper_model_shrink_matches: float = float(os.getenv("PAPER_MODEL_SHRINK_MATCHES", "12"))
+    paper_model_home_advantage_goals: float = float(os.getenv("PAPER_MODEL_HOME_ADVANTAGE_GOALS", "0.18"))
+    paper_model_use_xg: bool = os.getenv("PAPER_MODEL_USE_XG", "1").strip().lower() in {"1", "true", "yes", "on"}
+
     # Paper trading selection constraints
     paper_max_bets_per_day: int = int(os.getenv("PAPER_MAX_BETS_PER_DAY", "8"))
     paper_max_bets_per_league_per_day: int = int(os.getenv("PAPER_MAX_BETS_PER_LEAGUE_PER_DAY", "2"))
