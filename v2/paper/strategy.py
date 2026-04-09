@@ -117,6 +117,10 @@ def _match_day(match: MatchInfo) -> date:
 
 
 def _estimate_mu(match: MatchInfo) -> tuple[float, float]:
+    model_name = str(getattr(settings_v2, "paper_model_name", "team_strength") or "team_strength").strip().lower()
+    if model_name in {"baseline", "fixed", "fixed_baseline", "legacy"}:
+        return 1.25, 1.10
+
     try:
         goal_model = estimate_match_goal_model(
             league_key=match.league_key,
