@@ -13,7 +13,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from v2.paper.constants import FIXTURES_LEAGUE_UNIVERSE
-from v2.paper.historical_provider import HistoricalBackfillProvider
+from v2.paper.historical_provider import HistoricalBackfillProvider, HistoricalMySQLProvider
 from v2.paper.report import summarize_window_metrics
 from v2.paper.run_day import run_for_day
 from v2.paper.settle import run_settlement
@@ -69,6 +69,12 @@ def main() -> None:
     parser.add_argument("--stop-on-error", action="store_true", help="raise immediately on the first per-day exception")
     parser.add_argument("--competition-scope", choices=["league-only", "league-and-cups"], default="league-only")
     parser.add_argument("--league-keys", default="", help="optional comma-separated explicit league keys override")
+    parser.add_argument("--historical-source", choices=["sqlite", "mysql"], default="sqlite")
+    parser.add_argument("--mysql-host", default=os.getenv("SOFASCORE_MYSQL_HOST", "127.0.0.1"))
+    parser.add_argument("--mysql-port", type=int, default=int(os.getenv("SOFASCORE_MYSQL_PORT", "3306")))
+    parser.add_argument("--mysql-user", default=os.getenv("SOFASCORE_MYSQL_USER", "root"))
+    parser.add_argument("--mysql-password", default=os.getenv("SOFASCORE_MYSQL_PASSWORD", ""))
+    parser.add_argument("--mysql-database", default=os.getenv("SOFASCORE_MYSQL_DATABASE", "appdb"))
     args = parser.parse_args()
 
     season_start, season_end = _season_bounds(args.season)
@@ -84,11 +90,21 @@ def main() -> None:
     else:
         active_league_keys = None
 
-    provider = HistoricalBackfillProvider(
-        matches_sqlite=Path(args.matches_sqlite),
-        odds_sqlite=Path(args.odds_sqlite),
-        use_open_odds=use_open_odds,
-    )
+    if args.historical_source == "mysql":
+        provider = HistoricalMySQLProvider(
+            host=str(args.mysql_host),
+            port=int(args.mysql_port),
+            user=str(args.mysql_user),
+            password=str(args.mysql_password),
+            database=str(args.mysql_database),
+            use_open_odds=use_open_odds,
+        )
+    else:
+        provider = HistoricalBackfillProvider(
+            matches_sqlite=Path(args.matches_sqlite),
+            odds_sqlite=Path(args.odds_sqlite),
+            use_open_odds=use_open_odds,
+        )
 
     db_path = Path(args.sqlite)
     snapshot_db = Path(args.snapshot_db)
@@ -172,6 +188,8 @@ def main() -> None:
         "end_date": effective_end.isoformat(),
         "model": args.model,
         "use_open_odds": use_open_odds,
+        "historical_source": args.historical_source,
+        "mysql_database": args.mysql_database if args.historical_source == "mysql" else "",
         "competition_scope": args.competition_scope,
         "league_keys": active_league_keys or [],
         "bankroll": float(args.bankroll),
