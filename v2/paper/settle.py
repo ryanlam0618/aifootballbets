@@ -7,7 +7,7 @@ from typing import List, Tuple
 
 from v2.config import settings_v2
 from v2.paper.closing_odds import load_tracker_closing_odds_by_bet_id
-from v2.paper.constants import LEAGUE_UNIVERSE
+from v2.paper.constants import FIXTURES_LEAGUE_UNIVERSE, LEAGUE_UNIVERSE
 from v2.paper.clv import compute_clv
 from v2.paper.ledger import bankroll_before_day, open_unsettled_bets_for_day, settle_bet
 from v2.paper.models import MatchInfo
@@ -251,15 +251,17 @@ def run_settlement(
     day: date,
     provider: ResultsProvider | None = None,
     closing_odds_tracker_sqlite: Path | None = None,
+    league_keys: List[str] | None = None,
 ) -> int:
     provider = provider or SofaScoreFixturesResultsProvider()
-    score_map, score_map_ids = _scores_with_ids(provider=provider, day=day, league_keys=LEAGUE_UNIVERSE)
+    active_league_keys = list(league_keys or LEAGUE_UNIVERSE)
+    score_map, score_map_ids = _scores_with_ids(provider=provider, day=day, league_keys=active_league_keys)
 
     unsettled = open_unsettled_bets_for_day(db_path, day)
     if not unsettled:
         return 0
 
-    close_odds_map = _fetch_closing_odds_map(day=day, unsettled_rows=unsettled, league_keys=LEAGUE_UNIVERSE)
+    close_odds_map = _fetch_closing_odds_map(day=day, unsettled_rows=unsettled, league_keys=active_league_keys)
 
     tracker_map = {}
     tracker_db = closing_odds_tracker_sqlite
@@ -390,15 +392,23 @@ def main() -> None:
         default="",
         help="optional OddsPortal tracker sqlite for closing-odds hook",
     )
+    parser.add_argument(
+        "--competition-scope",
+        choices=["league-only", "league-and-cups"],
+        default="league-only",
+        help="competition universe to use (default: league-only)",
+    )
     args = parser.parse_args()
 
     day = datetime.strptime(args.date, "%Y-%m-%d").date()
     provider = _build_results_provider(args.results_provider, provider_json=args.provider_json)
+    league_keys = LEAGUE_UNIVERSE if args.competition_scope == "league-only" else FIXTURES_LEAGUE_UNIVERSE
     n = run_settlement(
         Path(args.sqlite),
         day,
         provider=provider,
         closing_odds_tracker_sqlite=(Path(args.closing_odds_tracker_sqlite) if str(args.closing_odds_tracker_sqlite).strip() else None),
+        league_keys=league_keys,
     )
     print(f"[OK] settled rows: {n} (provider={args.results_provider})")
 

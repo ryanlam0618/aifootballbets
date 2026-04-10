@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 from v2.config import settings_v2
-from v2.paper.constants import LEAGUE_UNIVERSE
+from v2.paper.constants import FIXTURES_LEAGUE_UNIVERSE, LEAGUE_UNIVERSE
 from v2.paper.ledger import append_selected_bets, bankroll_before_day
 from v2.paper.models import CandidateBet, MatchInfo
 from v2.paper.providers import (
@@ -110,12 +110,14 @@ def run_for_day(
     provider: OddsProvider | None = None,
     allow_synthetic_odds: bool | None = None,
     decision_log_path: Path | None = None,
+    league_keys: List[str] | None = None,
 ) -> dict:
     _ = snapshot_db  # reserved for future optional snapshot integration
     provider = provider or SofaScoreFixturesResultsProvider()
     allow_synthetic = settings_v2.paper_allow_synthetic_odds if allow_synthetic_odds is None else bool(allow_synthetic_odds)
+    active_league_keys = list(league_keys or LEAGUE_UNIVERSE)
 
-    matches = provider.fetch_matches(day=day, league_keys=LEAGUE_UNIVERSE)
+    matches = provider.fetch_matches(day=day, league_keys=active_league_keys)
     if not matches:
         return {
             "matches": 0,
@@ -130,9 +132,9 @@ def run_for_day(
 
     odds_with_meta = getattr(provider, "fetch_market_odds_with_meta", None)
     if callable(odds_with_meta):
-        odds_map_raw, odds_meta_raw = odds_with_meta(day=day, league_keys=LEAGUE_UNIVERSE, matches=matches)
+        odds_map_raw, odds_meta_raw = odds_with_meta(day=day, league_keys=active_league_keys, matches=matches)
     else:
-        odds_map_raw = provider.fetch_market_odds(day=day, league_keys=LEAGUE_UNIVERSE, matches=matches)
+        odds_map_raw = provider.fetch_market_odds(day=day, league_keys=active_league_keys, matches=matches)
         odds_meta_raw = {k: {"source": "unknown", "is_real": True} for k in odds_map_raw.keys()}
 
     odds_map, odds_meta, results_only_mode, synthetic_added = _with_optional_synthetic_odds(
@@ -363,10 +365,17 @@ def main() -> None:
         default="sofascore",
         help="fixtures/odds provider (default: sofascore)",
     )
+    parser.add_argument(
+        "--competition-scope",
+        choices=["league-only", "league-and-cups"],
+        default="league-only",
+        help="competition universe to use (default: league-only)",
+    )
     args = parser.parse_args()
 
     day = datetime.strptime(args.date, "%Y-%m-%d").date()
     run_id = args.run_id or f"paper_day_{day.isoformat()}"
+    league_keys = LEAGUE_UNIVERSE if args.competition_scope == "league-only" else FIXTURES_LEAGUE_UNIVERSE
 
     provider = _build_odds_provider(args.odds_provider, args.provider_json)
 
@@ -381,6 +390,7 @@ def main() -> None:
         provider=provider,
         allow_synthetic_odds=args.allow_synthetic_odds,
         decision_log_path=decision_log_path,
+        league_keys=league_keys,
     )
     print(f"[OK] day={day.isoformat()} provider={args.odds_provider} -> {res}")
 
