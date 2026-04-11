@@ -1,1 +1,1 @@
-""""""
+from risk import *  # noqa

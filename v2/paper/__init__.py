@@ -1,1 +1,1 @@
-"""Paper trading pipeline for v2 value betting."""
+from paper import *  # noqa
