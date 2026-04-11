@@ -10,7 +10,7 @@ except Exception:
     _dotenv_load = None
 
 
-BASE_DIR = Path(__file__).resolve().parents[1]
+BASE_DIR = Path(__file__).resolve().parent
 
 
 def _stdlib_load_dotenv(path: Path, override: bool = True) -> None:

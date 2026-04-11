@@ -50,6 +50,23 @@ class ResultsProvider(ABC):
         raise NotImplementedError
 
 
+class EspnResultsProvider(ResultsProvider):
+    """Compatibility base class for legacy ESPN-style result providers used in tests.
+
+    Concrete subclasses may implement `fetch_ft_scores_with_ids()` directly.
+    """
+
+    def fetch_ft_scores_with_ids(
+        self, day: date, league_keys: List[str]
+    ) -> Tuple[Dict[str, Tuple[int, int]], Dict[str, Tuple[int, int]]]:
+        _ = (day, league_keys)
+        return {}, {}
+
+    def fetch_ft_scores(self, day: date, league_keys: List[str]) -> Dict[str, Tuple[int, int]]:
+        names, _ids = self.fetch_ft_scores_with_ids(day=day, league_keys=league_keys)
+        return names
+
+
 def _http_get_json(url: str, params: Dict[str, str] | None = None, timeout: int = 25):
     q = urlencode(params or {})
     full_url = f"{url}?{q}" if q else url

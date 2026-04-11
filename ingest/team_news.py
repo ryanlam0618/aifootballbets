@@ -4,8 +4,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
-import pandas as pd
-from openai import OpenAI
+try:
+    import pandas as pd
+except Exception:  # optional for lightweight test envs
+    pd = None
+
+try:
+    from openai import OpenAI
+except Exception:  # optional until Grok research is actually used
+    OpenAI = None
 
 from config import settings_v2
 
@@ -63,12 +70,12 @@ def collect_lineup_and_injury(
     }
 
     try:
-        from ingest.sofascore_lineup import fetch_lineup_and_injury, sofascore_enabled
+        import ingest.sofascore_lineup as sofascore_lineup
 
-        if sofascore_enabled():
+        if sofascore_lineup.sofascore_enabled():
             # Save raw JSON responses for audit/backtest replay.
             raw_dir = Path("data") / "v2" / "sofascore_raw"
-            payload = fetch_lineup_and_injury(
+            payload = sofascore_lineup.fetch_lineup_and_injury(
                 home_team=home_team,
                 away_team=away_team,
                 match_date=match_date,
