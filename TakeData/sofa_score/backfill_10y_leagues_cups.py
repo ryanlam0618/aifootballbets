@@ -22,12 +22,12 @@ import argparse
 import datetime as dt
 import json
 import sqlite3
-import subprocess
 import time
 from pathlib import Path
 from typing import Dict, Iterable, Optional, Tuple
 
 import pandas as pd
+import requests
 
 
 SCHEDULE_URL = "https://www.sofascore.com/api/v1/sport/football/scheduled-events/{date}"
@@ -287,31 +287,14 @@ def to_int(v, default: int = 0) -> int:
     return int(round(n))
 
 
-def _project_root() -> Path:
-    return Path(__file__).resolve().parents[2]
-
-
-def _node_fetch_cmd(url: str, timeout: int) -> list[str]:
-    script = _project_root() / "scripts" / "sofascore_fetch.js"
-    return ["node", str(script), "--url", url, "--timeout-ms", str(int(max(1000, timeout * 1000)))]
-
-
 def fetch_json(url: str, retries: int = 3, timeout: int = 25) -> Optional[Dict]:
     for i in range(retries):
         try:
-            proc = subprocess.run(
-                _node_fetch_cmd(url, timeout),
-                check=False,
-                capture_output=True,
-                text=True,
-                timeout=max(5, int(timeout + 5)),
-            )
-            if proc.returncode != 0:
-                err = (proc.stderr or "").lower()
-                if "http 404" in err:
-                    return None
-                raise RuntimeError(proc.stderr.strip() or f"fetch failed for {url}")
-            return json.loads(proc.stdout) if proc.stdout else {}
+            resp = requests.get(url, timeout=timeout, headers={"user-agent": "Mozilla/5.0"})
+            if resp.status_code == 404:
+                return None
+            resp.raise_for_status()
+            return resp.json() if resp.text else {}
         except Exception:
             if i == retries - 1:
                 return None

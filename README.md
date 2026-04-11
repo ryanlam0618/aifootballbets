@@ -1,8 +1,12 @@
 # AI Football Bets — `clawbot_v2`
 
-此分支只保留 **v2 管線** + **資料爬蟲（TakeData）**。
+此 repo 現在以 **v2 為唯一主程式**。
 
-> v1 程式（`app.py` / `src/` / 舊 docs）已移除；目前保留的是 v2 專用 `scripts/` 與 `tests/`。
+- 主入口：`python -m v2.main`
+- Paper / validation / historical workflows：全部以 `v2/` + `scripts/` 為準
+- 舊版 v1 主程式與次要 sidecar / legacy utilities 已清走或歸檔
+
+> 目前保留的是：**v2 專用 scripts、tests、TakeData 爬蟲、必要設定檔**。
 
 ---
 
@@ -48,6 +52,26 @@ bash scripts/setup_env.sh --recreate
 python -m v2.main --matches "soccer_epl|Arsenal vs Chelsea"
 ```
 
+### v2 historical validation（SQLite / MySQL）
+
+```bash
+# SQLite-backed historical validation
+python scripts/validate_paper_season.py \
+  --season 2024-2025 \
+  --competition-scope league-and-cups
+
+# MySQL-backed historical validation
+python scripts/validate_paper_season.py \
+  --season 2024-2025 \
+  --competition-scope league-and-cups \
+  --historical-source mysql \
+  --mysql-host 127.0.0.1 \
+  --mysql-port 3306 \
+  --mysql-user root \
+  --mysql-password '<password>' \
+  --mysql-database appdb
+```
+
 ---
 
 ## Paper Trading（7-day value betting）
@@ -88,6 +112,21 @@ python scripts/paper_run_7d.py \
 最終會輸出 7 天總結（含 final PnL / ROI / max drawdown / winrate / avg edge / by market / flat-stake baseline）。
 
 READY 檢查清單請見：`v2/paper/README.md`
+
+---
+
+## Repo Cleanup Status
+
+已清理 / 歸檔的舊項目：
+- 舊版 v1 主程式痕跡（此前已不在主樹）
+- `REORGANIZATION_REPORT.md` → `archive/docs/REORGANIZATION_REPORT.md`
+- 若干 legacy utility / sidecar 已移除
+
+目前 repo 應以以下結構理解：
+- `v2/`：唯一主程式
+- `scripts/`：v2 專用 CLI / workflow wrappers
+- `TakeData/`：資料抓取與 backfill
+- `tests/`：v2 測試
 
 ---
 

@@ -18,34 +18,21 @@ import json
 import random
 import re
 import sqlite3
-import subprocess
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import requests
+
 TABLE_NAME = "event_odds_10y_multi"
 
-def _project_root() -> Path:
-    return Path(__file__).resolve().parents[2]
-
-
-def _fetch_json_node(url: str, timeout: int = 20) -> tuple[int, dict[str, Any]]:
-    script = _project_root() / "scripts" / "sofascore_fetch.js"
-    cmd = ["node", str(script), "--url", url, "--timeout-ms", str(int(max(1000, timeout * 1000)))]
-    proc = subprocess.run(
-        cmd,
-        check=False,
-        capture_output=True,
-        text=True,
-        timeout=max(5, int(timeout + 5)),
-    )
-    if proc.returncode == 0:
-        return 200, (json.loads(proc.stdout) if proc.stdout else {})
-    err = (proc.stderr or "").lower()
-    if "http 404" in err:
+def _fetch_json(url: str, timeout: int = 20) -> tuple[int, dict[str, Any]]:
+    resp = requests.get(url, timeout=timeout, headers={"user-agent": "Mozilla/5.0"})
+    if resp.status_code == 404:
         return 404, {}
-    raise RuntimeError(proc.stderr.strip() or f"fetch failed for {url}")
+    resp.raise_for_status()
+    return 200, (resp.json() if resp.text else {})
 
 
 TARGET_LEAGUES = {
