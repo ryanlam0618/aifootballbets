@@ -220,7 +220,7 @@ def test_event_id_cache_roundtrip(tmp_path: Path):
 
 
 def test_fetch_uses_cached_event_id_without_scheduled_lookup(monkeypatch, tmp_path: Path):
-    from v2.ingest import sofascore_lineup as mod
+    from ingest import sofascore_lineup as mod
 
     cache_path = tmp_path / "sofa_cache.json"
     cache = EventIdCache(cache_path)
@@ -254,7 +254,7 @@ def test_fetch_uses_cached_event_id_without_scheduled_lookup(monkeypatch, tmp_pa
 
 
 def test_fetch_fallbacks_when_best_event_lineups_404(monkeypatch):
-    from v2.ingest import sofascore_lineup as mod
+    from ingest import sofascore_lineup as mod
 
     fake_client = _FakeClientFallback404()
 
@@ -278,7 +278,7 @@ def test_fetch_fallbacks_when_best_event_lineups_404(monkeypatch):
 
 
 def test_client_retries_429_then_succeeds(monkeypatch, tmp_path: Path):
-    from v2.ingest import sofascore_lineup as mod
+    from ingest import sofascore_lineup as mod
 
     class _Resp:
         def __init__(self, status_code: int, payload: dict, headers=None):
@@ -338,7 +338,7 @@ def test_client_retries_429_then_succeeds(monkeypatch, tmp_path: Path):
 
 
 def test_client_non_retryable_404_raises(monkeypatch):
-    from v2.ingest import sofascore_lineup as mod
+    from ingest import sofascore_lineup as mod
 
     class _Resp:
         def __init__(self, status_code: int):

@@ -1,5 +1,5 @@
-from v2.ingest import sofascore_lineup as sofa
-from v2.ingest import team_news
+from ingest import sofascore_lineup as sofa
+from ingest import team_news
 
 
 def test_collect_lineup_unset_env_default_off_does_not_call_sofascore(monkeypatch):

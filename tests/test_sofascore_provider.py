@@ -30,7 +30,7 @@ class TestSofaScoreProvider(unittest.TestCase):
         for league_key in LEAGUE_UNIVERSE:
             self.assertIn(league_key, SOFASCORE_LEAGUE_MAP)
 
-    @patch("v2.paper.providers._http_get_json")
+    @patch("paper.providers._http_get_json")
     def test_fetch_matches_respects_timezone_window_and_aliases(self, mock_http_get_json):
         mock_http_get_json.side_effect = self._fake_http_get_json
         provider = SofaScoreFixturesResultsProvider()
@@ -51,7 +51,7 @@ class TestSofaScoreProvider(unittest.TestCase):
             },
         )
 
-    @patch("v2.paper.providers._http_get_json")
+    @patch("paper.providers._http_get_json")
     def test_fetch_ft_scores_with_ids_finished_only(self, mock_http_get_json):
         mock_http_get_json.side_effect = self._fake_http_get_json
         provider = SofaScoreFixturesResultsProvider()

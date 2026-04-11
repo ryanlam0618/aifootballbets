@@ -136,7 +136,7 @@ class TestEspnProviderAndResultsOnly(unittest.TestCase):
                 # Keep deterministic profit to avoid coupling to strategy internals.
                 return "loss", -float(bet_row["stake"])
 
-            with patch("v2.paper.settle._resolve_profit", side_effect=_spy_resolve_profit):
+            with patch("paper.settle._resolve_profit", side_effect=_spy_resolve_profit):
                 settled = run_settlement(
                     db_path=db_path,
                     day=date(2026, 3, 16),

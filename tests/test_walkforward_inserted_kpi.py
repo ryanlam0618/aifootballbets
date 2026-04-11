@@ -8,8 +8,8 @@ from paper.run_7d import run_walkforward
 
 
 class TestWalkforwardInsertedKpi(unittest.TestCase):
-    @patch("v2.paper.run_7d._window_inserted_kpi_aggregate")
-    @patch("v2.paper.run_7d.run_7d")
+    @patch("paper.run_7d._window_inserted_kpi_aggregate")
+    @patch("paper.run_7d.run_7d")
     def test_walkforward_emits_inserted_kpi_aggregate(self, mock_run_7d, mock_tags):
         mock_run_7d.side_effect = [
             {

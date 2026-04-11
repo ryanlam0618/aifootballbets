@@ -1,24 +1,24 @@
-# AI Football Bets — `clawbot_v2`
+# AI Football Bets
 
-此 repo 現在以 **v2 為唯一主程式**。
+此 repo 現在以 **root-first 結構** 為主。
 
 - 主入口：`python -m main`
-- Paper / validation / historical workflows：全部以 `v2/` compatibility layer + `scripts/` 為準
-- 舊版 v1 主程式與次要 sidecar / legacy utilities 已清走或歸檔
+- Paper / validation / historical workflows：以 `paper/` + `scripts/` 為準
+- 舊版 v1 / v2 compatibility layer 已移除
 
-> 目前保留的是：**v2 專用 scripts、tests、TakeData 爬蟲、必要設定檔**。
+> 目前保留的是：**root-first Python 模組、scripts、tests、TakeData 爬蟲、必要設定檔**。
 
 ---
 
 ## 主要目錄
 
-- `v2/` compatibility layer：v2 預測與報表流程
+- `paper/`：paper trading / validation / reporting 流程
 - `TakeData/`：歷史/即時資料爬蟲
 - `data/`：資料輸出目錄（多數為執行產物，不建議入版控）
 
 ---
 
-## 快速開始（v2）
+## 快速開始
 
 ```bash
 pip install -r requirements.txt
@@ -52,7 +52,7 @@ bash scripts/setup_env.sh --recreate
 python -m main --matches "soccer_epl|Arsenal vs Chelsea"
 ```
 
-### v2 historical validation（SQLite / MySQL）
+### historical validation（SQLite / MySQL）
 
 ```bash
 # SQLite-backed historical validation
@@ -76,7 +76,7 @@ python scripts/validate_paper_season.py \
 
 ## Paper Trading（7-day value betting）
 
-新模組：`v2/paper/`
+主要模組：`paper/`
 
 - 聯賽池（單一合併策略）：Big-5 + J1 + K League 1 + A-League Men + CSL
 - 每場比賽產生 1X2 / O/U / AH 候選，僅選一筆最佳注單（分數：fractional Kelly log-growth）
@@ -88,13 +88,13 @@ python scripts/validate_paper_season.py \
 
 ```bash
 # 單日：選注並寫入 bet_log
-python -m v2.paper.run_day --date 2026-03-15
+python -m paper.run_day --date 2026-03-15
 
 # 單日：依 ESPN 比分結算
-python -m v2.paper.settle --date 2026-03-15
+python -m paper.settle --date 2026-03-15
 
 # 單日：輸出 daily + weekly 報告
-python -m v2.paper.report --date 2026-03-15 --sqlite data/v2/tracking/bets.sqlite
+python -m paper.report --date 2026-03-15 --sqlite data/v2/tracking/bets.sqlite
 
 # 7 日流程（每天：選注 -> 結算 -> 出報告）
 python scripts/paper_run_7d.py --bankroll 2000 --sqlite data/v2/tracking/bets.sqlite
@@ -111,7 +111,7 @@ python scripts/paper_run_7d.py \
 
 最終會輸出 7 天總結（含 final PnL / ROI / max drawdown / winrate / avg edge / by market / flat-stake baseline）。
 
-READY 檢查清單請見：`v2/paper/README.md`
+READY 檢查清單請見：`paper/README.md`
 
 ---
 
@@ -123,10 +123,10 @@ READY 檢查清單請見：`v2/paper/README.md`
 - 若干 legacy utility / sidecar 已移除
 
 目前 repo 應以以下結構理解：
-- `v2/` compatibility layer：唯一主程式
-- `scripts/`：v2 專用 CLI / workflow wrappers
+- `paper/`：核心 paper trading / validation 流程
+- `scripts/`：CLI / workflow wrappers
 - `TakeData/`：資料抓取與 backfill
-- `tests/`：v2 測試
+- `tests/`：測試
 
 ---
 
