@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from v2.ingest.sofascore_lineup import (
+from ingest.sofascore_lineup import (
     EventIdCache,
     _best_event_by_fuzzy,
     _candidate_schedule_dates,

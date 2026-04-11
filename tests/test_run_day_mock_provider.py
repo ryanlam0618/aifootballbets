@@ -4,10 +4,10 @@ import unittest
 from datetime import date
 from pathlib import Path
 
-from v2.paper.db import ensure_tracking_schema
-from v2.paper.ledger import open_unsettled_bets_for_day
-from v2.paper.providers import JsonFileOddsProvider
-from v2.paper.run_day import run_for_day
+from paper.db import ensure_tracking_schema
+from paper.ledger import open_unsettled_bets_for_day
+from paper.providers import JsonFileOddsProvider
+from paper.run_day import run_for_day
 
 
 class TestRunDayWithMockProvider(unittest.TestCase):

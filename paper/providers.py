@@ -8,9 +8,9 @@ from typing import Any, Dict, List, Tuple
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-from v2.config import settings_v2
-from v2.paper.constants import LEAGUE_UNIVERSE, SOFASCORE_LEAGUE_MAP
-from v2.paper.models import MatchInfo
+from config import settings_v2
+from paper.constants import LEAGUE_UNIVERSE, SOFASCORE_LEAGUE_MAP
+from paper.models import MatchInfo
 
 
 class OddsProvider(ABC):

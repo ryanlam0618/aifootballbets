@@ -1,6 +1,6 @@
 import copy
 
-from v2.ingest.sofascore_lineup import parse_lineups_to_schema
+from ingest.sofascore_lineup import parse_lineups_to_schema
 
 
 def test_parse_new_lineups_format_players_and_missing_players():

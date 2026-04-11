@@ -4,7 +4,7 @@ from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 
-from v2.paper.run_7d import run_walkforward
+from paper.run_7d import run_walkforward
 
 
 class TestWalkforwardInsertedKpi(unittest.TestCase):

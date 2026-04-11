@@ -8,9 +8,9 @@ from typing import Any, Dict, List, Tuple
 
 import pymysql
 
-from v2.paper.constants import LEAGUE_UNIVERSE, SOFASCORE_LEAGUE_MAP
-from v2.paper.models import MatchInfo
-from v2.paper.providers import OddsProvider, ResultsProvider, match_key, normalize_team
+from paper.constants import LEAGUE_UNIVERSE, SOFASCORE_LEAGUE_MAP
+from paper.models import MatchInfo
+from paper.providers import OddsProvider, ResultsProvider, match_key, normalize_team
 
 
 class HistoricalBackfillProvider(OddsProvider, ResultsProvider):

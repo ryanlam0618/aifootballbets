@@ -5,8 +5,8 @@ import sqlite3
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
-from v2.config import settings_v2
-from v2.paper.ledger import bankroll_before_day
+from config import settings_v2
+from paper.ledger import bankroll_before_day
 
 
 def _to_float(x) -> float:

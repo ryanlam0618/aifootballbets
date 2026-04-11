@@ -5,13 +5,13 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import List, Tuple
 
-from v2.config import settings_v2
-from v2.paper.closing_odds import load_tracker_closing_odds_by_bet_id
-from v2.paper.constants import FIXTURES_LEAGUE_UNIVERSE, LEAGUE_UNIVERSE
-from v2.paper.clv import compute_clv
-from v2.paper.ledger import bankroll_before_day, open_unsettled_bets_for_day, settle_bet
-from v2.paper.models import MatchInfo
-from v2.paper.providers import (
+from config import settings_v2
+from paper.closing_odds import load_tracker_closing_odds_by_bet_id
+from paper.constants import FIXTURES_LEAGUE_UNIVERSE, LEAGUE_UNIVERSE
+from paper.clv import compute_clv
+from paper.ledger import bankroll_before_day, open_unsettled_bets_for_day, settle_bet
+from paper.models import MatchInfo
+from paper.providers import (
     JsonFileResultsProvider,
     ResultsProvider,
     SofaScoreFixturesResultsProvider,

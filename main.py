@@ -8,31 +8,31 @@ from typing import List
 import pandas as pd
 from openai import OpenAI
 
-from v2.config import settings_v2
-from v2.features.build_features import build_features
-from v2.ingest.fixtures import fixtures_to_csv, parse_match_lines, resolve_fixtures
-from v2.ingest.odds import (
+from config import settings_v2
+from features.build_features import build_features
+from ingest.fixtures import fixtures_to_csv, parse_match_lines, resolve_fixtures
+from ingest.odds import (
     build_odds_24h_csv,
     collect_and_store_snapshot,
     current_market_snapshot,
     current_market_snapshot_by_teams,
 )
-from v2.ingest.team_news import (
+from ingest.team_news import (
     collect_lineup_and_injury,
     grok_research,
     injuries_to_csv,
     injury_rows,
     write_lineup_text,
 )
-from v2.models.predict import predict_markets
-from v2.reports.exporters import (
+from models.predict import predict_markets
+from reporting.exporters import (
     append_recommendations_to_tracking_sqlite,
     export_betting_records_xlsx,
     export_recommendations,
     export_summary_report,
 )
-from v2.risk.allocator import allocate_stakes
-from v2.sync.google_drive import sync_outputs_local_gdrive, upload_with_service_account
+from risk.allocator import allocate_stakes
+from sync.google_drive import sync_outputs_local_gdrive, upload_with_service_account
 
 
 def _read_matches_interactive() -> List[str]:

@@ -6,7 +6,7 @@ from typing import List
 import numpy as np
 import pandas as pd
 
-from v2.config import settings_v2
+from config import settings_v2
 
 
 @dataclass

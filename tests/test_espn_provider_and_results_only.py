@@ -5,12 +5,12 @@ from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 
-from v2.paper.db import ensure_tracking_schema
-from v2.paper.ledger import open_unsettled_bets_for_day
-from v2.paper.models import MatchInfo
-from v2.paper.providers import EspnResultsProvider, OddsProvider, match_key
-from v2.paper.run_day import run_for_day
-from v2.paper.settle import run_settlement
+from paper.db import ensure_tracking_schema
+from paper.ledger import open_unsettled_bets_for_day
+from paper.models import MatchInfo
+from paper.providers import EspnResultsProvider, OddsProvider, match_key
+from paper.run_day import run_for_day
+from paper.settle import run_settlement
 
 
 class EmptyOddsRealFixtureProvider(OddsProvider):

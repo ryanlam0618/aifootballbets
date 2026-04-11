@@ -7,9 +7,9 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Dict, Iterable, Tuple
 
-from v2.config import BASE_DIR, settings_v2
-from v2.paper.constants import SOFASCORE_LEAGUE_MAP
-from v2.paper.providers import normalize_team
+from config import BASE_DIR, settings_v2
+from paper.constants import SOFASCORE_LEAGUE_MAP
+from paper.providers import normalize_team
 
 
 DEFAULT_HISTORY_CSV = BASE_DIR / "data" / "backfill_sofascore_10y" / "history_data_10y_leagues_cups.csv"

@@ -4,10 +4,10 @@ import math
 from datetime import date, datetime
 from typing import Dict, List, Optional, Tuple
 
-from v2.config import settings_v2
-from v2.paper.models import CandidateBet, MatchInfo
-from v2.paper.pricing import implied_probability_raw
-from v2.paper.team_strength import estimate_match_goal_model
+from config import settings_v2
+from paper.models import CandidateBet, MatchInfo
+from paper.pricing import implied_probability_raw
+from paper.team_strength import estimate_match_goal_model
 
 
 Matrix = List[List[float]]

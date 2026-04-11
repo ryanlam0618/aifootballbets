@@ -12,11 +12,11 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from v2.paper.constants import FIXTURES_LEAGUE_UNIVERSE
-from v2.paper.historical_provider import HistoricalBackfillProvider, HistoricalMySQLProvider
-from v2.paper.report import summarize_window_metrics
-from v2.paper.run_day import run_for_day
-from v2.paper.settle import run_settlement
+from paper.constants import FIXTURES_LEAGUE_UNIVERSE
+from paper.historical_provider import HistoricalBackfillProvider, HistoricalMySQLProvider
+from paper.report import summarize_window_metrics
+from paper.run_day import run_for_day
+from paper.settle import run_settlement
 
 
 def _daterange(start: date, end: date):

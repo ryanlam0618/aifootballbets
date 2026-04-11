@@ -10,10 +10,10 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from v2.config import settings_v2
-from v2.paper.report import generate_reports
-from v2.paper.run_day import run_for_day
-from v2.paper.settle import _build_results_provider, run_settlement
+from config import settings_v2
+from paper.report import generate_reports
+from paper.run_day import run_for_day
+from paper.settle import _build_results_provider, run_settlement
 
 
 def main() -> None:
@@ -48,7 +48,7 @@ def main() -> None:
     day = datetime.strptime(args.date, "%Y-%m-%d").date()
     run_id = args.run_id or f"paper_e2e_{day.isoformat()}"
 
-    from v2.paper.run_day import _build_odds_provider
+    from paper.run_day import _build_odds_provider
 
     provider = _build_odds_provider(args.odds_provider, args.provider_json)
     results_provider = _build_results_provider(args.results_provider, provider_json=args.provider_json)

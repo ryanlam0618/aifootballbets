@@ -9,7 +9,7 @@ import re
 import sqlite3
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
-from v2.tracking.xlsx_reader import read_first_sheet_rows
+from tracking.xlsx_reader import read_first_sheet_rows
 
 HKT = timezone(timedelta(hours=8))
 EXCEL_EPOCH = datetime(1899, 12, 30, tzinfo=HKT)

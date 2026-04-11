@@ -4,10 +4,10 @@ from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 
-from v2.paper.constants import LEAGUE_UNIVERSE, SOFASCORE_LEAGUE_MAP
-from v2.paper.providers import SofaScoreFixturesResultsProvider
-from v2.paper.run_day import _build_odds_provider
-from v2.paper.settle import _build_results_provider
+from paper.constants import LEAGUE_UNIVERSE, SOFASCORE_LEAGUE_MAP
+from paper.providers import SofaScoreFixturesResultsProvider
+from paper.run_day import _build_odds_provider
+from paper.settle import _build_results_provider
 
 
 class TestSofaScoreProvider(unittest.TestCase):

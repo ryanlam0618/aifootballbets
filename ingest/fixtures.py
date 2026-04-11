@@ -10,7 +10,7 @@ from typing import Iterable, List, Optional
 import pandas as pd
 import requests
 
-from v2.config import settings_v2
+from config import settings_v2
 
 
 @dataclass

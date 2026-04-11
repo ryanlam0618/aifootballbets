@@ -1,6 +1,6 @@
 import unittest
 
-from v2.paper.settle import _resolve_profit
+from paper.settle import _resolve_profit
 
 
 def _row(market: str, selection: str, line, odds: float = 2.0, stake: float = 100.0):

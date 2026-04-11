@@ -5,7 +5,7 @@ import shutil
 from pathlib import Path
 from typing import Dict, Iterable
 
-from v2.config import settings_v2
+from config import settings_v2
 
 
 def sync_outputs_local_gdrive(paths: Iterable[Path]) -> Dict[str, str]:

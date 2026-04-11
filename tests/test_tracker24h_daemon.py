@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from v2.tracking.daemon import (
+from tracking.daemon import (
     build_tracker_command,
     render_cron_hourly,
     render_docker_compose,

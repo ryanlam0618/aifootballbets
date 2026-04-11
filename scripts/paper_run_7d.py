@@ -10,7 +10,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from v2.paper.run_7d import run_7d, run_walkforward, _default_start_date_today_shanghai
+from paper.run_7d import run_7d, run_walkforward, _default_start_date_today_shanghai
 
 
 def main() -> None:

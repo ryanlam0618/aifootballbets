@@ -4,12 +4,12 @@ import unittest
 from datetime import date
 from pathlib import Path
 
-from v2.config import settings_v2
-from v2.paper.db import ensure_tracking_schema
-from v2.paper.report import generate_reports, summarize_window_metrics
-from v2.paper.models import MatchInfo
-from v2.paper.providers import OddsProvider
-from v2.paper.run_day import run_for_day
+from config import settings_v2
+from paper.db import ensure_tracking_schema
+from paper.report import generate_reports, summarize_window_metrics
+from paper.models import MatchInfo
+from paper.providers import OddsProvider
+from paper.run_day import run_for_day
 
 
 class MultiMatchProvider(OddsProvider):

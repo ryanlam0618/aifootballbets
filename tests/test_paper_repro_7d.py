@@ -3,8 +3,8 @@ import unittest
 from datetime import date
 from pathlib import Path
 
-from v2.paper.report import summarize_window_metrics
-from v2.paper.run_7d import run_7d
+from paper.report import summarize_window_metrics
+from paper.run_7d import run_7d
 
 
 class TestPaperRepro7D(unittest.TestCase):

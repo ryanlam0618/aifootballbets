@@ -9,10 +9,10 @@ from statistics import mean
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from v2.config import settings_v2
-from v2.paper.report import generate_reports, summarize_window_metrics
-from v2.paper.run_day import _build_odds_provider, run_for_day
-from v2.paper.settle import _build_results_provider, run_settlement
+from config import settings_v2
+from paper.report import generate_reports, summarize_window_metrics
+from paper.run_day import _build_odds_provider, run_for_day
+from paper.settle import _build_results_provider, run_settlement
 
 
 def _default_start_date_today_shanghai() -> date:

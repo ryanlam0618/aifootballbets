@@ -5,9 +5,9 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Iterable, List, Optional
 
-from v2.paper.db import ensure_tracking_schema
-from v2.paper.models import SelectedBet
-from v2.paper.staking import market_type, utc_to_hkt_iso
+from paper.db import ensure_tracking_schema
+from paper.models import SelectedBet
+from paper.staking import market_type, utc_to_hkt_iso
 
 HKT = timezone(timedelta(hours=8))
 

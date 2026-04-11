@@ -7,18 +7,18 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
-from v2.config import settings_v2
-from v2.paper.constants import FIXTURES_LEAGUE_UNIVERSE, LEAGUE_UNIVERSE
-from v2.paper.ledger import append_selected_bets, bankroll_before_day
-from v2.paper.models import CandidateBet, MatchInfo
-from v2.paper.providers import (
+from config import settings_v2
+from paper.constants import FIXTURES_LEAGUE_UNIVERSE, LEAGUE_UNIVERSE
+from paper.ledger import append_selected_bets, bankroll_before_day
+from paper.models import CandidateBet, MatchInfo
+from paper.providers import (
     JsonFileOddsProvider,
     OddsProvider,
     SofaScoreFixturesResultsProvider,
 )
-from v2.paper.staking import DailyRiskManager, make_selected_bet
-from v2.paper.pricing import build_devig_implied_map
-from v2.paper.strategy import generate_candidates_for_match, select_best_per_match
+from paper.staking import DailyRiskManager, make_selected_bet
+from paper.pricing import build_devig_implied_map
+from paper.strategy import generate_candidates_for_match, select_best_per_match
 
 
 def _synthetic_markets_for_match(match_id: str) -> Dict[Tuple[str, str, str], float]:

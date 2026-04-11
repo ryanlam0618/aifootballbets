@@ -4,9 +4,9 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
-from v2.config import settings_v2
-from v2.paper.models import CandidateBet, SelectedBet
-from v2.paper.strategy import kelly_full
+from config import settings_v2
+from paper.models import CandidateBet, SelectedBet
+from paper.strategy import kelly_full
 
 HKT = timezone(timedelta(hours=8))
 

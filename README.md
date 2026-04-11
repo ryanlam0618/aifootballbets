@@ -2,8 +2,8 @@
 
 此 repo 現在以 **v2 為唯一主程式**。
 
-- 主入口：`python -m v2.main`
-- Paper / validation / historical workflows：全部以 `v2/` + `scripts/` 為準
+- 主入口：`python -m main`
+- Paper / validation / historical workflows：全部以 `v2/` compatibility layer + `scripts/` 為準
 - 舊版 v1 主程式與次要 sidecar / legacy utilities 已清走或歸檔
 
 > 目前保留的是：**v2 專用 scripts、tests、TakeData 爬蟲、必要設定檔**。
@@ -12,7 +12,7 @@
 
 ## 主要目錄
 
-- `v2/`：v2 預測與報表流程
+- `v2/` compatibility layer：v2 預測與報表流程
 - `TakeData/`：歷史/即時資料爬蟲
 - `data/`：資料輸出目錄（多數為執行產物，不建議入版控）
 
@@ -22,7 +22,7 @@
 
 ```bash
 pip install -r requirements.txt
-python -m v2.main --help
+python -m main --help
 ```
 
 ### 環境安裝（無 ensurepip / 無 sudo）
@@ -49,7 +49,7 @@ bash scripts/setup_env.sh --recreate
 範例：
 
 ```bash
-python -m v2.main --matches "soccer_epl|Arsenal vs Chelsea"
+python -m main --matches "soccer_epl|Arsenal vs Chelsea"
 ```
 
 ### v2 historical validation（SQLite / MySQL）
@@ -123,7 +123,7 @@ READY 檢查清單請見：`v2/paper/README.md`
 - 若干 legacy utility / sidecar 已移除
 
 目前 repo 應以以下結構理解：
-- `v2/`：唯一主程式
+- `v2/` compatibility layer：唯一主程式
 - `scripts/`：v2 專用 CLI / workflow wrappers
 - `TakeData/`：資料抓取與 backfill
 - `tests/`：v2 測試

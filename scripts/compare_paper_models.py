@@ -11,10 +11,10 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from v2.paper.models import MatchInfo
-from v2.paper.pricing import build_devig_implied_map
-from v2.paper.providers import JsonFileOddsProvider
-from v2.paper.strategy import generate_candidates_for_match, select_best_per_match
+from paper.models import MatchInfo
+from paper.pricing import build_devig_implied_map
+from paper.providers import JsonFileOddsProvider
+from paper.strategy import generate_candidates_for_match, select_best_per_match
 
 
 def _load_provider(path: str):

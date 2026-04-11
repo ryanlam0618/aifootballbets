@@ -1,7 +1,7 @@
 import math
 import unittest
 
-from v2.paper.pricing import build_devig_implied_map
+from paper.pricing import build_devig_implied_map
 
 
 class TestDevigPricing(unittest.TestCase):

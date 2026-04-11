@@ -19,13 +19,13 @@
 
 ```bash
 cd aifootballbets
-python -m v2.main --matches "soccer_epl|Arsenal vs Chelsea" "soccer_epl|Liverpool vs Man City"
+python -m main --matches "soccer_epl|Arsenal vs Chelsea" "soccer_epl|Liverpool vs Man City"
 ```
 
 或互動模式：
 
 ```bash
-python -m v2.main
+python -m main
 ```
 
 ## Output
@@ -70,7 +70,7 @@ SOFASCORE_ENABLED=0  # disable
 
 ```bash
 # Default is ON; set SOFASCORE_ENABLED=0 to disable.
-python -m v2.main --matches "soccer_epl|Fulham vs Arsenal"
+python -m main --matches "soccer_epl|Fulham vs Arsenal"
 ```
 
 Rate limit / etiquette（非常保守）：

@@ -7,7 +7,7 @@ from typing import Any, Dict, List
 import pandas as pd
 from openai import OpenAI
 
-from v2.config import settings_v2
+from config import settings_v2
 
 
 def _safe_player_name(item: Any) -> str:
@@ -63,7 +63,7 @@ def collect_lineup_and_injury(
     }
 
     try:
-        from v2.ingest.sofascore_lineup import fetch_lineup_and_injury, sofascore_enabled
+        from ingest.sofascore_lineup import fetch_lineup_and_injury, sofascore_enabled
 
         if sofascore_enabled():
             # Save raw JSON responses for audit/backtest replay.

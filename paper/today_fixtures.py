@@ -6,8 +6,8 @@ from collections import defaultdict
 from datetime import date, datetime
 from typing import Any, Dict, List
 
-from v2.paper.constants import FIXTURES_LEAGUE_UNIVERSE, LEAGUE_UNIVERSE, SOFASCORE_LEAGUE_MAP
-from v2.paper.providers import SofaScoreFixturesResultsProvider
+from paper.constants import FIXTURES_LEAGUE_UNIVERSE, LEAGUE_UNIVERSE, SOFASCORE_LEAGUE_MAP
+from paper.providers import SofaScoreFixturesResultsProvider
 
 
 def list_fixtures_for_day(day: date, league_keys: List[str] | None = None) -> Dict[str, Any]:
