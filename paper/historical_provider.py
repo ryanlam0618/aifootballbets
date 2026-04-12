@@ -198,6 +198,8 @@ class HistoricalBackfillProvider(OddsProvider, ResultsProvider):
             score = (int(home_goals or 0), int(away_goals or 0))
             by_name[match_key(str(home_team or ""), str(away_team or ""))] = score
             by_id[f"{league_key}:{int(event_id)}"] = score
+        return by_name, by_id
+
 class HistoricalMySQLProvider(OddsProvider, ResultsProvider):
     def __init__(
         self,
