@@ -9,6 +9,14 @@ from paper.db import ensure_tracking_schema
 from paper.models import SelectedBet
 from paper.staking import market_type, utc_to_hkt_iso
 
+try:  # Layer-1 MySQL mirror (optional at import time)
+    from afbdb.connection import is_bets_mirror_enabled
+    from afbdb.ledger import db_append_bets, db_settle_bet
+except Exception:  # pragma: no cover
+    is_bets_mirror_enabled = lambda: False
+    db_append_bets = None
+    db_settle_bet = None
+
 HKT = timezone(timedelta(hours=8))
 
 
@@ -90,7 +98,16 @@ def append_selected_bets(db_path: Path, bets: Iterable[SelectedBet], source_book
         before = conn.total_changes
         conn.executemany(sql, payloads)
         conn.commit()
-        return int(conn.total_changes - before)
+        inserted = int(conn.total_changes - before)
+
+        # Layer-1 mirror: best-effort dual-write into MySQL afb_bets.
+        if inserted and is_bets_mirror_enabled() and db_append_bets is not None:
+            try:
+                db_append_bets(payloads)
+            except Exception as exc:  # mirror must never break the run
+                print(f"[ledger][WARN] MySQL mirror append failed: {exc}")
+
+        return inserted
     finally:
         conn.close()
 
@@ -149,6 +166,22 @@ def settle_bet(
             ),
         )
         conn.commit()
+
+        # Layer-1 mirror: best-effort settlement update in MySQL afb_bets.
+        if is_bets_mirror_enabled() and db_settle_bet is not None:
+            try:
+                db_settle_bet(
+                    bet_id,
+                    result,
+                    float(profit),
+                    float(bankroll_after),
+                    odds_close=(float(odds_close) if odds_close is not None else None),
+                    clv_abs=(float(clv_abs) if clv_abs is not None else None),
+                    clv_pct=(float(clv_pct) if clv_pct is not None else None),
+                    close_odds_source=(str(close_odds_source) if close_odds_source else None),
+                )
+            except Exception as exc:
+                print(f"[ledger][WARN] MySQL mirror settle failed: {exc}")
     finally:
         conn.close()
 

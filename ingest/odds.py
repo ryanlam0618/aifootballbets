@@ -14,6 +14,14 @@ import requests
 
 from config import settings_v2
 
+try:  # Layer-1 MySQL mirror (optional at import time)
+    from afbdb.connection import is_snapshots_db_enabled, new_run_id
+    from afbdb.ledger import db_write_snapshots
+except Exception:  # pragma: no cover
+    is_snapshots_db_enabled = lambda: False
+    db_write_snapshots = None
+    new_run_id = None
+
 
 @dataclass
 class OddsRow:
@@ -210,6 +218,37 @@ def collect_and_store_snapshot(
         df.to_sql("odds_snapshots", conn, if_exists="append", index=False)
     finally:
         conn.close()
+
+    # Layer-1 mirror: best-effort dual-write into MySQL afb_odds_snapshots.
+    if is_snapshots_db_enabled() and db_write_snapshots is not None:
+        try:
+            snap_rows = []
+            for r in all_rows:
+                try:
+                    snap_rows.append(
+                        {
+                            "match_id": str(r.match_id),
+                            "source": "the_odds_api",
+                            "league_key": r.league_key,
+                            "league_name": None,
+                            "home_team": r.home_team,
+                            "away_team": r.away_team,
+                            "commence_time_utc": None,
+                            "market_key": f"{r.market} {r.line}".strip(),
+                            "selection": r.selection,
+                            "odds": float(r.decimal_odds),
+                            "bookmaker": r.bookmaker,
+                            "captured_at_utc": r.timestamp_utc,
+                            "run_id": new_run_id("odds") if new_run_id else None,
+                        }
+                    )
+                except Exception:
+                    continue
+            if snap_rows:
+                db_write_snapshots(snap_rows)
+        except Exception as exc:
+            print(f"[ingest.odds][WARN] MySQL snapshot mirror failed: {exc}")
+
     return df
 
 
@@ -638,6 +677,68 @@ def current_market_snapshot(match_ids: list[str], db_path: Path) -> Dict[Tuple[s
         return out
     finally:
         conn.close()
+
+
+def current_market_snapshot_db(match_ids: list[str], asof_utc=None) -> Dict[Tuple[str, str, str], float]:
+    """Layer-1 DB-backed snapshot reader.
+
+    Latest odds per (match_id, market_key, selection) from afb_odds_snapshots,
+    as-of a given UTC time (or absolute latest). Averaged across bookmakers
+    captured within the same latest snapshot instant. Returns {} when DB
+    unavailable (caller falls back to local sqlite).
+    """
+    if not match_ids:
+        return {}
+    try:
+        from afbdb.connection import afb_mysql_connect
+    except Exception:
+        return {}
+    try:
+        conn = afb_mysql_connect(ensure_schema=True)
+    except Exception as exc:
+        print(f"[ingest.odds][WARN] DB snapshot read unavailable: {exc}")
+        return {}
+
+    placeholders = ",".join(["%s"] * len(match_ids))
+    params: list = list(match_ids)
+    asof_clause = ""
+    if asof_utc is not None:
+        asof_clause = " AND captured_at_utc <= %s"
+        params.append(asof_utc)
+
+    out: Dict[Tuple[str, str, str], float] = {}
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                f"""
+                SELECT s.match_id, s.market_key, s.selection, AVG(s.odds) AS avg_odds
+                FROM afb_odds_snapshots s
+                JOIN (
+                    SELECT match_id, market_key, selection, MAX(captured_at_utc) AS mx
+                    FROM afb_odds_snapshots
+                    WHERE match_id IN ({placeholders}){asof_clause}
+                    GROUP BY match_id, market_key, selection
+                ) t ON t.match_id = s.match_id
+                   AND t.market_key = s.market_key
+                   AND t.selection = s.selection
+                   AND t.mx = s.captured_at_utc
+                GROUP BY s.match_id, s.market_key, s.selection
+                """,
+                tuple(params),
+            )
+            for mid, market_key, selection, avg_odds in cur.fetchall():
+                if market_key is None or selection is None or avg_odds is None:
+                    continue
+                out[(str(mid), str(market_key), str(selection))] = float(avg_odds)
+        return out
+    except Exception as exc:
+        print(f"[ingest.odds][WARN] DB snapshot read failed: {exc}")
+        return {}
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 
 def current_market_snapshot_by_teams(fixtures_df: pd.DataFrame, db_path: Path) -> Dict[Tuple[str, str, str], float]:

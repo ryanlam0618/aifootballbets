@@ -277,6 +277,16 @@ def run(matches: List[str], bankroll: float | None, default_league_key: str = "s
     # optional final LLM rationale refinement
     alloc_df = _refine_rationale_with_chatgpt(alloc_df, bankroll)
 
+    # Layer-1: mirror predictions into MySQL afb_predictions
+    run_id = f"pred_{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}"
+    try:
+        from reporting.exporters import export_predictions_to_db
+
+        pred_written = export_predictions_to_db(alloc_df, run_id=run_id)
+        print(f"[OK] predictions DB mirror: {pred_written} rows (run_id={run_id})")
+    except Exception as exc:
+        print(f"[WARN] predictions DB mirror skipped: {exc}")
+
     # 6) reports
     reco_out = export_recommendations(alloc_df, reco_csv)
     records_df = export_betting_records_xlsx(reco_out, records_xlsx)

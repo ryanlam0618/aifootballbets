@@ -118,6 +118,26 @@ class V2Settings:
     tracking_sqlite_path: str = os.getenv("TRACKING_SQLITE_PATH", str(BASE_DIR / "data" / "v2" / "tracking" / "bets.sqlite"))
     tracking_source_book: str = os.getenv("TRACKING_SOURCE_BOOK", "sofascore")
 
+    # ------------------------------------------------------------- Layer-1 DB
+    # MySQL data layer (afb_* tables). Credentials via .env only — never commit.
+    afb_mysql_host: str = os.getenv("AFB_MYSQL_HOST", "127.0.0.1")
+    afb_mysql_port: int = int(os.getenv("AFB_MYSQL_PORT", "3306"))
+    afb_mysql_user: str = os.getenv("AFB_MYSQL_USER", "")
+    afb_mysql_password: str = os.getenv("AFB_MYSQL_PASSWORD", "")
+    afb_mysql_database: str = os.getenv("AFB_MYSQL_DATABASE", "appdb")
+
+    # History backend for the model features:
+    #   db  = read fixtures/results/xG from MySQL (matches/match_shotmap) — primary
+    #   csv = legacy file-based history (data/backfill_sofascore_10y/...)
+    # db failures degrade gracefully to csv/baseline.
+    afb_history_backend: str = os.getenv("AFB_HISTORY_BACKEND", "db")
+    afb_history_min_date: str = os.getenv("AFB_HISTORY_MIN_DATE", "2015-01-01")
+
+    # Mirror odds snapshots / bet ledger into MySQL (dual-write; sqlite stays
+    # the pipeline-internal working store so tests & replay stay deterministic).
+    afb_snapshots_db: bool = os.getenv("AFB_SNAPSHOTS_DB", "1").strip().lower() in {"1", "true", "yes", "on"}
+    afb_bets_mirror_db: bool = os.getenv("AFB_BETS_MIRROR_DB", "1").strip().lower() in {"1", "true", "yes", "on"}
+
     def missing_keys(self) -> list[str]:
         missing = []
         if not self.odds_api_key:

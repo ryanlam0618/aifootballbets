@@ -11,6 +11,12 @@ from config import BASE_DIR, settings_v2
 from paper.constants import SOFASCORE_LEAGUE_MAP
 from paper.providers import normalize_team
 
+try:  # DB-backed history (Layer-1); optional at import time.
+    from afbdb.history import build_history_index, fetch_history_rows
+except Exception:  # pragma: no cover - afbdb unavailable
+    build_history_index = None
+    fetch_history_rows = None
+
 
 DEFAULT_HISTORY_CSV = BASE_DIR / "data" / "backfill_sofascore_10y" / "history_data_10y_leagues_cups.csv"
 DEFAULT_BASELINE_MU_HOME = 1.25
@@ -137,6 +143,57 @@ def _load_history_index(history_csv_str: str) -> dict:
     return {"team_rows": team_rows, "league_rows": league_rows}
 
 
+# --------------------------------------------------------------- DB backend
+
+_DB_INDEX_CACHE: dict | None = None
+_DB_INDEX_LOADED = False
+
+
+def _load_history_index_from_db() -> dict | None:
+    """Build the same index from MySQL (matches + match_shotmap).
+
+    Loaded once per process; rows are as-of filtered downstream, so a single
+    full load serves every walk-forward day. Returns None on any failure so
+    callers can fall back to the CSV/baseline path.
+    """
+    global _DB_INDEX_CACHE, _DB_INDEX_LOADED
+    if _DB_INDEX_LOADED:
+        return _DB_INDEX_CACHE
+    _DB_INDEX_LOADED = True
+
+    if build_history_index is None or fetch_history_rows is None:
+        return None
+    backend = str(getattr(settings_v2, "afb_history_backend", "db")).strip().lower()
+    if backend != "db":
+        return None
+    try:
+        from afbdb.connection import afb_mysql_connect
+
+        conn = afb_mysql_connect(ensure_schema=True)
+    except Exception as exc:
+        print(f"[team_strength][history] DB backend unavailable ({exc.__class__.__name__}); "
+              "falling back to CSV/baseline")
+        return None
+    try:
+        min_date = str(getattr(settings_v2, "afb_history_min_date", "2015-01-01"))
+        rows = fetch_history_rows(conn, min_date=min_date)
+        _DB_INDEX_CACHE = build_history_index(rows, normalize_team)
+        n_teams = len(_DB_INDEX_CACHE["team_rows"]) if _DB_INDEX_CACHE else 0
+        print(f"[team_strength][history] loaded {len(rows)} matches from DB "
+              f"({n_teams} teams, min_date={min_date})")
+        return _DB_INDEX_CACHE
+    except Exception as exc:
+        print(f"[team_strength][history] DB read failed ({exc.__class__.__name__}); "
+              "falling back to CSV/baseline")
+        _DB_INDEX_CACHE = None
+        return None
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
 def _clamp(v: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, float(v)))
 
@@ -237,7 +294,16 @@ def estimate_match_goal_model(
     home_advantage_goals: float = DEFAULT_HOME_ADVANTAGE_GOALS,
 ) -> MatchGoalModel:
     csv_path = Path(history_csv or DEFAULT_HISTORY_CSV)
-    index = _load_history_index(str(csv_path))
+
+    # Backend routing: an explicitly provided CSV wins (backwards compat for
+    # comparison scripts); otherwise DB-first with graceful CSV fallback.
+    if history_csv is not None:
+        index = _load_history_index(str(csv_path))
+    else:
+        index = _load_history_index_from_db()
+        if index is None:
+            index = _load_history_index(str(csv_path))
+
     league_names = _league_names_for_key(league_key, fallback_name=league_name)
     baseline = _league_baseline(index, league_names=league_names, ref_day=day)
 

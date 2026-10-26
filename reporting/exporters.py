@@ -8,6 +8,63 @@ from typing import Dict, Optional
 
 import pandas as pd
 
+try:  # Layer-1 MySQL predictions store (optional at import time)
+    from afbdb.ledger import db_write_predictions
+except Exception:  # pragma: no cover
+    db_write_predictions = None
+
+
+def export_predictions_to_db(df: pd.DataFrame, run_id: str, model_name: str = "team_strength_poisson") -> int:
+    """Mirror prediction rows into MySQL afb_predictions (Layer-1).
+
+    Best-effort: returns row count attempted; failures are logged, never raised.
+    """
+    if db_write_predictions is None or df is None or df.empty:
+        return 0
+    rows = []
+    run_date = datetime.now(timezone.utc).date().isoformat()
+    for _, r in df.iterrows():
+        try:
+            rows.append(
+                {
+                    "run_id": run_id,
+                    "run_date": run_date,
+                    "match_id": str(r.get("match_id", "")),
+                    "league": (str(r.get("league"))[:100] if r.get("league") is not None else None),
+                    "home_team": str(r.get("home_team", ""))[:100],
+                    "away_team": str(r.get("away_team", ""))[:100],
+                    "market": str(r.get("market", ""))[:50],
+                    "line": (str(r.get("line"))[:20] if r.get("line") not in (None, "") else None),
+                    "selection": str(r.get("selection", ""))[:32],
+                    "odds": (float(r["odds"]) if str(r.get("odds", "")).strip() not in ("", "None") else None),
+                    "model_probability": float(r["model_probability"]),
+                    "implied_probability": (
+                        float(r["implied_probability"])
+                        if str(r.get("implied_probability", "")).strip() not in ("", "None")
+                        else None
+                    ),
+                    "edge": (float(r["edge"]) if str(r.get("edge", "")).strip() not in ("", "None") else None),
+                    "ev": (float(r["ev"]) if str(r.get("ev", "")).strip() not in ("", "None") else None),
+                    "kelly_fraction": (
+                        float(r["bankroll_pct"]) if str(r.get("bankroll_pct", "")).strip() not in ("", "None") else None
+                    ),
+                    "suggested_stake": (
+                        float(r["suggested_stake"]) if str(r.get("suggested_stake", "")).strip() not in ("", "None") else None
+                    ),
+                    "bet_flag": bool(r.get("bet_flag")),
+                    "confidence": (str(r.get("confidence"))[:10] if r.get("confidence") else None),
+                    "rationale": (str(r.get("rationale")) if r.get("rationale") is not None else None),
+                    "model_name": model_name,
+                }
+            )
+        except Exception:
+            continue
+    try:
+        return db_write_predictions(rows)
+    except Exception as exc:
+        print(f"[exporters][WARN] predictions DB write failed: {exc}")
+        return 0
+
 
 def export_recommendations(df: pd.DataFrame, out_csv: Path) -> pd.DataFrame:
     out_csv.parent.mkdir(parents=True, exist_ok=True)
