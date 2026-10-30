@@ -15,7 +15,8 @@ from __future__ import annotations
 from typing import Dict
 
 _HISTORY_QUERY = """
-SELECT m.match_date        AS match_date,
+SELECT m.match_id          AS match_id,
+       m.match_date        AS match_date,
        c.name              AS league,
        th.name             AS home_team,
        ta.name             AS away_team,
@@ -54,14 +55,15 @@ def fetch_history_rows(conn, min_date: str = _MIN_DATE) -> list[dict]:
         for r in cur.fetchall():
             rows.append(
                 {
-                    "match_date": str(r[0]),
-                    "league": str(r[1] or ""),
-                    "home_team": str(r[2] or ""),
-                    "away_team": str(r[3] or ""),
-                    "home_goals": r[4],
-                    "away_goals": r[5],
-                    "home_xg_total": (float(r[6]) if r[6] is not None else None),
-                    "away_xg_total": (float(r[7]) if r[7] is not None else None),
+                    "match_id": str(r[0]),
+                    "match_date": str(r[1]),
+                    "league": str(r[2] or ""),
+                    "home_team": str(r[3] or ""),
+                    "away_team": str(r[4] or ""),
+                    "home_goals": r[5],
+                    "away_goals": r[6],
+                    "home_xg_total": (float(r[7]) if r[7] is not None else None),
+                    "away_xg_total": (float(r[8]) if r[8] is not None else None),
                 }
             )
     return rows
