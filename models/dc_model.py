@@ -202,6 +202,7 @@ class MatchRecord:
     away: str
     home_goals: int
     away_goals: int
+    league: Optional[str] = None  # optional; enables per-league home advantage / weights
 
 
 @dataclass
@@ -209,6 +210,7 @@ class DCModel:
     attack: Dict[str, float] = field(default_factory=dict)
     defense: Dict[str, float] = field(default_factory=dict)
     home_adv: float = 0.0
+    home_adv_by_league: Dict[str, float] = field(default_factory=dict)  # empty unless per-league fit
     rho: float = 0.0
     half_life_days: float = 365.0
     asof: Optional[date] = None
@@ -216,21 +218,27 @@ class DCModel:
     n_teams: int = 0
     loglik_per_match: float = 0.0
 
-    def _params(self, home: str, away: str) -> Tuple[float, float]:
+    def _home_adv(self, league: Optional[str]) -> float:
+        if league and self.home_adv_by_league:
+            return self.home_adv_by_league.get(league, self.home_adv)
+        return self.home_adv
+
+    def _params(self, home: str, away: str, league: Optional[str] = None) -> Tuple[float, float]:
+        ha = self._home_adv(league)
         a_h = self.attack.get(home, 0.0)
         d_a = self.defense.get(away, 0.0)
         a_a = self.attack.get(away, 0.0)
         d_h = self.defense.get(home, 0.0)
-        lam = math.exp(a_h + d_a + self.home_adv)
+        lam = math.exp(a_h + d_a + ha)
         mu = math.exp(a_a + d_h)
         return max(0.05, min(6.0, lam)), max(0.05, min(6.0, mu))
 
-    def score_matrix(self, home: str, away: str, max_goals: int = 10) -> List[List[float]]:
-        lam, mu = self._params(home, away)
+    def score_matrix(self, home: str, away: str, max_goals: int = 10, league: Optional[str] = None) -> List[List[float]]:
+        lam, mu = self._params(home, away, league)
         return tau_corrected_matrix(lam, mu, self.rho, max_goals=max_goals)
 
-    def probs_1x2(self, home: str, away: str, max_goals: int = 10) -> Dict[str, float]:
-        mat = self.score_matrix(home, away, max_goals=max_goals)
+    def probs_1x2(self, home: str, away: str, max_goals: int = 10, league: Optional[str] = None) -> Dict[str, float]:
+        mat = self.score_matrix(home, away, max_goals=max_goals, league=league)
         home_w = draw = away_w = 0.0
         for x in range(len(mat)):
             row = mat[x]
@@ -325,6 +333,9 @@ def fit_dc(
     tol: float = 1e-5,
     rho_grid: Optional[Sequence[float]] = None,
     fit_rho: bool = True,
+    per_league_home_adv: bool = False,
+    ha_shrink_matches: float = 200.0,
+    league_weights: Optional[Dict[str, float]] = None,
 ) -> DCModel:
     """Fit the Dixon-Coles model by coordinate-ascent MLE.
 
@@ -333,6 +344,12 @@ def fit_dc(
     - rho: in-sweep 1-D grid search maximising the tau-corrected likelihood
     - gauge fixing: mean(attack) pinned to 0 after each sweep
     - teams with < min_matches matches in the window stay at neutral 0.0
+    - per_league_home_adv: fit a separate home advantage per league, shrunk
+      toward the pooled value by ha_shrink_matches pseudo-matches (leagues
+      below the shrink evidence keep the pooled HA); backward compatible —
+      default off
+    - league_weights: multiplicative weight per league (e.g. down-weight
+      small-sample cups); default None = uniform
     """
     if rho_grid is None:
         rho_grid = [round(-0.15 + 0.01 * i, 3) for i in range(26)]  # [-0.15, +0.10]
@@ -341,11 +358,22 @@ def fit_dc(
     if not kept:
         raise ValueError("no usable matches in window")
 
+    # per-match league + optional league weight multiplier (T2 ③④)
+    match_league: List[str] = [(m.league or "") for m in kept]
+    if league_weights:
+        weights = [w * float(league_weights.get(lg, 1.0)) for w, lg in zip(weights, match_league)]
+
     attack: Dict[str, float] = {t: 0.0 for t in team_idx}
     defense: Dict[str, float] = {t: 0.0 for t in team_idx}
     home_adv = 0.0
+    home_adv_by_league: Dict[str, float] = {}
     rho = 0.0
     teams = sorted(team_idx.keys())
+
+    def _ha_for(match_idx: int) -> float:
+        if per_league_home_adv:
+            return home_adv_by_league.get(match_league[match_idx], home_adv)
+        return home_adv
 
     for _sweep in range(max_sweeps):
         max_delta = 0.0
@@ -358,7 +386,7 @@ def fit_dc(
                 w = weights[i]
                 if m.home == t:
                     num += w * m.home_goals
-                    den += w * math.exp(defense.get(m.away, 0.0) + home_adv)
+                    den += w * math.exp(defense.get(m.away, 0.0) + _ha_for(i))
                 else:
                     num += w * m.away_goals
                     den += w * math.exp(defense.get(m.home, 0.0))
@@ -377,12 +405,12 @@ def fit_dc(
                     den += w * math.exp(attack.get(m.away, 0.0))
                 else:
                     num += w * m.home_goals
-                    den += w * math.exp(attack.get(m.home, 0.0) + home_adv)
+                    den += w * math.exp(attack.get(m.home, 0.0) + _ha_for(i))
             new_d = math.log(num + 1e-9) - math.log(den + 1e-9) if den > 0 else 0.0
             max_delta = max(max_delta, abs(new_d - defense[t]))
             defense[t] = new_d
 
-        # ---- home advantage ----
+        # ---- home advantage (pooled) ----
         num = den = 0.0
         for i, m in enumerate(kept):
             w = weights[i]
@@ -391,6 +419,27 @@ def fit_dc(
         new_h = math.log(num + 1e-9) - math.log(den + 1e-9) if den > 0 else 0.0
         max_delta = max(max_delta, abs(new_h - home_adv))
         home_adv = new_h
+
+        # ---- per-league home advantage, shrunk toward pooled (T2 ③) ----
+        if per_league_home_adv:
+            lg_num: Dict[str, float] = {}
+            lg_den: Dict[str, float] = {}
+            lg_n: Dict[str, int] = {}
+            for i, m in enumerate(kept):
+                lg = match_league[i]
+                w = weights[i]
+                lg_num[lg] = lg_num.get(lg, 0.0) + w * m.home_goals
+                lg_den[lg] = lg_den.get(lg, 0.0) + w * math.exp(attack.get(m.home, 0.0) + defense.get(m.away, 0.0))
+                lg_n[lg] = lg_n.get(lg, 0) + 1
+            new_by_league: Dict[str, float] = {}
+            for lg, n_lg in lg_n.items():
+                if lg_den.get(lg, 0.0) <= 0:
+                    continue
+                raw = math.log(lg_num[lg] + 1e-9) - math.log(lg_den[lg] + 1e-9)
+                shrink = n_lg / (n_lg + max(1.0, ha_shrink_matches))
+                new_by_league[lg] = shrink * raw + (1.0 - shrink) * home_adv
+                max_delta = max(max_delta, abs(new_by_league[lg] - home_adv_by_league.get(lg, home_adv)))
+            home_adv_by_league = new_by_league
 
         # ---- gauge fix: mean(attack) = 0 ----
         c = sum(attack[t] for t in teams) / len(teams)
@@ -408,7 +457,7 @@ def fit_dc(
                     x, y = m.home_goals, m.away_goals
                     if (x, y) not in ((0, 0), (0, 1), (1, 0), (1, 1)):
                         continue
-                    lam = math.exp(attack.get(m.home, 0.0) + defense.get(m.away, 0.0) + home_adv)
+                    lam = math.exp(attack.get(m.home, 0.0) + defense.get(m.away, 0.0) + _ha_for(i))
                     mu = math.exp(attack.get(m.away, 0.0) + defense.get(m.home, 0.0))
                     tf = tau_factor(x, y, lam, mu, r)
                     if tf <= 0:
@@ -425,7 +474,7 @@ def fit_dc(
     # ---- report metric: weighted tau-corrected log-likelihood per match ----
     ll_total = w_total = 0.0
     for i, m in enumerate(kept):
-        lam = math.exp(attack.get(m.home, 0.0) + defense.get(m.away, 0.0) + home_adv)
+        lam = math.exp(attack.get(m.home, 0.0) + defense.get(m.away, 0.0) + _ha_for(i))
         mu = math.exp(attack.get(m.away, 0.0) + defense.get(m.home, 0.0))
         x, y = m.home_goals, m.away_goals
         w = weights[i]
@@ -439,6 +488,7 @@ def fit_dc(
         attack=attack,
         defense=defense,
         home_adv=home_adv,
+        home_adv_by_league=dict(home_adv_by_league) if per_league_home_adv else {},
         rho=rho,
         half_life_days=half_life_days,
         asof=asof,

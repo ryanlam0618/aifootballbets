@@ -77,7 +77,13 @@ def load_matches(conn, min_date: str) -> List[dict]:
 
 
 def to_match_records(matches: Sequence[dict]) -> List[MatchRecord]:
-    return [MatchRecord(m["match_date"], m["home"], m["away"], m["home_goals"], m["away_goals"]) for m in matches]
+    return [
+        MatchRecord(
+            m["match_date"], m["home"], m["away"], m["home_goals"], m["away_goals"],
+            m.get("league"),
+        )
+        for m in matches
+    ]
 
 
 # ------------------------------------------------------------- split logic
