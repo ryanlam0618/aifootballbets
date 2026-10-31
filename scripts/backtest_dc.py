@@ -66,6 +66,7 @@ def load_matches(conn, min_date: str) -> List[dict]:
                     "home": r["home_team"],
                     "away": r["away_team"],
                     "league": r["league"],
+                    "round_name": r.get("round_name"),
                     "home_goals": int(r["home_goals"]),
                     "away_goals": int(r["away_goals"]),
                 }
