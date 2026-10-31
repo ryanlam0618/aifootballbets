@@ -160,6 +160,7 @@ def db_write_predictions(pred_rows: list[dict]) -> int:
             "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
         )
         with conn.cursor() as cur:
+            inserted = 0
             for r in pred_rows:
                 cur.execute(
                     sql,
@@ -171,7 +172,7 @@ def db_write_predictions(pred_rows: list[dict]) -> int:
                         str(r.get("home_team") or "")[:100],
                         str(r.get("away_team") or "")[:100],
                         str(r.get("market") or "")[:50],
-                        (None if r.get("line") in (None, "") else str(r.get("line"))[:20]),
+                        (None if r.get("line") is None else str(r.get("line"))[:20]),  # empty string preserved — uq_afb_pred needs non-NULL line to dedupe
                         str(r.get("selection") or "")[:32],
                         r.get("odds"),
                         float(r["model_probability"]),
@@ -186,8 +187,9 @@ def db_write_predictions(pred_rows: list[dict]) -> int:
                         str(r.get("model_name") or "team_strength_poisson")[:50],
                     ),
                 )
+                inserted += cur.rowcount
         conn.commit()
-        return len(pred_rows)
+        return int(inserted)
     except Exception as exc:
         _warn("predictions.write", exc)
         try:
