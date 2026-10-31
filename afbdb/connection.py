@@ -100,8 +100,8 @@ def afb_mysql_connect(ensure_schema: bool = True):
         charset="utf8mb4",
         autocommit=False,
         connect_timeout=10,
-        read_timeout=60,
-        write_timeout=60,
+        read_timeout=600,
+        write_timeout=600,
     )
     if ensure_schema:
         from afbdb.schema import ensure_afb_schema
