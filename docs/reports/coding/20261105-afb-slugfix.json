@@ -1,0 +1,100 @@
+{
+  "schema_version": "1.0",
+  "task_id": "20261105-afb-slugfix",
+  "agent": "coding",
+  "status": "completed",
+  "created_at": "2026-11-05T17:45:00+08:00",
+  "request_summary": "SLUGFIX (Duncan queue item 1): verify/fix OddsPortal league slugs for the 11 UNSUPPORTED leagues from odds coverage verify + retry Ligue 1 timeout. Direct-session execution per Kris standing instruction.",
+  "scope_completed": [
+    "Root cause identified: NOT missing OddsPortal data — oddsharvester CLI whitelist (SPORTS_LEAGUES_URLS_MAPPING) lacked the slugs, so probes failed validation before reaching OddsPortal; plus wrong uefa-/europe-/asia- prefixed slug candidates and wrong season formats for calendar-year competitions",
+    "Authoritative slug source: oddsportal.com/sitemap/tournament.xml (679 URLs) + HTTP 200 verification of 9 candidate URLs",
+    "Whitelist patch: +9 slug entries (england-efl-cup, japan-emperors-cup, japan-j-league-cup, australia-australia-cup, china-chinese-fa-cup, afc-champions-league-2, afc-champions-league-elite, afc-cup)",
+    "coverage_verify.py SLUG_CANDIDATES rewritten with probe-verified slugs; CALENDAR_YEAR_CUPS extended (CSL, AFC CL, ACL Two, J.League Cup)",
+    "17 links-only probes executed (data/slugfix/): 10 competitions now CONFIRMED SUPPORTED",
+    "Commit 39e709c pushed to master (2824eeb..39e709c)"
+  ],
+  "findings": [
+    {
+      "title": "9 of 11 UNSUPPORTED were false negatives",
+      "severity": "high",
+      "evidence": [
+        "UCL champions-league 2022-2023: 161 links; UEL europa-league 2018-2019: 373; UECL conference-league 2021-2022: 255; EFL Cup england-efl-cup 2020-2021: 93; CSL 2023/2024: 244/245; AFC CL 2022: 140; afc-cup 2022 (old ACL Two name): 66; Emperor's Cup 2016: 57; Australia Cup 2022: 34",
+        "Ligue 1 france-ligue-1 2016-2017: 390 links — earlier timeout was transient"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "UECL original probe also used wrong era",
+      "severity": "info",
+      "evidence": [
+        "UECL founded 2021 — original probe seasons 2017-2018/2018 could never have data"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "3 competitions still return 0 links for probed seasons (slug valid, season empty)",
+      "severity": "low",
+      "evidence": [
+        "J.League Cup 2017/2018: 0; Chinese FA Cup 2017/2024: 0; AFC CL Elite 2023/2024-2025: 0 — need season-selector inspection before declaring unsupported"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "title": "Sitemap omits cups without upcoming fixtures",
+      "severity": "info",
+      "evidence": [
+        "Emperor's Cup etc. absent from tournament.xml yet return HTTP 200 — sitemap lists only tournaments with scheduled future events"
+      ],
+      "confidence": "high"
+    }
+  ],
+  "actions_taken": [
+    "Fetched OddsPortal tournament sitemap; curl HTTP status checks; 17 sequential headless-browser links-only probes",
+    "Edited sport_league_constants.py (+9 whitelist entries) and coverage_verify.py (SLUG_CANDIDATES + CALENDAR_YEAR_CUPS)",
+    "Committed 39e709c and pushed via SSH alias github-afb (credential helper had no git-protocol support; token script not used for push)"
+  ],
+  "verification": [
+    {
+      "check": "Probe results recorded for all 17 slug x season combos",
+      "result": "passed",
+      "evidence": "data/slugfix/*.log + *_links.json artifacts"
+    },
+    {
+      "check": "All new whitelist URLs reachable",
+      "result": "passed",
+      "evidence": "HTTP 200/301 via curl"
+    },
+    {
+      "check": "Commit pushed",
+      "result": "passed",
+      "evidence": "git push output: 2824eeb..39e709c master -> master"
+    },
+    {
+      "check": "Full odds sampling for newly supported leagues",
+      "result": "not_run",
+      "evidence": "Phase 2 scope (coverage verify re-run + CLV-BACKFILL resume)"
+    }
+  ],
+  "risks": [
+    "coverage_verify state.json still holds old unsupported statuses — relevant league states should be cleared before re-run",
+    "playwright_manager.py has a pre-existing uncommitted OH_PROFILE_DIR change (CLV-BACKFILL concurrency, not touched by this task)"
+  ],
+  "blockers": [],
+  "recommended_next_actions": [
+    "Phase 2: re-run coverage verify with corrected slugs/season formats for the newly supported leagues, then resume CLV-BACKFILL scraping + INSERT IGNORE DB writes",
+    "Inspect season selectors on J.League Cup / Chinese FA Cup / AFC CL Elite pages before declaring them unsupported"
+  ],
+  "handoff_to_main": "SLUGFIX complete: 9 of 11 UNSUPPORTED leagues were false negatives (whitelist gaps + wrong slugs/season formats); 10 competitions now probe-verified SUPPORTED with link counts; fix committed and pushed (39e709c). Remaining 3 comps need season-selector inspection. Ready for Phase 2 (coverage re-run + CLV-BACKFILL resume) per queue.",
+  "telegram_usage": {
+    "used": false,
+    "bot_name": null,
+    "direction": "none",
+    "targets": [
+      null
+    ],
+    "inbound_summary": null,
+    "outbound_reply_bot": null,
+    "exception_handled_by_main": false,
+    "note": "No Telegram interaction; work executed in-session."
+  }
+}

@@ -1,0 +1,134 @@
+{
+  "schema_version": "1.0",
+  "task_id": "20261106-afb-phase4-teams-facup",
+  "agent": "coding",
+  "status": "completed",
+  "created_at": "2026-11-06T21:20:00+08:00",
+  "request_summary": "PHASE4 (Kris approved '1+2' 2026-11-06 19:13): Task 1 - FA Cup coverage backfill (OddsPortal-scraped fixtures missing from DB matches table, then re-map odds); Task 2 - teams-table suspect cleanup following the La Liga playbook (lineup player lists + W/D/L fingerprints, rename only what is proven, new dated backup before any write).",
+  "scope_completed": [
+    "Task 2 verification: full W/D/L fingerprint scan of 5 suspect leagues (23/24 + 24/25), Sofascore API name lookup attempted (403-blocked on this host), lineup player-name evidence collected for all suspects + hidden cases",
+    "Task 2: 18 lineup/web-verified teams-table renames applied (backup afb_backup_teams_20261106 first: 3740 teams + 52154 matches rows)",
+    "Task 2 verification: remap dry-run match rate 91.6% -> 93.3% after renames",
+    "Task 1: precise FA Cup gap analysis with clv_remap matcher (23/24: 119 genuine-missing; 24/25: 87)",
+    "Task 1: 206 FA Cup matches + 61 new teams rows inserted (synthetic id convention: teams/match ids >= 900000001; manifest data/clv_backfill/facup_backfill_manifest.json; idempotent, 0 skipped)",
+    "Task 1 verification: final live remap 97.1% (5282/5442) -> +4554 new snapshot rows; odds table now 94238 rows / 5322 distinct matches / 15 bookies; FA Cup matches rows 274 -> 480",
+    "Commits ac6a6bd + 8cd2715 pushed to origin/master (ac6a6bd..8cd2715)"
+  ],
+  "findings": [
+    {
+      "title": "18 confirmed teams-table mislabels renamed (lineup evidence)",
+      "severity": "info",
+      "evidence": [
+        "1648 Amiens SC->RC Lens; 1656 RC Strasbourg->FC Lorient; 1684 Olympique Lyonnais->Angers SCO (Ligue 1)",
+        "2692 Lille->AC Milan; 2686 Fiorentina->Atalanta; 2688 Hellas Verona->Venezia; 2690 Sampdoria->Parma (Serie A)",
+        "3136 Vegalta Sendai->Nagoya Grampus; 3141 Kashiwa Reysol->Cerezo Osaka; 3146 Sagan Tosu->Vissel Kobe; 3147 Vissel Kobe->FC Tokyo; 44409 Albirex Niigata->Machida Zelvia (J1)",
+        "5968 Melbourne City->Brisbane Roar; 371682 Wellington Phoenix->Macarthur FC (A-League)",
+        "195172 Seongnam FC->Kimpo FC; 339827 Pohang Steelers->Chungnam Asan FC; 189422 Suwon Samsung Bluewings->Seoul E-Land FC (K League playoffs verified: Gangwon 2023 opponent = Gimpo FC per Yonhap/mk.co.kr; Daegu 2024 playoff opponent = Chungnam Asan per Wikipedia)",
+        "2890 Ventforet Kofu->KRC Genk (discovered during cup scan: Genk players Vandevoordt/Paintsil/El Khannouss/Karetsas in UEL/UECL lineups; a Japanese club cannot play European comps)",
+        "5762 'Ventforet Kofu' verified CORRECT (Peter Utaka lineup; 2022 Emperor's Cup winner -> ACL 23/24 slot)",
+        "K League 7652 'Suwon Samsung Bluewings' + 41261 'Suwon FC' verified CORRECT (2023: Samsung auto-relegated as worst record; Suwon FC won playoff vs Busan 6-4 agg)"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "Cup competitions contain a large duplicate-label contamination layer (NOT fixed this phase - needs separate approval)",
+      "severity": "high",
+      "evidence": [
+        "Full recon in cup_suspect_scan.py output: Copa del Rey 13 dup groups, Coupe de France 9, DFB Pokal 4, UCL 24/25 5 (incl Manchester City:[3052,17], Lille:[4860,1643,2692], Aston Villa:[40,2352]), UECL 23/24 12 groups, Coppa Italia 5, Emperor's Cup up to 4-id groups, Chinese FA Cup many",
+        "Spanish clubs appear in Coppa Italia (2706 'UD Las Palmas', 2770 'Espanyol'), English lower-league sides in UECL (2353 Chesterfield, 37946 Whitehawk), German clubs in UCL 24/25 (3251 Werder Bremen, 2955 Fortuna Dusseldorf)",
+        "Root cause likely same class as the 18 league rows: correct fixtures/ids, wrong teams-table labels; needs its own lineup-verification sweep"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "FA Cup odds unmatched was fixture-coverage gap, now closed",
+      "severity": "info",
+      "evidence": [
+        "Genuine missing (precise matcher): 119 (23/24) + 87 (24/25) = 206 fixtures; 117/119 + 87/87 had scores; 2 rows inserted with NULL scores",
+        "Post-backfill remap ingested the odds: FA Cup match rate now effectively complete (5282/5442 = 97.1% overall)"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "Sofascore API and web_fetch are 403-blocked from this host",
+      "severity": "low",
+      "evidence": [
+        "Direct urllib and anti_block browser headers both 403; web_fetch tool also 403 on api.sofascore.com",
+        "Team-name verification therefore used lineup player names (DB match_lineups/players) + web_search cross-checks instead"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "Synthetic id convention documented for non-Sofascore rows",
+      "severity": "low",
+      "evidence": [
+        "New teams/matches created with ids >= 900000001 (existing max: match 17174003, team 1284427); manifest records every mapping",
+        "Risk: a future full Sofascore FA Cup backfill could duplicate these fixtures - reconcile by (date, teams) before mass-inserting"
+      ],
+      "confidence": "medium"
+    }
+  ],
+  "actions_taken": [
+    "Built and ran verification harnesses (team_suspect_scan, team_canon_check, team_lineup_evidence, cup_suspect_scan, facup_gap_analysis, facup_backfill)",
+    "Created backup afb_backup_teams_20261106 (teams 3740 + matches 52154 rows) before any write",
+    "Applied 18 verified teams renames; measured remap improvement 91.6% -> 93.3%",
+    "Inserted 206 missing FA Cup matches + 61 new clubs (idempotent, manifest saved)",
+    "Re-ran live remap: 97.1% overall, +4554 odds rows; odds table 94238 rows / 5322 matches / 15 bookies",
+    "Committed 8cd2715 and pushed (ac6a6bd..8cd2715 master)"
+  ],
+  "verification": [
+    {
+      "check": "Backup created before writes",
+      "result": "passed",
+      "evidence": "afb_backup_teams_20261106 3740 rows; afb_backup_matches_20261106 52154 rows"
+    },
+    {
+      "check": "18 renames applied + read back",
+      "result": "passed",
+      "evidence": "SELECT verify shows all 18 new names + country codes"
+    },
+    {
+      "check": "Remap improvement after renames (dry-run, no writes)",
+      "result": "passed",
+      "evidence": "5442 -> 5076 matched (93.3%), up from 91.6%"
+    },
+    {
+      "check": "FA Cup backfill completeness",
+      "result": "passed",
+      "evidence": "206 inserted, 0 skipped; FA Cup matches rows 274 -> 480 (+206 exact)"
+    },
+    {
+      "check": "Final live remap ingest",
+      "result": "passed",
+      "evidence": "5442 -> 5282 matched (97.1%); +4554 rows; odds table 94238 rows / 5322 matches / 15 bookies"
+    },
+    {
+      "check": "Push of commits",
+      "result": "passed",
+      "evidence": "ac6a6bd..8cd2715 master -> master"
+    }
+  ],
+  "risks": [
+    "Cup-competition duplicate-label contamination remains (documented above) - expected to explain most of the remaining 160 unmatched records and corrupts cup odds attribution until cleaned",
+    "2 FA Cup matches inserted with NULL scores (scrape had none); status='finished'",
+    "Synthetic-id fixtures could duplicate if a future Sofascore-based FA Cup backfill runs without reconciliation",
+    "The stale alias-table entries learned against pre-fix labels are harmless but remain (matching falls back correctly)"
+  ],
+  "blockers": [],
+  "recommended_next_actions": [
+    "PHASE5 candidate: systematic cup-competition duplicate-label cleanup using the same playbook (recon data already captured by cup_suspect_scan.py)",
+    "Optional: reconcile synthetic-id FA Cup fixtures if/when a Sofascore FA Cup fixture backfill is planned",
+    "Optional: populate afb_odds_snapshots.league_name (currently all NULL) going forward for DB-side per-league analytics"
+  ],
+  "handoff_to_main": "PHASE4 completed: 18 lineup-verified teams renames (new backup afb_backup_teams_20261106 first) + 206 FA Cup fixture backfill -> remap 91.6% -> 97.1%, odds table now 94238 rows / 5322 matches / 15 bookies. Cup-comp duplicate-label layer documented as recommended next phase. Commits ac6a6bd + 8cd2715 pushed.",
+  "telegram_usage": {
+    "used": false,
+    "bot_name": null,
+    "direction": "inbound",
+    "targets": [],
+    "inbound_summary": null,
+    "outbound_reply_bot": null,
+    "exception_handled_by_main": false,
+    "note": "No Telegram traffic in this task; work executed in coding session per direct instruction."
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "schema_version": "1.0",
+  "task_id": "20261106-afb-clv-task1-alias-remap",
+  "agent": "coding",
+  "status": "completed",
+  "created_at": "2026-11-06T08:20:00+08:00",
+  "request_summary": "Task 1 (Kris approved 1+2 2026-11-06 12:37): alias-based remap to recover the 43% no-match rate. Direct-session execution.",
+  "scope_completed": [
+    "Root cause deeper than naming: La Liga teams-table had 7 mislabeled rows (same disease as EPL Phase 1) - verified by lineup rosters (match_lineups player names) + W/D/L fingerprints: 2814 'Eibar'->Espanyol, 2817 'Juventus'->Barcelona (Lewandowski/Kounde lineups + 88pts + 2015 fixture), 2819 'RB Leipzig'->Villarreal (Parejo/Pepe/Foyth lineups + 71pts), 2820 'Numancia'->Osasuna (Budimir/Herrera + 52pts), 2826 'Leganés'->Mallorca (Darder/Muriqi + 48pts; real Leganes=2845), 2858 'Villarreal'->Almeria (Embarba/Akieme + W3 D12 L23 bottom), 33779 'UD Las Palmas'->Granada CF (Callejon/Diedhiou + W4 bottom; real Las Palmas=6577)",
+    "7 teams rows renamed (backup afb_backup_teams_20261105 intact); La Liga 24/25 now 20/20 correct clubs",
+    "scripts/clv_remap.py: alias learning from unambiguous co-occurrence (anchor club + single DB match on date + score fingerprint), multi-round, conflict-drop; bugs fixed en route (flat alias views, score int coercion, 5-tuple unpacking)",
+    "Remap result: 3,944 scraped -> 3,650 matched (92.5%, up from 57%); 12 files at 100% match (PL, La Liga, Serie A, K League, Ligue 1 24-25, Bundesliga 24-25, A-League, Coppa Italia 23-24)",
+    "DB insert: +12,756 rows via INSERT IGNORE -> 52,957 rows / 2,903 distinct matches total (run_id='clv_backfill_batch1'), 14 bookmakers",
+    "Commit fe379db pushed (dfc8470..fe379db master)"
+  ],
+  "findings": [
+    {
+      "title": "Teams-table mislabels extend beyond EPL",
+      "severity": "high",
+      "evidence": [
+        "La Liga 7 rows confirmed via lineups + W/D/L",
+        "Other leagues likely have more: Ligue 1 aliases 'lens'->'Amiens SC' etc. suggest mislabeled rows there too; Serie A 'ac milan'->'Lille'; J1 'fc tokyo'->'Vissel Kobe'; A-League 'brisbane roar'->'Melbourne City' - all need the same lineup-verification pass"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "FA Cup unmatched are mostly DB coverage gaps, not mapping gaps",
+      "severity": "info",
+      "evidence": [
+        "DB FA Cup 23-24=149 matches vs 235 scraped records; 24-25=125 vs 155 - scraped found more matches than DB contains"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "Learning pollution fixed via score fingerprint",
+      "severity": "info",
+      "evidence": [
+        "First learning produced 'osasuna'->'Cadiz' (wrong match on date); requiring scraped scores == DB scores in alias learning eliminated it"
+      ],
+      "confidence": "high"
+    }
+  ],
+  "actions_taken": [
+    "7 teams UPDATEs (backup verified 3740 rows pre-write)",
+    "scripts/clv_remap.py written + committed fe379db",
+    "Remap dry-run then live run; DB totals verified"
+  ],
+  "verification": [
+    {
+      "check": "La Liga 24/25 club set",
+      "result": "passed",
+      "evidence": "20/20 correct clubs after renames"
+    },
+    {
+      "check": "Lineup identity for renamed ids",
+      "result": "passed",
+      "evidence": "match_lineups player names: 2817=Lewandowski/Kounde (Barcelona), 2820=Budimir/Herrera (Osasuna), 2819=Parejo/Pepes/Foyth (Villarreal), 2814=Cabrera/Pere Milla (Espanyol), 2826=Darder/Muriqi (Mallorca), 2858=Embarba/Akieme (Almeria), 33779=Callejon/Diedhiou (Granada)"
+    },
+    {
+      "check": "Match rate improvement",
+      "result": "passed",
+      "evidence": "2450->3650 of 3944 (57%->92.5%); 12 files 100%"
+    },
+    {
+      "check": "DB totals",
+      "result": "passed",
+      "evidence": "52,957 rows / 2,903 distinct matches; +12,756 rows from remap"
+    },
+    {
+      "check": "Other leagues mislabel verification",
+      "result": "not_run",
+      "evidence": "Suspect aliases identified but lineup-verification pass pending (next work block)"
+    }
+  ],
+  "risks": [
+    "Other leagues may still have mislabeled teams rows (Ligue 1, Serie A, J1, A-League, K League, cups) - suspect aliases identified, verification pending",
+    "Alias table bridges to wrong-labeled rows for those leagues; mapping is correct (match_id-level) but display names may be wrong until teams rows are fixed"
+  ],
+  "blockers": [],
+  "recommended_next_actions": [
+    "Lineup-verification pass for remaining suspect aliases (Ligue 1, Serie A, J1, A-League, K League, cups) then teams-row renames where confirmed",
+    "Task 2 (Batch 2) expansion: UCL/UEL/UECL/EFL Cup/CSL/AFC comps x 2 seasons"
+  ],
+  "handoff_to_main": "Task 1 COMPLETE: no-match rate 43% -> 7.5%. Root cause deeper than names - La Liga had 7 mislabeled teams rows (lineup+WD/L verified, renamed with backup). New clv_remap.py learns score-validated aliases: 3,650/3,944 = 92.5% mapped, +12,756 rows inserted (52,957 total). Commit fe379db pushed. Other leagues' suspect mislabels identified, verification pass queued. Proceeding to Task 2 (Batch 2) per approved order.",
+  "telegram_usage": {
+    "used": false,
+    "bot_name": null,
+    "direction": "none",
+    "targets": [
+      null
+    ],
+    "inbound_summary": null,
+    "outbound_reply_bot": null,
+    "exception_handled_by_main": false,
+    "note": "No Telegram interaction."
+  }
+}

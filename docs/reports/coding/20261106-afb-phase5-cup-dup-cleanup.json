@@ -1,0 +1,116 @@
+{
+  "schema_version": "1.0",
+  "task_id": "20261106-afb-phase5-cup-dup-cleanup",
+  "agent": "coding",
+  "status": "completed",
+  "created_at": "2026-11-06T22:45:00+08:00",
+  "request_summary": "PHASE5 (Kris approved 'batch phase5' 2026-11-06 21:53): cup-competition duplicate-label cleanup. Backup first (afb_backup_teams_20261106b), lineup+W/D/L verification per playbook, rename only what is proven, re-run remap for new match rate, INSERT IGNORE ingest. Leftovers: 2 FA Cup NULL scores filled; synthetic-id reconciliation explicitly out of scope.",
+  "scope_completed": [
+    "Backup: afb_backup_teams_20261106b (3801 teams) + afb_backup_matches_20261106b (52360 rows) created before any write",
+    "Recon: fresh post-PHASE4 duplicate-label scan -> 155 duplicate groups across 18 competitions, 188 unique ids; evidence JSON saved (phase5_dup_groups.json, phase5_lineup_evidence.json)",
+    "Data-driven prioritization: per-file unmatched analysis (CSL 48, Bundesliga 29, CSL 19, UEL 20, UECL 12, AFC CL 10 ...) using the remap matcher to classify unmatched records",
+    "10 lineup-verified (era-specific) teams renames applied: 2671 'VfB Stuttgart'->'1. FC Koln' (Schwabe/Hubers/Kainz/El Mala both eras); 2556 'SC Freiburg'->'Mainz 05' (Caci/Sano/Zentner/Mwene/Lee/Amiri); 2953 'FC Barcelona'->'Ajax' (Henderson/Brobbey/Hato/Taylor 23-24 era + Bouwman/Regeer/Gloukh 2026); 3250 'Lazio'->'AEK Athens' (Mantalos/Vida/Garcia/Rota both eras); 2352 'Aston Villa'->'Celtic' (McGregor/Scales/Tierney/Nygren); 1892 'FC Midtjylland'->'Malmo FF' (Sigurdsson/Ellborg/Botheim/Bolin); 295152 'Jiangsu'->'Wuhan Three Towns' (Tao Qianglong; Jiangsu Suning dissolved 2021); 281331 'AS Trencin'->'Chengdu Rongcheng' (Edu Garcia/Leonco/Karzev/Chow); 369532 'Beijing Guoan'->'Qingdao West Coast' (Haroyan/Beauguel/Indio); 96 'Stoke City'->'Hull City' (Egan/Belloumi/Ajayi/Coyle)",
+    "country_code set NULL on renamed rows: teams.country_code has FK to countries table; changing country would require writes outside the teams/matches/afb_odds_snapshots boundary - NULL is honest and compliant",
+    "Remap re-run: 5442 scraped -> 5382 matched (98.9%), +1671 new snapshot rows; odds table now 95909 rows / 5422 distinct matches / 15 bookmakers",
+    "FA Cup NULL scores resolved: 900000017 Scarborough Athletic 1-1 Forest Green Rovers (Wikipedia-confirmed 1st round); 900000010 rewritten to Sutton United 3-0 Horsham - original Sutton v Barnsley pairing never played (Barnsley disqualified for ineligible player, Horsham reinstated; Wikipedia-confirmed); manifest updated"
+  ],
+  "findings": [
+    {
+      "title": "10 cup/league duplicate-label ids verified and renamed",
+      "severity": "info",
+      "evidence": [
+        "Bundesliga 23-24 unmatched (29) traced to Koln fixtures stored under the 'VfB Stuttgart' label and Mainz fixtures under 'SC Freiburg'",
+        "CSL 2024 (48) + 2023 (19) unmatched traced to Wuhan Three Towns stored as 'Jiangsu', Chengdu Rongcheng as 'AS Trencin', Qingdao West Coast as second 'Beijing Guoan' id",
+        "UEL 23-24 + 24-25 (20) unmatched traced to Ajax fixtures stored as 'FC Barcelona' and AEK Athens fixtures stored as 'Lazio'",
+        "UCL 24/25 'Aston Villa' dup = Celtic (they played UCL 24-25); 'FC Midtjylland' dup = Malmo FF"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "match_lineups home/away attribution contamination detected in evidence",
+      "severity": "medium",
+      "evidence": [
+        "Several ids' lineup pulls contained players from BOTH teams of a match (e.g. 17 'Manchester City' showing Chelsea/Everton/Bournemouth players; 96 showing an Olympiacos GK)",
+        "Known class of bug from the 2026-10 team_attribution fix project; dominant-club analysis used instead, but lineup-based verification for remaining dups must account for this"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "Remaining duplicate groups NOT renamed (insufficient evidence / same-club dedupe cases)",
+      "severity": "info",
+      "evidence": [
+        "FA Cup/EFL Cup lower-league pairs: 51 'Peterborough United' shows mixed lower-league players (suspect, left); 53 'Bristol Rovers' mixed (76 kept as Bristol Rovers); 89/37998 identical non-league lineups mislabeled 'Coventry City' (club identity unresolved)",
+        "Same-club duplicate rows (dedupe, not rename): 656/1161 both Rosenborg-lineups, Valur 1899/1901, Vikingur 1904/1908, Brackley 123/25935 + Worthing 234/47289 (empty lineups, PHASE4-era legacy rows)",
+        "AFC/Asian pairs (Al-Ain 37082/47674, Pakhtakor 34310/34316, Lokomotiv Tashkent 40263/40268, True Bangkok 40661/85741, Al-Ahed 40657/40658) and Japanese cup dups (Albirex 4-id group, Kawasaki 38140/5127, etc.) left pending - need their own evidence rounds",
+        "remaining unmatched after fixes ~120 records across files, mostly fixtures where BOTH sides were mislabeled pairs or transliteration gaps (e.g. 'Zira' vs 'Zira FK' schwa-fold bug)"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "Sutton v Barnsley fixture never played - DQ documented",
+      "severity": "info",
+      "evidence": [
+        "Wikipedia 2023-24 FA Cup: Barnsley won the 1st-round replay 3-0 but were expelled for fielding an ineligible player; Horsham reinstated and took the 2nd-round tie, losing 0-3 at Sutton",
+        "DB fixture 900000010 updated accordingly"
+      ],
+      "confidence": "high"
+    }
+  ],
+  "actions_taken": [
+    "Created PHASE5 backup afb_backup_teams_20261106b + afb_backup_matches_20261106b",
+    "Ran fresh dup-group scan (155 groups saved), pulled lineup evidence for 188 ids",
+    "Classified unmatched records per file with the remap matcher; verified priority ids era-by-era",
+    "Applied 10 verified renames (country_code=NULL due to FK boundary)",
+    "Re-ran live remap: 98.9% matched, +1671 rows ingested",
+    "Filled 2 FA Cup NULL-score fixtures (1-1; and corrected voided pairing to Sutton 3-0 Horsham); manifest updated"
+  ],
+  "verification": [
+    {
+      "check": "Backup before writes",
+      "result": "passed",
+      "evidence": "afb_backup_teams_20261106b 3801 rows / matches 52360 rows"
+    },
+    {
+      "check": "10 renames applied and read back",
+      "result": "passed",
+      "evidence": "SELECT verify shows all 10 new names"
+    },
+    {
+      "check": "First rename attempt FK failure handled",
+      "result": "passed",
+      "evidence": "country_code FK to countries detected; rolled back cleanly; reapplied with country_code=NULL"
+    },
+    {
+      "check": "Remap improvement",
+      "result": "passed",
+      "evidence": "97.1% -> 98.9% (5382/5442); +1671 rows; odds table 95909 rows / 5422 matches / 15 bookies"
+    },
+    {
+      "check": "FA Cup NULL scores closed",
+      "result": "passed",
+      "evidence": "both fixtures now carry scores; manifest updated"
+    }
+  ],
+  "risks": [
+    "Remaining ~120 unmatched records: same-club duplicate rows and unresolved lower-league/non-league identities; renaming without evidence would violate the playbook - left flagged",
+    "lineup attribution contamination means lineup-only evidence can mislead; dominant-club analysis mitigates but web cross-checks recommended for the remaining AFC/Asian pairs",
+    "Synthetic-id reconciliation before any future Sofascore backfill remains outstanding (per Kris: not this phase)"
+  ],
+  "blockers": [],
+  "recommended_next_actions": [
+    "PHASE6 candidate: same-club duplicate-row dedupe (merge ids) - needs matches-table team_id rewrites, separate approval",
+    "PHASE6 candidate: remaining lower-league/non-league identity verification (web-based squad lookups)",
+    "Optional fix: fold() schwa transliteration ('Zira' vs 'Zira FK') in clv_remap for a few residual unmatched records"
+  ],
+  "handoff_to_main": "PHASE5 completed: 10 lineup-verified cup/league duplicate-label renames (Koln/Mainz/Ajax/AEK/Celtic/Malmo + 3 CSL clubs + Hull City) with PHASE5 backup first; remap 97.1% -> 98.9%, odds table now 95909 rows / 5422 matches / 15 bookies; both FA Cup NULL-score fixtures resolved (one was a voided Barnsley-DQ pairing, corrected to Sutton 3-0 Horsham). Remaining duplicate groups documented as PHASE6 candidates.",
+  "telegram_usage": {
+    "used": false,
+    "bot_name": null,
+    "direction": "inbound",
+    "targets": [],
+    "inbound_summary": null,
+    "outbound_reply_bot": null,
+    "exception_handled_by_main": false,
+    "note": "No Telegram traffic in this task; work executed in coding session per direct instruction."
+  }
+}

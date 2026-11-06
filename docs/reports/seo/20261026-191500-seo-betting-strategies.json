@@ -1,0 +1,91 @@
+{
+  "schema_version": "1.0",
+  "task_id": "20261026-191500-seo-betting-strategies",
+  "agent": "seo",
+  "status": "completed",
+  "created_at": "2026-10-26T19:50:00+08:00",
+  "request_summary": "Kris 問「依家嘅投注策略有邊種」— 盤點 2026 投注策略種類（落注方法學，唔係模型）：靠價、交易所專屬、靠著數、注碼策略、新興戰場；每種：點運作/邊個用/回報風險/限紅法律/一句實話；結尾策略光譜總結。",
+  "scope_completed": [
+    "A. 靠價 4 種：value betting（+EV）、arbitrage（palp/限紅）、steam/line shopping（-105 vs -110 打和門檻 262→257）、fading the public（公眾 ~48%）",
+    "B. 交易所 4 種：back/lay trading、scalping（£0.16/£30 tick 實例）、greening up、in-play trading（時間衰減/過度反應/courtsiding）",
+    "C. 著數 2 種：matched betting（UK 生态、SNR 70-80% 轉換、香港無）、bonus hunting/reloads（莊家 CRM 反制）",
+    "D. 注碼 4 種：flat/percentage、Kelly 家族（full 35%+ 回撤、0.25-0.5 fractional）、Martingale/Fibonacci（數學證明必輸：負 EV 總和+上限存在即失敗）、dutching（資金分配技術非策略）",
+    "E. 新興 3 項：預測市場 arb（Forbes 2026 月 $53B；Kalshi $33B vs Polymarket $14.5B；'arb is dead' 進程）、in-play 延遲搶價、香港 HKJC 池波場景（takeout 高+無固定賠率+離岸刑事紅線）",
+    "策略光譜總結：🟢 長期可行 4 / 🟡 有限窗口 4 / 🔴 海市蜃樓 4 / ❌ 香港用唔到 5 + 一句總結"
+  ],
+  "findings": [
+    {
+      "title": "所有策略只有兩個真錢源：概率判斷優於市場 / 市場結構錯價 — 冇第三樣",
+      "severity": "info",
+      "evidence": [
+        "Value/steam/fading 都係第一類；arb/trading/bonus/預測市場 arb 都係第二類",
+        "Martingale/Fibonacci 等注碼排列改變唔到期望值（Wikipedia + gambling-math 2026 證明）",
+        "Dutching 係資金分配技術唔創造 edge"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "香港合法環境下策略工具箱幾乎清零 — 法律結構決定，唔係技術決定",
+      "severity": "high",
+      "evidence": [
+        "HKJC 池波 = parimutuel：無固定賠率，value betting 無對象；takeout 高（馬約 17-18%）期望天然負",
+        "交易所/matched betting/arb/預測市場全部需要離岸賬戶 = 向非法莊投注刑事（最高 9 個月+HK$30,000）",
+        "唯一法律安全玩法 = paper trading 研究系統驗 CLV（repo 已係呢個定位）"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "Arb/新興套利同屬『有上限嘅套利』：短期真掂、長期自我毀滅",
+      "severity": "info",
+      "evidence": [
+        "Arb turnover ROI 1-3%，賬戶幾個月內 gubbing（上份 artifact 證據沿用）",
+        "預測市場 $53B/月規模但 tradetheoutcome 2026：retail arb 已輸俾 bot",
+        "Matched betting 莊家 CRM 反制：短命提取賬戶被 KPI 化識別（Altenar 2026）"
+      ],
+      "confidence": "high"
+    }
+  ],
+  "actions_taken": [
+    "2 輪 web 研究（9 條查詢）補位：steam/line shopping、fading public、Betfair trading、martingale 數學、dutching、reload offers、預測市場 arb、in-play latency",
+    "讀回自己上兩份 artifact 確保唔重複模型內容，焦點在落注方法學",
+    "撰寫純文字+emoji report：17 種策略逐項（運作/使用者/回報風險/限紅法律/實話評級）+ 策略光譜總結 + 16 組來源"
+  ],
+  "verification": [
+    {
+      "check": "格式：純文字+emoji、無 markdown 表格、每策略含五要素、光譜總結置尾",
+      "result": "passed",
+      "evidence": "subagent_results/20261026-191500-seo-betting-strategies.md 全文檢查"
+    },
+    {
+      "check": "無 credential/token/chat id",
+      "result": "passed",
+      "evidence": "僅公開來源 URL 與法律引用"
+    },
+    {
+      "check": "無直接 Telegram 聯絡 Kris",
+      "result": "passed",
+      "evidence": "全程無 message tool 發送；僅 artifact + sessions_send"
+    }
+  ],
+  "risks": [
+    "回報數字多屬 vendor claim 或業界博客（RebelBetting 30% ROI、£1,000-2,000 matched betting 提取），已標註未審計",
+    "預測市場法律定性未清（美國法院 2026 仍在爭論 derivatives vs bets），香港居民參與另有離岸刑事風險",
+    "實話評級（🟢🟡🔴）為證據加權主觀評級，已喺報告標明"
+  ],
+  "blockers": [],
+  "recommended_next_actions": [
+    "Main Agent 審閱後以適當 bot 總結回覆 Kris（叮囑：香港場景一節係重點，策略多數用唔到）",
+    "如 Kris 想深入某一策略（如 value betting CLV 工作流或交易所 trading），可開 follow-up"
+  ],
+  "handoff_to_main": "投注策略盤點完成，寫入 subagent_results/20261026-191500-seo-betting-strategies.md (+ .json)。核心：17 種策略歸兩個錢源（概率優於市場/結構錯價）；🟢 長期可行 = value betting+CLV、exchange trading、line shopping、fractional Kelly；🔴 海市蜃樓 = martingale 系（數學證明必輸）、包贏 tipster；❌ 香港用唔到 = matched betting/交易所/arb/預測市場（全部涉離岸刑事），唯一合法 HKJC 池波 takeout 高、策略無用武之地 — 結論同 repo『研究+paper trading』定位完全吻合。",
+  "telegram_usage": {
+    "used": false,
+    "bot_name": null,
+    "direction": "inbound",
+    "targets": [],
+    "inbound_summary": "任務經 sessions_send 由 Main Agent 委派（Kris Telegram 指示），非直接 inbound",
+    "outbound_reply_bot": null,
+    "exception_handled_by_main": false,
+    "note": "按指示未直接聯絡 Kris；全部產出經 artifact + sessions_send 交 Main Agent"
+  }
+}

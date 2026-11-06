@@ -1,0 +1,162 @@
+{
+  "schema_version": "1.0",
+  "task_id": "20261003-164141-coding-loader-teamid-fix",
+  "agent": "coding",
+  "status": "completed",
+  "created_at": "2026-10-03T16:41:41+08:00",
+  "request_summary": "Loader team_id attribution fix (L1/L2/L3), code-only, no DB writes, no fetch, no push. Kris approved 2026-10-03 15:10 HKT; delegated by Main Agent with rootcause_teamid_20261002.md context. GOAL: every loader derives team_id from EVENT payload + is_home/isHome, never from player-level teamId, never from blind home-team fallback; refuses to write team_id not among the match's two teams.",
+  "scope_completed": [
+    "L1 lineups — all 18 listed files fixed: team_id = resolve_side_team_id(event, is_home); players[0].get(\"teamId\") garbage path removed (incl. backfill_runner.py 3-step resolution, gen4_phaseB_19_20_remediation.py seeding residual path, test_all_upserts.py)",
+    "L2 incidents — all 11 listed files fixed: team_id from isHome -> event side id; payload nested team.id is cross-check only; foreign third-team rows skipped + counted in rejected_foreign_team with sample-id logging; matches backfill_runner.py:1655 reference behaviour",
+    "L3 match_player_stats — backfill_runner.insert_lineups now passes the event side id down to insert_player_stats (caller chain verified behaviourally); tests/test_parse_14023966.py + tests/test_parse_14023959.py player-stats side resolution switched to resolve_side_team_id",
+    "SHARED HELPER — new team_attribution.py (repo root) with resolve_side_team_id(event, is_home), resolve_incident_team_id(inc, event), validate_team_id(team_id, home_id, away_id); imported by all 20 touched files; zero inline copies remain",
+    "Extra site found + fixed under the blanket GOAL: test_all_upserts.py incidents block wrote raw inc['team']['id'] unvalidated — now uses resolve_incident_team_id + skip + counter",
+    "Period/injuryTime side-less system rows: loaders now SKIP them (reference-implementation behaviour; aligns with 2026-10-02 DB repair note that these rows have no team semantics and are exposed with team_id_fixed=NULL via view)"
+  ],
+  "findings": [
+    {
+      "title": "L1 defect sites were 20, not 18 — single-quote variants in test_parse files",
+      "severity": "low",
+      "evidence": [
+        "grep 'players\\\\[0\\\\].get(.teamId.)' found 18 double-quote files per task list PLUS tests/test_parse_14023966.py:94 and tests/test_parse_14023959.py:94 using players[0].get('teamId')",
+        "test_parse files are the L3 (match_player_stats) writers — fixed under L3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "Side-less incident rows (period/injuryTime) interpretation decision",
+      "severity": "info",
+      "evidence": [
+        "Task one-liner 'team_id = home_id if isHome else away_id' read literally would force away_id onto side-less rows",
+        "Named reference backfill_runner.py:1655 skips rows with no team ('system rows may have no team at all ... skip those')",
+        "data/fix_incidents_team_id_20261002.md PERIOD ROWS note: period markers have NO team semantics; flipping side would INVENT false attribution; consumers filter incident_type <> 'period'",
+        "Decision: helper returns (None, 'no_side_signal') -> loader skips (old behaviour wrote them with home id + is_home=0 mismatch)"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "backfill_runner.insert_incidents left untouched (per task: it is the reference implementation)",
+      "severity": "low",
+      "evidence": [
+        "It prefers payload team.id when present and does not cross-check it against (home, away) — a third-team nested team.id WOULD still be written by this one path",
+        "Task explicitly scoped L2 to the 11 fallback_team_id files and named backfill_runner.py:1655 as the correct reference, so it was not modified",
+        "Recommend a small follow-up if Duncan wants the foreign-team cross-check applied there too (one-line resolve_incident_team_id swap + validation)"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "test_parse shotmap blocks still use shot.get('teamId') — deliberately out of scope",
+      "severity": "info",
+      "evidence": [
+        "Root-cause table measured match_shotmap.team_id at 0% wrong (payload shape is reliable there)",
+        "Task L3 scope is match_player_stats only; flagged for awareness only"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "Pre-existing hardcoded proxy credential in test_all_upserts.py (observed, not introduced)",
+      "severity": "medium",
+      "evidence": [
+        "test_all_upserts.py module top: proxy dict with ip/port/user/pw in plaintext (pre-existing, untouched by this fix)",
+        "Per secret-scan policy this should be moved to env/config; left alone to keep this diff purely team_id-attribution"
+      ],
+      "confidence": "high"
+    }
+  ],
+  "actions_taken": [
+    "Created team_attribution.py shared helper (validate_team_id / resolve_side_team_id / resolve_incident_team_id) with reject reasons missing_team_id / foreign_team_id / no_side_signal",
+    "Codemod (exact-match, assert-count=1 per edit, dry-run first) applied 65 edits across 20 files; all 20 compile",
+    "backfill_runner.py insert_lineups: garbage 3-step resolution replaced with resolve_side_team_id(data, is_home); stale docstring comment corrected; insert_player_stats chain now receives event side ids",
+    "11 gen4_phaseB-family upsert_incidents: fallback_team_id removed, counters + helper resolution + reject log added at function tail",
+    "test_all_upserts.py: lineups block + incidents block fixed to helper rule",
+    "tests/test_parse_14023966.py + _14023959.py: player-stats side resolution switched to helper",
+    "New tests/test_team_attribution_fix.py (11 offline tests: fixture ground truth, per-row resolution, source-independence proof with planted garbage + synthetic event ids, incidents isHome derivation, foreign-row rejection by helper AND by real cdf loader loop with recording fake conn, real upsert_lineups 40-row team_id check, backfill_runner match_lineups+match_player_stats chain check, validate gate)",
+    "Local commit 9d12539 on branch v2 (no push, per task)",
+    "data/** untouched; no backfill/fetch executed; no DB connection opened"
+  ],
+  "verification": [
+    {
+      "check": "pytest tests/test_team_attribution_fix.py (new test, real fixture match_14023966_full.json)",
+      "result": "passed",
+      "evidence": "11 passed in 0.41s (offline; real gen4_phaseB_cdf_gapfill.upsert_incidents + upsert_lineups and backfill_runner.DataInserter.insert_lineups exercised against recording fake conn; fixture garbage values 41/1658/36360/241802//38/2829/36539 proven non-sources)"
+    },
+    {
+      "check": "Regression: pytest tests/test_gen4_stage4d_insert_player_stats.py tests/test_gen4_stage4d_deadlock_retry.py",
+      "result": "passed",
+      "evidence": "14 passed in 2.05s"
+    },
+    {
+      "check": "Consolidated run (new + both regression files together)",
+      "result": "passed",
+      "evidence": "25 passed in 2.43s"
+    },
+    {
+      "check": "python -m py_compile on all 22 touched files (20 loaders/tests + helper + new test)",
+      "result": "passed",
+      "evidence": "PY_COMPILE: ALL 22 PASS"
+    },
+    {
+      "check": "grep 'players[0].get(.teamId.)' (both quote styles) across repo *.py",
+      "result": "passed",
+      "evidence": "0 matches (exit=1). Remaining 'teamId' strings are comments, shotmap code (0% wrong per root cause, out of scope), or _archived/ scripts"
+    },
+    {
+      "check": "grep 'fallback_team_id' across repo *.py",
+      "result": "passed",
+      "evidence": "0 matches (exit=1)"
+    },
+    {
+      "check": "grep 'from team_attribution import' — all touched loaders import the helper",
+      "result": "passed",
+      "evidence": "21 files (20 touched + the new test); no inline copies remain"
+    },
+    {
+      "check": "rejected_foreign_team counter + sample-id log present in L2 files",
+      "result": "passed",
+      "evidence": "grep -l matches all 11 gen4 L2 files + test_all_upserts.py"
+    },
+    {
+      "check": "Commit scope hygiene — only task files committed",
+      "result": "passed",
+      "evidence": "git commit 9d12539: 22 files changed (20 M + team_attribution.py + tests/test_team_attribution_fix.py); pre-existing untracked qa_*.py/tools/ left uncommitted; branch v2; no push"
+    }
+  ],
+  "risks": [
+    "Future runs of the 11 gen4 L2 loaders will no longer write period/injuryTime marker rows (old code force-attributed them to home team). This matches backfill_runner reference + 25/26 production path and the DB-repair view (team_id_fixed=NULL), but incident row counts per match will drop by ~2-4 rows vs bug-era loads — worth remembering when diffing run counts",
+    "backfill_runner.insert_incidents (reference implementation) still prefers payload team.id when present without a foreign-team cross-check — tiny residual contamination path if SofaScore ever ships nested incident team objects; recommend optional follow-up to route it through resolve_incident_team_id",
+    "gen4 loaders must run from repo root for `from team_attribution import ...` to resolve (same constraint as their existing relative data/ paths — no new operational constraint, but path-coupled)",
+    "test_all_upserts.py still contains a pre-existing plaintext proxy credential unrelated to this fix — recommend a separate cleanup task",
+    "Shotmap blocks in tests/test_parse_14023966.py/_14023959.py keep shot.get('teamId') by design (shotmap measured 0% wrong); noted so nobody mistakes them for missed L1 sites"
+  ],
+  "blockers": [],
+  "recommended_next_actions": [
+    "Review commit 9d12539 (branch v2, local only) and push when convenient (push deliberately NOT done per task)",
+    "Optional: apply the same foreign-team cross-check to backfill_runner.insert_incidents (small follow-up, changes reference path behaviour — needs Duncan's call)",
+    "Optional cleanup: move test_all_upserts.py proxy credential to env/config",
+    "No DB action needed from this task — DB side was already fully repaired 2026-10-02"
+  ],
+  "commit_hash": "9d12539224d20a243c7c5c733b2a08b24b5095dc (short 9d12539, branch v2, NOT pushed)",
+  "helper_added": "team_attribution.py (resolve_side_team_id / resolve_incident_team_id / validate_team_id)",
+  "tests": [
+    {"name": "tests/test_team_attribution_fix.py", "result": "passed", "evidence": "11 passed (fixture-based, offline, real loader loops on recording fake conn)"},
+    {"name": "tests/test_gen4_stage4d_insert_player_stats.py", "result": "passed", "evidence": "8 passed (regression, unchanged)"},
+    {"name": "tests/test_gen4_stage4d_deadlock_retry.py", "result": "passed", "evidence": "6 passed (regression, unchanged)"}
+  ],
+  "greps": {
+    "players[0].get(.teamId.)": "0 matches repo-wide (both quote styles) — CLEAN",
+    "fallback_team_id": "0 matches repo-wide — CLEAN",
+    "from team_attribution import": "21 files import the helper",
+    "rejected_foreign_team": "present in all 11 gen4 L2 files + test_all_upserts.py"
+  },
+  "handoff_to_main": "Loader team_id attribution fix complete: L1 (18 files) + L2 (11 files) + L3 (backfill_runner chain + 2 test_parse files) all switched to event-payload + side-flag derivation via new shared helper team_attribution.py; foreign third-team ids skipped + counted; verified by 11 new offline tests + 14 regression tests + py_compile 22/22 + clean greps. Local commit 9d12539 on v2, not pushed. No DB writes, no fetch, data/** untouched.",
+  "telegram_usage": {
+    "used": false,
+    "bot_name": null,
+    "direction": null,
+    "targets": [],
+    "inbound_summary": null,
+    "outbound_reply_bot": null,
+    "exception_handled_by_main": false,
+    "note": "Task arrived via sessions_send from Main Agent; all reporting done via sessions_send + artifact per protocol. No Telegram activity."
+  }
+}

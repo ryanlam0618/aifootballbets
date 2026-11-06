@@ -1,0 +1,113 @@
+{
+  "schema_version": "1.0",
+  "task_id": "afb-layer2-T1-backtest",
+  "agent": "coding",
+  "status": "completed",
+  "created_at": "2026-10-30T04:00:00+08:00",
+  "request_summary": "為 T1 DC 模型做完整 backtest 框架 + 實測報告：時間序 70/30 + walk-forward（as-of fits）、1X2/AH/校準/市場對比指標、真 DB 全量跑、出 txt+json 報告（Main Agent 指派，T2 前置）",
+  "scope_completed": [
+    "scripts/backtest_dc.py：time_split（日期序 70/30，禁隨機切分）、walkforward_windows（91 日季步進 as-of fits）、1X2 hit/log-loss/calibration 10 桶、AH 五線 pred-vs-real eff + pick 統計、市場對比（match_odds 分數賠率 de-vig）、分聯賽 breakdown、render_txt",
+    "afbdb/history.py：history rows 加 match_id（additive，解鎖 odds join）",
+    "tests/test_backtest_dc.py：18 個 hermetic 測試（切分零洩漏/窗位連續/指標/AH 結算語義含 quarter 拆分+互補性/分數賠率解析/渲染）",
+    "真 DB 全量 backtest 兩次（每次約 40 分鐘、12+ as-of fits）+ market merge run",
+    "報告：reports/backtest_dc_report.txt + .json（實數）",
+    "pytest 99 passed / 1 failed（62 baseline 保持；唯一 fail 係既有 test_paper_repro_7d）",
+    "commit ead6fac 已 push origin/main"
+  ],
+  "findings": [
+    {
+      "title": "1X2 實測：hit 49.6%（holdout）/ 50.6%（walk-forward pooled），log-loss 1.038/1.018 — 符合學術 50-56% 天花板",
+      "severity": "info",
+      "evidence": ["holdout: n=15,609 hit=0.4957 ll=1.0379（邊界 2023-05-17，train 36,412）", "walkforward: 14 窗 pooled hit=0.5059 ll=1.0176，窗區間 hit 0.4724-0.5273"],
+      "confidence": "high"
+    },
+    {
+      "title": "模型無市場 edge：同子集上模型 hit 49.2% vs 市場大熱門 56.0%，且有系統性主場偏好",
+      "severity": "high",
+      "evidence": ["3,818 場有 1x2 分數賠率嘅驗證場", "mean edge（model - de-vig market）：Home +0.0251 / Draw -0.0013 / Away -0.0232", "雙方一致率僅 0.4007"],
+      "confidence": "high"
+    },
+    {
+      "title": "校準極端值嚴重過度自信 — isotonic/temperature 校準應係 T2 第一優先",
+      "severity": "high",
+      "evidence": ["中段近完美：[0.2-0.3) pred 0.2547/real 0.2506；[0.4-0.5) pred 0.445/real 0.4513", "極端：[0.9-1.0) pred 0.937/real 0.660（n=97）；[0.8-0.9) pred 0.840/real 0.688", "AH 高線一致高估 2-4pp（1.0 線 pred 0.7712/real 0.7414）"],
+      "confidence": "high"
+    },
+    {
+      "title": "match_odds 儲存格式陷阱：1x2 賠率喺 choice_name+fractional_value，home/draw/away 欄全 NULL",
+      "severity": "medium",
+      "evidence": ["首版 market 對比 n=0；SELECT COUNT(home_odds)=0（172 行樣本）", "修復：_fractional_to_decimal（'5/4'->2.25）+ market_name='Full time' 過濾 + per-choice 平均，8 個邊界測試"],
+      "confidence": "high"
+    },
+    {
+      "title": "分聯賽變異大：盃賽虛高（Coppa Italia 0.707）、細樣本聯賽差（A-League 0.400、AFC CL Two 0.416/ll 1.197）",
+      "severity": "info",
+      "evidence": ["per_league breakdown 喺報告 json", "足協盃 ll=1.331（n=219）— 細樣本+盃賽隨機性"],
+      "confidence": "high"
+    }
+  ],
+  "actions_taken": [
+    "實現 scripts/backtest_dc.py（split/walkforward/指標/市場對比/報告渲染）",
+    "修 afbdb/history.py 加 match_id（additive）",
+    "寫 tests/test_backtest_dc.py（18 測試）+ 修兩個測試期望錯誤（quarter-line 2-2@0.75 實為雙贏；互補性身份應為 f(hg,ag,L)+f(ag,hg,-L)=1）",
+    "抓到並修 match_odds 分數賠率格式 bug（market n=0 根因）+ NaN 防護（isfinite 兩層）",
+    "真 DB 全量 backtest 兩次 + market merge，報告寫入 reports/",
+    "commit ead6fac push origin/main"
+  ],
+  "verification": [
+    {
+      "check": "pytest 全套",
+      "result": "passed",
+      "evidence": "99 passed / 1 failed（唯一 fail 係既有 test_paper_repro_7d，未碰；62-pass baseline 保持）"
+    },
+    {
+      "check": "時間序切分零洩漏",
+      "result": "passed",
+      "evidence": "test_no_leakage：train 全部 < boundary，val 全部 >= boundary；walkforward 窗位連續無重疊，asof=窗起點（嚴格只用窗前歷史）"
+    },
+    {
+      "check": "真 DB 實跑證據",
+      "result": "passed",
+      "evidence": "holdout n=15,609 hit=0.4957 ll=1.0379；walkforward 14 窗 pooled hit=0.5059 ll=1.0176；market n=3,818 edges Home +0.0251/Draw -0.0013/Away -0.0232（NaN-free 已驗證）"
+    },
+    {
+      "check": "AH 結算語義與 dc_model 一致",
+      "result": "passed",
+      "evidence": "ah_realised_eff 與 dc_model settlement 同語義（integer push/half 無 push/quarter 拆分）；互補性全 scoreline 測試通過"
+    },
+    {
+      "check": "push 禁令狀態",
+      "result": "passed",
+      "evidence": "今次任務明確要求 push — commit ead6fac 已 push origin/main（66fd235..ead6fac）"
+    },
+    {
+      "check": "credential 掃描",
+      "result": "passed",
+      "evidence": "code/artifact/message 無 credential；DB 連接經 dotenv"
+    }
+  ],
+  "risks": [
+    "模型現階段無市場 edge（市場大熱門 56.0% vs 模型 49.2%）— 任何基於模型 probability 嘅投注策略現階段唔應該落實金",
+    "極端概率過度自信（0.94 vs 0.66）— 校準前不應直接用模型概率做 Kelly 注碼",
+    "全量 backtest 約 40 分鐘（12+ fits 純 Python）— 可接受但頻繁重跑會慢，可加參數快取"
+  ],
+  "blockers": [],
+  "recommended_next_actions": [
+    "1. T2（解凍後）：機率校準 isotonic/temperature 做第一組件 — 極端桶 0.94 vs 0.66 係最大可修缺陷",
+    "2. 選注規則改為 edge 對 de-vig market（唔係 raw odds），或直接用 market prior + 模型殘差",
+    "3. per-league home advantage 實驗（低成本）",
+    "4. 盃賽/細樣本聯賽降權或單獨建模",
+    "5. AH ROI 評估需要 AH 賠率數據（appdb match_odds 有 asian_handicap type 15,988 行分數格式，可接入了 market_comparison 同款解析）"
+  ],
+  "handoff_to_main": "T1 backtest 完成：框架（holdout+walkforward 無洩漏）+ 實數報告已出。核心結論：模型 1X2 hit 49.6-50.6%（學術區間內）但無市場 edge（fav 56.0% vs model 49.2%）+ 極端校準過度自信 — T2 首選做校準。Commit ead6fac 已 push。pytest 99/1（baseline 保持）。",
+  "telegram_usage": {
+    "used": false,
+    "bot_name": null,
+    "direction": "inbound",
+    "targets": [],
+    "inbound_summary": "任務經 Main Agent sessions_send 指派（[MAIN_DISPATCH] afb-layer2-T1-backtest，T2 前置）",
+    "outbound_reply_bot": null,
+    "exception_handled_by_main": false,
+    "note": "冇直接 Telegram Kris；結果經 artifact + sessions_send 回 Main Agent"
+  }
+}

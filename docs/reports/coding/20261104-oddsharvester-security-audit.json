@@ -1,0 +1,90 @@
+{
+  "task_id": "afb-ODDSH-AUDIT",
+  "agent": "coding",
+  "status": "completed",
+  "created_at": "2026-11-04T15:00:00+08:00",
+  "verdict": "clean",
+  "request_summary": "OddHarvester 安全審查 + 技術棧解釋（Kris 親口指示，只讀靜態審查零改動）：網絡端點全清單、混淆代碼、subprocess、憑證處理、依賴供應鏈、.git/config token 跟進、本地 vs 上游 diff 審查",
+  "scope_completed": [
+    "網絡端點全清單掃描（src/ scripts/ *.py 全部 URL 去重 30+ 條）",
+    "混淆代碼掃描（base64/exec/eval/__import__/importlib）",
+    "subprocess 使用審查（3 檔案逐個讀上下文）",
+    "憑證處理審查（login_oddsportal.py 逐行、cookies 檔案、credential.helper、AWS/S3）",
+    "依賴供應鏈（pyproject dependencies + uv.lock 36 套件全檢 + hooks grep）",
+    ".git/config 9/18 token flag 跟進（已解決）",
+    "本地 vs 上游 diff 審查（89 files，+94k/-349；自家 5 個檔案逐個掃越權路徑/env/憑證）",
+    "repo 衛生（git ls-files cookies/scraped_data/data 追蹤狀態 + git check-ignore）"
+  ],
+  "verdict_rationale": "無惡意行為、無數據外傳、無憑證收集、無混淆代碼；依賴全部主流套件；發現 4 項低風險衛生問題 + 3 項資訊性記錄，全部有建議",
+  "findings": [
+    {
+      "severity": "low",
+      "title": "proxy 憑證以命令行參數傳遞（process list 可見）",
+      "evidence": ["scripts/orchestrator_v1.py:292 cli_args.extend([\"--proxy-user\", p[1], \"--proxy-pass\", p[2]])"],
+      "note": "proxy 帳密出現喺 /proc/pid/cmdline，同機其他用戶可見；建議改 env/stdin"
+    },
+    {
+      "severity": "low",
+      "title": "cookies 默認儲存路徑寫死喺 repo 外個人目錄",
+      "evidence": ["src/oddsharvester/cli/commands/scrape_full.py:108 default=/home/openclaw/.openclaw/workspace/projects/OddsHarvester/cookies.json"],
+      "note": "cookies 係 session 憑證；路徑硬編碼影響可移植性 + 憑證檔案喺固定可預測位置"
+    },
+    {
+      "severity": "low",
+      "title": "data/proxy_webshare.txt 唔喺 .gitignore（IP:PORT:USER:PASS 憑證檔格式）",
+      "evidence": ["git check-ignore 無覆蓋；檔案現時不存在（無即時洩漏）", "若將來建立可能意外 commit"],
+      "note": "建議 .gitignore 加 pattern"
+    },
+    {
+      "severity": "low",
+      "title": "63 個 data/ 輸出檔已被 git 追蹤（batch logs + 刮下來嘅賠率 JSON）",
+      "evidence": ["git ls-files data/ = 63 檔案（a-league-men__2016-2017.log 等）"],
+      "note": "repo 膨脹 + 數據產物混入版本控制；建議 gitignore data/ 輸出 pattern"
+    },
+    {
+      "severity": "info",
+      "title": "orchestrator 以 os.environ.copy() 將完整環境傳給子進程",
+      "evidence": ["scripts/orchestrator_v1.py:370"],
+      "note": "標準做法；子進程會見到 env 內所有變數（含任何秘密）"
+    },
+    {
+      "severity": "info",
+      "title": "login_oddsportal.py 為独立工具，無任何調用者；憑證經函數參數傳入",
+      "evidence": ["126 行；grep 全 repo 無 caller；cookies 存本地檔案"],
+      "note": "session cookie 檔案屬憑證，保持不入 git"
+    },
+    {
+      "severity": "info",
+      "title": "9/18 audit 嘅 .git/config token flag 已解決",
+      "evidence": ["現 config 只有 HTTPS remote（origin + upstream，無憑證）+ user 名稱；無 credential.helper"],
+      "note": "未來 sync 保持乾淨"
+    }
+  ],
+  "endpoints": [
+    {"domain": "www.oddsportal.com", "purpose": "主目標（賽程/賠率頁面 + 數十聯賽路徑）", "runtime": true},
+    {"domain": "api.proxyscrape.com", "purpose": "免費 proxy 名單來源（fetch_free_proxies.py，文檔化功能）", "runtime": true},
+    {"domain": "centroquote.it", "purpose": "--base-url 參數幫助文字示例（regional mirror 示範），非硬編碼調用", "runtime": false},
+    {"domain": "github.com / img.shields.io / codecov.io / pypi.org / opensource.org", "purpose": "README/docs 連結", "runtime": false},
+    {"domain": "proxy.example.com / http://user", "purpose": "文檔格式示例", "runtime": false}
+  ],
+  "tech_stack": "賠率影印舖比喻：Playwright 反偵測 = 隱身司機開真瀏覽器行街（拆「我是機器人」牌子、自動撳走 cookie 彈窗、揀啱盤口商過濾同時段）；賠率解析器 = 影印員（認出主勝/和/客勝數字逐個抄）；historic 模式 = 時光機（返去舊日子影低賠率變化歷史）；輸出 = 快遞（JSON/CSV 落 data/，可寄 S3 或寫 MySQL）；rate limiter = 行路禮儀員（請求之間停一停避免被當機械人）；proxy = 轉地址出門（每 job 用唔同 IP 分散來源）",
+  "recommendations": [
+    "1. .gitignore 加 data/proxy_webshare.txt（proxy 憑證 pattern）— 一分鐘",
+    "2. scrape_full.py:108 cookies 默認路徑參數化/改 repo 內 gitignored 目錄",
+    "3. proxy 憑證傳遞改 env/stdin（避免 process list 洩露）",
+    "4. data/ 輸出 gitignore 考慮（63 tracked files，repo hygiene）",
+    "5. 生產 historic 回填前對 pip 依賴樹重審一次（uv.lock 今日乾淨）",
+    "6. 維持 .git/config 乾淨（9/18 flag 已解決）"
+  ],
+  "notes": "只讀靜態審查零 repo 改動；pytest 未重跑（9/18 audit 已確認 1106 passed）；審查基準 HEAD dc76466；artifact 無任何 token/secret/chat ID",
+  "telegram_usage": {
+    "used": false,
+    "bot_name": null,
+    "direction": "inbound",
+    "targets": [],
+    "inbound_summary": "任務經 Main Agent sessions_send 指派（[afb-ODDSH-AUDIT]，Kris 2026-11-04 14:16 親口指示）",
+    "outbound_reply_bot": null,
+    "exception_handled_by_main": false,
+    "note": "冇直接 Telegram Kris；結果經 artifact + sessions_send 回 Main Agent"
+  }
+}

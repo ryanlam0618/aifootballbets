@@ -1,0 +1,103 @@
+{
+  "schema_version": "1.0",
+  "task_id": "20261027-002900-seo-ensemble-weighting-theory",
+  "agent": "seo",
+  "status": "completed",
+  "created_at": "2026-10-27T01:05:00+08:00",
+  "request_summary": "Kris 決定行 ensemble 路線（DC-Poisson/pi-rating/xG + 市場概率，walk-forward 樣本幾百至千場），要求盤點 ensemble/forecast combination 權重理論：A 經典組合（Bates-Granger/GR1984/CLS/Stock-Watson puzzle）、B 概率池化、C performance-based、D BMA、E stacking、F online adaptive、G 足球實證+多樣性理論；每項數學定義+出處+優劣+陷阱，最後針對場景俾實戰組合。",
+  "scope_completed": [
+    "A. 經典 4 項：Bates-Granger 1969（inverse variance 公式）、Granger-Ramanathan 1984（OLS 權重/負權陷阱）、CLS（非負+加總1）、⭐Stock-Watson 2004 forecast combination puzzle（等權難敗，估計誤差機理）",
+    "B. 概率池化 3 項：linear pool（+Ranjan-Gneiting 2010 校準陷阱：pool 完必須 re-calibrate）、log pool（zero problem+過度自信，arXiv 2202.11219 極端例）、calibrate-then-combine 實證（HCTALO 2023）",
+    "C. Performance-based 3 項：inverse-MSE、softmax-of-score、rolling re-weighting+shrinkage（對付 puzzle 嘅工程答案）",
+    "D. BMA：後驗加權定義+M-open misspecification 退化問題（收斂單一模型；BMC Dirichlet 修正）— 場景實用性低-中",
+    "E. Stacking：Wolpert 1992/Breiman 1996/Super Learner；out-of-fold 防洩漏要點（時間序列必須 rolling origin）；meta-learner 參數預算上限",
+    "F. Online 2 項：Hedge/MW（regret O(sqrt(T ln n))、T 細時保證鬆）、confidence-based gating（過擬合面翻倍）— 均 P3",
+    "G. 足球實證：專門權重對比 paper 罕有（實證空白聲明）；間接證據鏈 4 條；Krogh-Vedelsby 1995 ambiguity 分解 + Ueda-Nakano 1996 bias-variance-covariance → 市場概率成員相關性最低、理論增益最大",
+    "實戰推薦組合：P0 等權 linear pool+clip+pool 後 re-calibrate+三 benchmark；P1 inverse-MSE shrinkage/CLS/log-odds 對照；P2 stacking（樣本>1000）；P3 BMA/Hedge/gating 不建議；防洩漏檢查清單 4 條"
+  ],
+  "findings": [
+    {
+      "title": "等權起步係理論結果唔係偷懶：forecast combination puzzle（Stock & Watson 2004）",
+      "severity": "info",
+      "evidence": [
+        "J. Forecasting 23, 405-430 原文：最佳組合 = simple mean/trimmed mean，最佳 TVP 權重近乎 1/n",
+        "Smith & Wallis 2009 / Elliott：機理 = 權重估計誤差 > 估準權重收益",
+        "模型多+樣本相對細時最嚴重 — 100% 是 Kris 場景"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "Linear pool 有隱藏陷阱：calibrated 模型池化後必不再 calibrated（Ranjan & Gneiting 2010）",
+      "severity": "medium",
+      "evidence": [
+        "UW TR543 striking result：加權 linear pool 必然 uncalibrated 且缺乏 sharpness",
+        "直接影響 EV 計算：pool 後概率系統性過度彌散 → 必須 re-calibrate",
+        "log pool 有 zero problem（一個成員出 p≈0 即全局歸零）+ 過度自信（arXiv 2202.11219 例子）"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "市場概率做第四員係理論上最值錢一步（多樣性分解推論）",
+      "severity": "info",
+      "evidence": [
+        "Krogh-Vedelsby 1995：ensemble 誤差 = 成員平均誤差 − 分歧度",
+        "Ueda-Nakano 1996：成員誤差 covariance 越大增益越小",
+        "三個統計模型同食歷史數據 → 相關高；市場成員相關最低 → 增益最大（IEEE 2026：bookmaker probs dominate）"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "足球場景專門權重對比研究係實證空白 — 需自行 walk-forward 驗證",
+      "severity": "low",
+      "evidence": [
+        "搜尋期內無 peer-reviewed 直接對比（本身係發現）",
+        "間接鏈：系統綜述（GBT 最優）+ Dolores hybrid + 2023 Challenge（多信號+校準取勝，非花巧權重）",
+        "業界慣例：權重複雜度永遠排最後"
+      ],
+      "confidence": "medium"
+    }
+  ],
+  "actions_taken": [
+    "2 輪 web 研究（10 條查詢+1 Wikipedia 權威條目抓取）覆蓋 A-G 全部理論；搜尋供應商中途故障，改用 arXiv review/Stock-Watson 原文 PDF/Ensemble learning 條目補位",
+    "撰寫純文字+emoji report：TL;DR 5 句 → A-G 16 項理論（數學定義+出處+優劣+陷阱）→ 實戰推薦組合（P0-P3+防洩漏清單）→ 18 組來源",
+    "未經 web 額外驗證嘅細節（Wolpert/Hedge 頁碼）如實標註"
+  ],
+  "verification": [
+    {
+      "check": "格式：純文字+emoji、無表格、每理論含數學定義+出處+優劣+陷阱、實戰組合針對 Kris 場景",
+      "result": "passed",
+      "evidence": "subagent_results/20261027-002900-seo-ensemble-weighting-theory.md 全文檢查"
+    },
+    {
+      "check": "無 credential/token/chat id",
+      "result": "passed",
+      "evidence": "僅公開論文引用"
+    },
+    {
+      "check": "無直接 Telegram 聯絡 Kris",
+      "result": "passed",
+      "evidence": "全程無 message tool 發送；僅 artifact + sessions_send"
+    }
+  ],
+  "risks": [
+    "搜尋供應商中途故障（連續 12 條空結果），Wolpert 1992/Hedge 算法部分未取得額外網上錨點 — 已基於權威條目（Wikipedia Ensemble learning）+ 經典文獻元數據，並在 report 標註",
+    "football 專門權重對比實證空白，報告內建議均屬證據加權推論，需 repo walk-forward 實測確認",
+    "Stock-Watson 等 GDP/宏觀場景結論外推到體育概率場景屬合理但非同構 — 已在報告以三 benchmark 設計對沖此風險"
+  ],
+  "blockers": [],
+  "recommended_next_actions": [
+    "Main Agent 審閱後以適當 bot 總結回覆 Kris（重點：P0 起步組合 + 等權 benchmark 硬性規則）",
+    "如 Kris 確認 ensemble 動工：可派 Forge 實現 P0（等權 linear pool + clip + isotonic + 三 benchmark），理論已齊"
+  ],
+  "handoff_to_main": "Ensemble 權重理論盤點完成，寫入 subagent_results/20261027-002900-seo-ensemble-weighting-theory.md (+ .json)。核心：①等權起步係理論結果（Stock-Watson 2004 puzzle，估計誤差機理）②linear pool 後必須 re-calibrate（Ranjan-Gneiting 校準陷阱）③市場概率做第四員理論增益最大（多樣性分解）④升級路線 等權→inverse-MSE shrinkage→CLS→stacking，每級跑贏等權先有資格；BMA/Hedge/gating 均不建議（場景樣本不足）。含 P0-P3 實戰組合+防洩漏清單。",
+  "telegram_usage": {
+    "used": false,
+    "bot_name": null,
+    "direction": "inbound",
+    "targets": [],
+    "inbound_summary": "任務經 sessions_send 由 Main Agent 委派（Kris Telegram 指示），非直接 inbound",
+    "outbound_reply_bot": null,
+    "exception_handled_by_main": false,
+    "note": "按指示未直接聯絡 Kris；全部產出經 artifact + sessions_send 交 Main Agent"
+  }
+}

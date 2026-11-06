@@ -1,0 +1,70 @@
+{
+  "task_id": "afb-ODDSH-SLUGFIX",
+  "agent": "coding",
+  "status": "completed",
+  "created_at": "2026-11-05T23:15:00+08:00",
+  "verdict": "pass_with_caveats",
+  "request_summary": "11 個 UNSUPPORTED 聯賽 slug 修復 + 重試驗證（Kris 指示）：probe OddsPortal 地區/盃賽索引頁搵正確 slug、驗證季數據、抽樣 odds 驗證、產出完整 24+ slug map",
+  "method": "Patchright persistent context 瀏覽 11 個地區索引頁（europe/england/asia/australia/china/japan/south-korea/spain/italy/germany/france）→ 抽取全部 a[href*='/football/'] 連結 → 72 個唯一 slug → 配對 11 個目標 → links-only probe + 樣本 odds 驗證",
+  "results": {
+    "upgraded_to_pass": {
+      "UCL": {"slug": "champions-league", "season": "2022-2023", "links": 161, "sample": "10/10 valid, 8 bookies, odds 1.53-5.85", "note": "證實無 uefa 前綴"},
+      "UEL": {"slug": "europa-league", "season": "2023-2024", "links": 179, "sample": "8/8 valid, 8 bookies, odds 1.55-5.71"},
+      "AFC Champions League": {"slug": "afc-champions-league", "season": "2023-2024", "links": 164, "sample": "10/10 valid, 6 bookies, odds 1.22-9.5", "note": "舊名最後一季"},
+      "UECL": {"slug": "conference-league", "season": "2023-2024", "links": 310, "sample": "10/10 valid, 4 bookies, odds 1.41-8.72"}
+    },
+    "slug_exists_but_no_data": {
+      "EFL Cup": {"slug": "efl-cup", "index_entries": 4, "note": "2023-2024 links-only 0 matches — season 格式需調查"},
+      "Chinese Super League": {"slug": "super-league", "index_entries": 8, "note": "2024 calendar-year 0 matches — season 格式需核對"}
+    },
+    "renamed_confirmed": {
+      "AFC Champions League Two": {"slug": "afc-champions-league-2", "index_entries": 6, "note": "2024 改名；2024-25 links-only 0 matches（首季 historic odds 未入）"}
+    },
+    "genuinely_unsupported": {
+      "leagues": ["Emperor's Cup", "J.League Cup", "Australia Cup", "Chinese FA Cup"],
+      "evidence": "地區索引頁 + 直接 slug probe（多季格式）全部 0 links",
+      "note": "如實記錄：呢 4 個盃賽喺 OddsPortal 冇歷史賠率覆蓋"
+    }
+  },
+  "slug_map_24plus": {
+    "PASS_15": {
+      "Premier League": "england-premier-league",
+      "La Liga": "spain-laliga",
+      "Serie A": "italy-serie-a",
+      "Bundesliga": "germany-bundesliga",
+      "Ligue 1": "france-ligue-1",
+      "J1 League": "japan-j1-league",
+      "K League 1": "south-korea-k-league-1",
+      "A-League Men": "australia-a-league",
+      "FA Cup": "england-fa-cup",
+      "Copa del Rey": "spain-copa-del-rey",
+      "Coppa Italia": "italy-coppa-italia",
+      "DFB Pokal": "germany-dfb-pokal",
+      "UCL": "champions-league",
+      "UEL": "europa-league",
+      "AFC Champions League": "afc-champions-league"
+    },
+    "PARTIAL_1": {"EFL Cup": "efl-cup（slug 對，season 格式需調查）"},
+    "NEED_INVESTIGATION_1": {"Chinese Super League": "super-league（slug 對，season 格式需調查）"},
+    "FIRST_SEASON_1": {"AFC Champions League Two": "afc-champions-league-2"},
+    "UNSUPPORTED_4": ["Emperor's Cup", "J.League Cup", "Australia Cup", "Chinese FA Cup"]
+  },
+  "verification": [
+    {"check": "索引探測", "result": "passed", "evidence": "11 地區頁 / 72 slug / Patchright persistent context"},
+    {"check": "7 slug 驗證（links + 樣本 odds）", "result": "passed", "evidence": "UCL 10/10、UEL 8/8、AFC CL 10/10、UECL 10/10 全有效；odds 全部 1.41-9.5 合理範圍"},
+    {"check": "5 盃賽 slug probe", "result": "passed", "evidence": "全部 0 links — 如實記錄不支援"},
+    {"check": "artifact 無 secret", "result": "passed", "evidence": "md/json 無 token/secret/chat ID"}
+  ],
+  "risks": [
+    "4 個盃賽真不支援係基於索引頁 + 直接 probe 嘅結果 — OddsPortal 可能喺其他 section（例如專門 cups 頁）有但未探測到",
+    "EFL Cup / CSL 嘅 season 格式問題未解 — 需要核對 OddsPortal 嘅 season 命名慣例"
+  ],
+  "blockers": [],
+  "recommended_next_actions": [
+    "1. [afb-CLV-backfill 第二批] 用更新後嘅 15 PASS slug map 回填（UCL/UEL/AFC CL/UECL 新加入）",
+    "2. EFL Cup / CSL season 格式調查（OddsPortal season 命名慣例核對）",
+    "3. 4 個不支援盃賽：如 Kris 需要，可考慮其他數據源（football-data.co.uk 等）— 需拍板"
+  ],
+  "commits": [],
+  "notes": "本任務冇代碼改動（純探測+驗證）；probe 腳本 + 結果喺 oddsharvester repo data/smoke_test/ + data/coverage_verify/；artifact 無 token/secret/chat ID"
+}

@@ -1,0 +1,100 @@
+{
+  "schema_version": "1.0",
+  "task_id": "20261106-afb-clv-backfill-batch1-final",
+  "agent": "coding",
+  "status": "completed",
+  "created_at": "2026-11-06T06:50:00+08:00",
+  "request_summary": "TEAMFIX Phase 2 (Duncan queue): CLV-BACKFILL Batch 1 - 11 leagues x 2 seasons (2024-25 + 2023-24), 1x2 FullTime, all bookmakers, scrape + map + INSERT IGNORE into afb_odds_snapshots.",
+  "scope_completed": [
+    "All 22 league-season jobs DONE (11 leagues x 2024-25 + 2023-24)",
+    "Total: 3,944 records scraped -> 2,245 mapped (57%) -> 40,201 snapshot rows inserted into afb_odds_snapshots (run_id='clv_backfill_batch1'), DB verified 2,242 distinct matches",
+    "Per-league highlights: K League 99% mapping (calendar-year seasons 2025/2024), Serie A 252+171, PL 187+102; J1 via calendar-year seasons 2024/2023 after patch",
+    "7 pipeline bugs found and fixed en route (argparse append, scrape timeout 1500->7200s, MIN_RECORDS partial guard, per-worker state files, OH_CHECKPOINT_SAVE=0 checkpoint-overwrite root cause, rc!=0 guard acceptance, calendar-year season mapping)",
+    "scripts/clv_backfill.py committed (was never tracked - the earlier 'missing script' issue)"
+  ],
+  "findings": [
+    {
+      "title": "Checkpoint wiring was the core data-loss bug",
+      "severity": "high",
+      "evidence": [
+        "historic.py wires checkpoint_file_path = -o output path; save_checkpoint overwrites the file with a single record after every match and the final aggregate write is skipped"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "CLI returns rc=1 on partial listing discovery with valid data",
+      "severity": "medium",
+      "evidence": [
+        "PL 2024-25: rc=1 with 230 valid records; guard updated to accept n>=MIN_RECORDS regardless of rc"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "Mapping no-match rate 43% overall (1,699/3,944)",
+      "severity": "medium",
+      "evidence": [
+        "La Liga 70%, Copa del Rey 69% no-match: OddsPortal short names vs DB full names - token-subset matcher cannot bridge disjoint names (e.g. 'Bilbao' vs 'Athletic Club')",
+        "Unmatched records skipped, never guessed (per spec)"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "Listing-page partial failures cap coverage at ~40-80% per league-season",
+      "severity": "low",
+      "evidence": [
+        "1-4 listing pages failed per season scrape (rc=1 warnings); those matches were never discovered"
+      ],
+      "confidence": "high"
+    }
+  ],
+  "actions_taken": [
+    "Ran 22 scrape+map+insert jobs across 3 worker generations (two earlier generations killed after diagnosing output-corruption bugs)",
+    "Patched scripts/clv_backfill.py (6 fixes) and src/oddsharvester (sport_league_constants whitelist, coverage_verify candidates)",
+    "Verified DB writes: 40,201 rows / 2,242 distinct matches, zero pollution from partial scrapes at any point"
+  ],
+  "verification": [
+    {
+      "check": "All 22 jobs stage=done",
+      "result": "passed",
+      "evidence": "state.json + state-w2.json: 22/22 done (0 failed after retries)"
+    },
+    {
+      "check": "DB totals match pipeline stats",
+      "result": "passed",
+      "evidence": "SELECT COUNT(*), COUNT(DISTINCT match_id) -> 40201 / 2242 == pipeline inserted total"
+    },
+    {
+      "check": "Calendar-year seasons correct",
+      "result": "passed",
+      "evidence": "J1 2024/2023 + K League 2025/2024 scrapes succeeded with 119-228 mapped per season"
+    },
+    {
+      "check": "Mapping rate acceptable",
+      "result": "partial",
+      "evidence": "57% overall; K League 99%, Serie A/PL healthy; La Liga 22-30% - alias improvement recommended as follow-up"
+    }
+  ],
+  "risks": [
+    "43% of scraped records unmatched to DB matches - odds for those matches exist in scrape artifacts but are not in DB; alias-table mapping improvement would recover much of it",
+    "Listing-page failures leave small per-season discovery gaps (~1-4 pages)"
+  ],
+  "blockers": [],
+  "recommended_next_actions": [
+    "Follow-up task: team-name alias table for OddsPortal short names (would lift mapping rate well above 57%)",
+    "Optional: extend backfill to newly-supported competitions from SLUGFIX (UCL/UEL/UECL/EFL Cup/CSL/AFC comps)",
+    "CLV analysis can now consume afb_odds_snapshots closing odds for the 11 core leagues"
+  ],
+  "handoff_to_main": "TEAMFIX Phase 2 COMPLETE: all 22 league-season jobs done, 3,944 records scraped, 40,201 odds rows inserted (DB verified). 7 pipeline bugs fixed en route (root cause: CLI checkpoint wiring overwrote output with 1 record). scripts/clv_backfill.py committed. Known limitation: 43% mapping no-match rate from name variants - alias table recommended as follow-up.",
+  "telegram_usage": {
+    "used": false,
+    "bot_name": null,
+    "direction": "none",
+    "targets": [
+      null
+    ],
+    "inbound_summary": null,
+    "outbound_reply_bot": null,
+    "exception_handled_by_main": false,
+    "note": "No Telegram interaction."
+  }
+}

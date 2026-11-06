@@ -1,0 +1,111 @@
+{
+  "schema_version": "1.0",
+  "task_id": "afb-layer2-T2-calibration",
+  "agent": "coding",
+  "status": "completed",
+  "created_at": "2026-10-30T08:30:00+08:00",
+  "request_summary": "Layer-2 T2：Kris 拍板四項全做 —— ①校準（isotonic+temperature，as-of 零洩漏）②選注 edge 對 de-vig market（flat-stake ROI before/after）③per-league home advantage ④細樣本盃賽降權；出 before/after 對比報告 + 誠實結論（Main Agent 指派）",
+  "scope_completed": [
+    "models/calibration.py：PAVA isotonic（per-class + trio renormalise）、temperature scaling（3-class logit/T NLL fit）、grouped temperature（cup/league/continental）— 純 stdlib",
+    "models/dc_model.py（additive 向後兼容）：MatchRecord.league、per-league home advantage（shrink toward pooled，ha_shrink_matches）、league_weights 乘數",
+    "scripts/backtest_t2.py：①②③④ before/after orchestrator（calib 窗 7,804 場 -> 2024-12-07，test 窗 7,805 場；零洩漏）",
+    "scripts/backtest_dc.py：to_match_records 帶 league、分數賠率解析器、isfinite 防護",
+    "tests/test_t2_calibration.py：12 個 hermetic 測試全綠",
+    "真 DB 全流程跑（4 個 holdout fits，約 15 分鐘）",
+    "報告：reports/backtest_dc_t2_report.md + .json（①②③④ 各自貢獻齊）",
+    "pytest 111 passed / 1 failed（99 baseline 保持）",
+    "commit 23c6256 已 push origin/main"
+  ],
+  "findings": [
+    {
+      "title": "temperature calibration 係唯一有實際改善嘅組件：test ll 1.0448 -> 1.0381",
+      "severity": "info",
+      "evidence": ["isotonic 1.0662（過擬合更差，唔建議用）", "grouped temperature 1.0394（無額外益處）", "fit 出嚟 T > 1 確認模型過度自信，同 T1 校準桶發現一致"],
+      "confidence": "high"
+    },
+    {
+      "title": "所有選注變體 ROI 皆負 — 校準後都冇市場 edge（誠實結論）",
+      "severity": "high",
+      "evidence": ["th=0.03: raw 3,365 注 ROI -4.10% / temp 3,330 注 -4.01%", "th=0.05: raw 2,972 注 -3.37% / temp 2,856 注 -3.85%", "th=0.10: raw 2,058 注 -0.34% / temp 1,888 注 -4.64%"],
+      "confidence": "high"
+    },
+    {
+      "title": "per-league HA 邊際改善；真發現係盃賽 HA 系統性高過聯賽",
+      "severity": "info",
+      "evidence": ["24 聯賽各自 HA（shrink 200）；整體 ll 1.0379 -> 1.0369", "焦點聯賽微變：A-League ll 1.0934->1.0908、J1 1.0913->1.0891、AFC CL Two 1.1966->1.1950、CSL 微惡化 1.0277->1.0307", "top HA 全係盃賽：Emperor's Cup +0.518、EFL Cup +0.409、Coppa Italia +0.388（聯賽約 +0.25）"],
+      "confidence": "high"
+    },
+    {
+      "title": "盃賽降權/剔除冇益：整體 val log-loss 反而變差",
+      "severity": "info",
+      "evidence": ["baseline 1.0379；cups_excluded 1.0417（+0.0038）；cups_weight_0_5 1.0418（+0.0039）"],
+      "confidence": "high"
+    },
+    {
+      "title": "修兩個過程 bug：to_match_records 冇帶 league（令 ③④ 首跑無效退化）+ grouped temperature API 傳參格式",
+      "severity": "medium",
+      "evidence": ["首跑 ③ per-league HA fitted(1 leagues) 退化為單一空 league、④ 與 baseline 完全相同", "修正 to_match_records 帶 m.get('league') 後重跑：24 聯賽正常"],
+      "confidence": "high"
+    }
+  ],
+  "actions_taken": [
+    "實現 models/calibration.py（isotonic PAVA / temperature / grouped，純 stdlib）",
+    "dc_model.py additive：MatchRecord.league + per-league HA shrinkage + league_weights",
+    "實現 scripts/backtest_t2.py（①②③④ before/after orchestrator）",
+    "修 to_match_records league 缺失 + grouped API 用法 + fp 精度 bucket 防護",
+    "tests/test_t2_calibration.py 12 測試",
+    "真 DB 全流程跑 + 報告寫入 reports/backtest_dc_t2_report.md/.json",
+    "commit 23c6256 push origin/main"
+  ],
+  "verification": [
+    {
+      "check": "pytest 全套",
+      "result": "passed",
+      "evidence": "111 passed / 1 failed（唯一 fail 係既有 test_paper_repro_7d 未碰；99-pass baseline 保持，新增 12 T2 測試全綠）"
+    },
+    {
+      "check": "校準 as-of 零洩漏",
+      "result": "passed",
+      "evidence": "calibrator 只用 calib 窗（2023-05-17 -> 2024-12-07，7,804 場）擬合，test 窗（2024-12-07 -> 2026-10-04，7,805 場）評估；有單元測試鎖 PAVA 單調性 + temperature NLL 改善方向"
+    },
+    {
+      "check": "before/after 數據完整性",
+      "result": "passed",
+      "evidence": "①ll before 1.0448 / temp 1.0381；②三閾值 ROI 全負（誠實記錄）；③24 聯賽 per-league before/after；④兩變體 delta —— 全部喺 reports/backtest_dc_t2_report.json"
+    },
+    {
+      "check": "per-league HA 正確性",
+      "result": "passed",
+      "evidence": "合成兩聯賽測試：強主場聯賽 HA 收斂高、無主場優勢聯賽低、global 落中間；league_weights 降權方向測試通過；gauge fix 保持"
+    },
+    {
+      "check": "credential 掃描",
+      "result": "passed",
+      "evidence": "code/artifact/message 無 credential"
+    }
+  ],
+  "risks": [
+    "模型 + 校準後仍無市場 edge（ROI 全負）— 任何實金投注策略現階段都唔應該執行",
+    "isotonic 喺呢個數據分佈過擬合 — 如果將來重試必須配 regularisation 或更大 calib 窗",
+    "per-league HA 對弱聯賽改善極微 — A-League/AFC CL Two 嘅低命中率另有根因（數據質素或本質不可預測），未解"
+  ],
+  "blockers": [],
+  "recommended_next_actions": [
+    "1. T3 候選：盃賽專門建模（per-league HA 已證明盃賽 HA 顯著更高，可加盃賽輪次特徵或分開 fit）",
+    "2. 採用 temperature 校準入 run_day 生產路徑（單參數 as-of 重 fit 成本極低）",
+    "3. 市場 edge 路線重估：model-market 分歧場篩選（agree rate 0.40）或 market prior + model residual blend",
+    "4. 啟動 CLV 追蹤：afb_odds_snapshots 開始累積 closing odds 時間序列",
+    "5. 弱聯賽（A-League 0.40、AFC CL Two 0.41）單獨診斷"
+  ],
+  "handoff_to_main": "T2 完成：①temperature 校準有細改善（ll 1.0448->1.0381）、isotonic 過擬合唔採用；②全部投注變體 ROI 負 — 無市場 edge（誠實結論）；③per-league HA 邊際（但發現盃賽 HA 系統性更高，T3 訊號）；④降權無益。pytest 111/1（baseline 保持）。Commit 23c6256 已 push。",
+  "telegram_usage": {
+    "used": false,
+    "bot_name": null,
+    "direction": "inbound",
+    "targets": [],
+    "inbound_summary": "任務經 Main Agent sessions_send 指派（[MAIN_DISPATCH] afb-layer2-T2，Kris 拍板四項全做）",
+    "outbound_reply_bot": null,
+    "exception_handled_by_main": false,
+    "note": "冇直接 Telegram Kris；結果經 artifact + sessions_send 回 Main Agent"
+  }
+}

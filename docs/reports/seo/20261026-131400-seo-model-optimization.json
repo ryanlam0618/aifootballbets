@@ -1,0 +1,104 @@
+{
+  "schema_version": "1.0",
+  "task_id": "20261026-131400-seo-model-optimization",
+  "agent": "seo",
+  "status": "completed",
+  "created_at": "2026-10-26T13:45:00+08:00",
+  "request_summary": "Kris follow-up 問「模型有咩可以優化」，針對 aifootballbets repo（Forge 審查基準：獨立雙 Poisson、無 DC tau、無 calibration、xG 未用、xgboost 零用），7 大優化方向做聚焦 research，要網上證據、預期效果、難度、優先級、路線圖。",
+  "scope_completed": [
+    "1. Dixon-Coles tau 低分修正（rho MLE、penaltyblog、O/U AH 改善證據）",
+    "2. Bivariate Poisson (Karlis-Ntzoufras) vs 獨立 Poisson（draw 改善、penaltyblog 現成）",
+    "3. Feature engineering：指數時間衰減、pi-ratings/Elo、rolling xG features（xG_for/against/diff）",
+    "4. ML 層：XGBoost/LightGBM + rating+xG features benchmark、ensemble/stacking 證據（Dolores、GBM SOTA）",
+    "5. 機率校準：Platt/isotonic + time-decay weights + cap 0.80、CLV/EV 關係（r/algobetting、Gevorgyan 2026）",
+    "6. Deep Learning SOTA 2020-26：LSTM/Transformer/LLM 無顯著優勢、GBM 仍最優（Springer 2024、Systematic Review 2024、LLM-SoccerArena 2026）",
+    "7. Odds blending / market prior：de-vigged closing odds 加權融合、作特徵（IEEE 2026、MDPI 2026、KellyBench）",
+    "輸出：純文字+emoji 優化清單（9 項含深度學習觀望）、優先級排序、6 階段路線圖、主要來源 25 條"
+  ],
+  "findings": [
+    {
+      "title": "Dixon-Coles tau 係模型基石，penaltyblog 現成、風險極低、即時見效",
+      "severity": "info",
+      "evidence": [
+        "predictionengine.app (2026)：MLE L-BFGS-B + 1,216 場 walk-forward backtest",
+        "penaltyblog PyPI：pip install 即用 DixonColes、KarlisNtzoufras、TimeDecay",
+        "DC tau 只動 0-0/1-0/0-1/1-1 四格，直接改善 O/U 2.5 同 AH 定價"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "指數時間衰減 + pi-ratings + rolling xG 係零成本高 ROI 特徵工程",
+      "severity": "info",
+      "evidence": [
+        "DC 原文 ξ=0.0065 (half-life 107 日)；arXiv 2608.11505 證實近期數據信息量大",
+        "Constantinou & Fenton (2012) pi-rating：只用比分差動態更新，收斂快、穩健",
+        "Sage 2026-02、MDPI 2026、smartmatchpick 2026：xG features 持續提升 RPS/Brier"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "機率校準 + Odds blending 直接針對 CLV/EV，文獻一致推薦",
+      "severity": "info",
+      "evidence": [
+        "r/algobetting 2026-05：per-(sport,verdict) Platt + decay weights + cap 0.80 實戰有效",
+        "IEEE Access 2026-07：bookmaker probs dominate predictive signal，market-informed features 顯著提升",
+        "KellyBench 2026-04：model vs market log loss 專門 benchmark"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "Deep Learning (LSTM/Transformer/LLM) 現階段無優勢，GBM 仍是 SOTA",
+      "severity": "info",
+      "evidence": [
+        "Springer ML 2024 (s10994-024-06608-w)：bookmaker odds RPS 0.2020 略優於 DL",
+        "Systematic Review 2024-10 (arXiv 2410.21484)：gradient boosted trees 最低 RPS",
+        "LLM-SoccerArena 2026-07 / AI World Cup 2026-08：GPT-4 competitive 但未超越 GBM"
+      ],
+      "confidence": "high"
+    }
+  ],
+  "actions_taken": [
+    "讀 Forge 審查報告確認 repo 模型現狀（獨立雙 Poisson、無 DC tau、無 calibration、xG 未用、xgboost 零用）",
+    "4 輪 web 研究（16 條查詢）覆蓋 DC tau、bivariate Poisson、feature engineering、ML benchmark、calibration、deep learning、odds blending、pi-ratings",
+    "撰寫純文字+emoji 優化清單（9 項）、優先級排序（P0×1, P1×6, P2×2, P3×1）、6 階段路線圖、25 條來源"
+  ],
+  "verification": [
+    {
+      "check": "報告格式符合要求（純文字+emoji、無 markdown 表格、每項含：優化→證據→預期效果→難度→優先級、優先級排序、路線圖置尾）",
+      "result": "passed",
+      "evidence": "subagent_results/20261026-131400-seo-model-optimization.md 全文檢查通過"
+    },
+    {
+      "check": "無 credential/token/chat id 寫入 artifact",
+      "result": "passed",
+      "evidence": "僅含公開論文/技術博客/開源庫 URL"
+    },
+    {
+      "check": "無直接 Telegram 聯絡 Kris",
+      "result": "passed",
+      "evidence": "本任務全程無 message tool 發送；僅 artifact + sessions_send 回 Main Agent"
+    }
+  ],
+  "risks": [
+    "repo 現有雙 pipeline (v2/paper) 需先合併再做模型實驗，否則 drift 風險",
+    "KELLY_FRACTION=0.75/.env.example 與 config.py=0.5 不一致，必須先統一收緊風控數值",
+    "CI 紅燈 (3 個不存在 test) 需先修復，否則無綠燈基線做回歸測試",
+    "SofaScore scraping 屬灰色地帶，長期需保持 The Odds API fallback 可用性"
+  ],
+  "blockers": [],
+  "recommended_next_actions": [
+    "Main Agent 轉述給 Kris：建議先做 Phase 0 工程收尾（半日），再按 Phase 1-3 逐步落地統計核心+特徵+校準+blending",
+    "如 Kris 決定執行：可派 Forge (coding agent) 做 Phase 0-2 實際代碼實現，Scout 負責後續驗證設計"
+  ],
+  "handoff_to_main": "Model optimization report 完成，寫入 subagent_results/20261026-131400-seo-model-optimization.md (+ .json)。核心：9 項優化按 P0-P3 排序，Phase 0 工程收尾先行，Phase 1-3（DC tau、時間衰減、pi-rating、xG、校準、odds blending）預期 1 週內可落地並見 CLV 改善。請 Main Agent 審閱後以適當 bot 回覆 Kris。",
+  "telegram_usage": {
+    "used": false,
+    "bot_name": null,
+    "direction": "inbound",
+    "targets": [],
+    "inbound_summary": "任務經 sessions_send 由 Main Agent 委派（Kris Telegram follow-up），非直接 inbound",
+    "outbound_reply_bot": null,
+    "exception_handled_by_main": false,
+    "note": "按指示未直接聯絡 Kris；全部產出經 artifact + sessions_send 交 Main Agent"
+  }
+}

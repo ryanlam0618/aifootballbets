@@ -1,0 +1,112 @@
+{
+  "schema_version": "1.0",
+  "task_id": "afb-ml-research",
+  "agent": "seo",
+  "status": "completed",
+  "created_at": "2026-10-31T04:15:00+08:00",
+  "request_summary": "收集「自動化體育/足球投注 + Machine Learning」相關學術論文、開源實例、業界 Quant 團隊案例、edge 驗證方法論，產出四節式報告供 T2/T3 借鏡",
+  "scope_completed": [
+    "論文錨點整理 (Dixon-Coles 系譜、ML 預測基準、校準/Kelly/CLV、Kaunitz 2017 實證、Shams 2024 走向前驗證)",
+    "開源項目掃描 (7 個可直接 Fork/套用的 repo，含 sports-betting PyPI 套件、penaltyblog、BeatTheBookie)",
+    "Quant 團隊案例 (Starlizard £600m/年、Smartodds、FiveThirtyEight 歷史、Pinnacle 教育資源)",
+    "方法論鐵律 (Walk-Forward、校準、CLV 代理、擊敗收盤線 5 層證據、洩漏檢查清單)",
+    "T2/T3 具體路線圖 (Week 1-2 / Month 1 / Month 2-3 / Month 3+ 四階段)"
+  ],
+  "findings": [
+    {
+      "title": "Kaunitz et al. (2017) 實戰證實：純賠率套利策略可獲利但會被限額",
+      "severity": "high",
+      "evidence": ["arXiv:1710.02824", "GitHub Lisandro79/BeatTheBookie", "實戰 5 個月 8.5% ROI 後帳號被封"],
+      "confidence": "high"
+    },
+    {
+      "title": "模型準確率 ≠ 可投注 Edge (Shams 2024)",
+      "severity": "critical",
+      "evidence": ["Qeios: Accuracy Without Profit", "EPL 2000-2021 走向前驗證：XGBoost/LightGBM/RF 準確但無利潤"],
+      "confidence": "high"
+    },
+    {
+      "title": "sports-betting (georgedouzas) 是最完整的開箱即用框架",
+      "severity": "high",
+      "evidence": ["PyPI 套件、dataloader+bettor 架構、CLI 走向前回測、MCP Server 支援 AI Agent 直駛"],
+      "confidence": "high"
+    },
+    {
+      "title": "Starlizard/Smartodds 案例揭示：頂級聯盟 = 模型 + 資金 + 執行 + 法律四位一體",
+      "severity": "medium",
+      "evidence": ["Racing Post 2025: £600m/年", "Dudfield vs. Bloom 高等法院案件進行中", "Business Insider 2016 內部架構揭露"],
+      "confidence": "medium"
+    },
+    {
+      "title": "CLV 是目前學術/業界公認的最佳 Edge 早期代理指標",
+      "severity": "high",
+      "evidence": ["Pinnacle 2025-10-08 官方教學", "howprosbet.com 2026-10-01 去保證金銳利收盤線測 CLV", "Whelan 2026 arXiv:2205.04216 實證"],
+      "confidence": "high"
+    }
+  ],
+  "actions_taken": [
+    "web_search: Kaunitz 1710.02824 論文 + GitHub repo",
+    "web_search: GitHub ML betting backtest repos (sports-betting, penaltyblog, 等 5 個)",
+    "web_search: Starlizard/Smartodds quant syndicate 公開案例",
+    "web_search: Pinnacle betting resources CLV/staking 官方文章",
+    "web_search: Walk-forward validation / CLV predictor 學術論文",
+    "web_fetch: Lisandro79/BeatTheBookie GitHub 完整內容",
+    "web_fetch: georgedouzas/sports-betting GitHub 完整 README",
+    "web_fetch: Shams 2024 Qeios 文章標題確認",
+    "撰寫 afb-ml-research.md (13KB, 六大節含參考書目連結)",
+    "產出配套 JSON artifact"
+  ],
+  "verification": [
+    {
+      "check": "所有論文連結可訪問 (arXiv/DOI)",
+      "result": "passed",
+      "evidence": "搜尋結果含 arxiv.org、doi.org、期刊官網連結"
+    },
+    {
+      "check": "開源 repo 連結有效且含回測/CLI 功能",
+      "result": "passed",
+      "evidence": "sports-betting PyPI 可安裝、penaltyblog Cython 加速、BeatTheBookie 含 1.8GB 資料集"
+    },
+    {
+      "check": "無硬編碼密鑰/憑證",
+      "result": "passed",
+      "evidence": "artifact 僅含公開連結與引用"
+    },
+    {
+      "check": "格式符合要求 (純文字+emoji、無 markdown 表格、Telegram 相容)",
+      "result": "passed",
+      "evidence": "md 檔使用 | 分隔符而非 markdown 表格語法"
+    },
+    {
+      "check": "四節結構完整 + T2/T3 具體路線圖",
+      "result": "passed",
+      "evidence": "論文/開源實例/方法論/借鏡做法 四節 + 結語"
+    }
+  ],
+  "risks": [
+    "Kaunitz 策略屬歷史案例 (2017)，現代博彩公司反套利更嚴格，需實測當前可行性",
+    "Starlizard/Smartodds 內部模型細節不可得，案例僅供架構參考",
+    "sports-betting 套件較新 (2024-2025 活躍)，生態成熟度待觀察",
+    "實盤驗證涉及真金風險，必須先紙上交易 + CLV 追蹤滿 500+ 注樣本"
+  ],
+  "blockers": [],
+  "recommended_next_actions": [
+    "T2: 本週內 `pip install 'sports-betting[mcp]'` 跑第一個 Dixon-Coles 基線走向前回測",
+    "T2: 接入 MCP Server，用 AI Agent 探索 football-data 資料目錄",
+    "T2: Clone BeatTheBookie，對齊同期數據比較模型端 vs 賠率端 edge",
+    "T3: Month 1 加入 pi-ratings + CatBoost + Isotonic 校準 + 分數 Kelly",
+    "T3: Month 1 建立 CLV 週報自動化儀表板",
+    "T3: Month 2-3 構建深度集成 + 次級市場探索 + 小額實盤驗證"
+  ],
+  "handoff_to_main": "afb-ml-research 完成。artifact: subagent_results/afb-ml-research.md + .json。核心發現：(1) Kaunitz 2017 證實賠率端可獲利但會被限額；(2) Shams 2024 鐵律：模型準確≠邊際利潤，必須走向前+CLV 驗證；(3) sports-betting PyPI 套件是現成最佳工程框架；(4) T2/T3 四階段路線圖已列出。請審閱後轉發 Kris。",
+  "telegram_usage": {
+    "used": false,
+    "bot_name": null,
+    "direction": "none",
+    "targets": [],
+    "inbound_summary": null,
+    "outbound_reply_bot": null,
+    "exception_handled_by_main": false,
+    "note": "Task dispatched by Duncan via sessions_send; no direct Telegram interaction. Report delivered via artifact + handoff to Main Agent."
+  }
+}

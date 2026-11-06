@@ -1,0 +1,95 @@
+{
+  "schema_version": "1.0",
+  "task_id": "20260909-035300-coding-oddsharvester-upstream-sync",
+  "agent": "coding",
+  "status": "completed",
+  "created_at": "2026-09-09T07:30:00+08:00",
+  "request_summary": "Sync fork ryanlam0618/oddsharvester with upstream jordantete/OddsHarvester v0.12.0 (06e5708), resolving 14 conflicted files while preserving fork anti-detection and in-house features; run ruff+pytest+smoke; write docs/upgrade-sync-2026-09-09.md; push branch for review (no merge to master).",
+  "scope_completed": [
+    "14 conflicted files resolved (Dockerfile, pyproject.toml, uv.lock, cli.py, commands/__init__.py, historic.py, base_scraper.py, browser_helper.py, odds_history_extractor.py, odds_parser.py, odds_portal_scraper.py, playwright_manager.py, retry.py, scraper_app.py)",
+    "ruff check cleaned to style-only residuals (132; zero F8xx)",
+    "unit tests: 1106 passed / 5 skipped; integration suite failures identical on pristine upstream (environmental)",
+    "smoke tests: upcoming EPL 1x2 (5 matches), historic EPL links-only (50 links), live links-only (9 links), checkpoint write + season validation (1/1)",
+    "report written: docs/upgrade-sync-2026-09-09.md",
+    "committed and pushed to origin/sync/upstream-2026-09-09 (commit dc76466)"
+  ],
+  "findings": [
+    {
+      "title": "Upstream flow restored for scrape_historic; fork Option-B retained via scrape-full",
+      "severity": "medium",
+      "evidence": [
+        "odds_portal_scraper.scrape_historic now uses upstream link collection -> extract_match_odds (with checkpoint + season filtering threaded through)",
+        "_extract_matches_from_results_page and FullOddsExtractor retained; used by scrape-full command",
+        "upstream matches now hydrate h2h fragment URLs correctly (verified via extract_match_odds on arsenal/southampton 2024-25 h2h link)"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "browser_helper demoted to optional collaborator",
+      "severity": "low",
+      "evidence": [
+        "BaseScraper.__init__ accepts browser_helper=None; all touchpoints guarded",
+        "upstream unit tests construct scrapers without it and still pass"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "Git merge commit became a regular commit",
+      "severity": "low",
+      "evidence": [
+        "MERGE_HEAD was lost when a stash/checkout cycle was used mid-merge; content is complete and pushed on branch dc76466, but git history shows a regular commit rather than a merge commit",
+        "PR diff vs master is still the full sync diff"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "Integration suite (-m integration) fails identically on upstream",
+      "severity": "low",
+      "evidence": ["29 failed on merged branch and on pristine upstream v0.12.0 checkout — environment/fixture issue, unrelated to merge"],
+      "confidence": "high"
+    },
+    {
+      "title": "odds-history year inference not wired in market_extractor",
+      "severity": "low",
+      "evidence": ["reference_match_date now passed as None (previously referenced undefined match_data — latent fork bug); legacy regex fallback + _parse_timestamp retained for future wiring"],
+      "confidence": "high"
+    }
+  ],
+  "actions_taken": [
+    "Merged 14 conflicted files per per-file strategy in report",
+    "Fixed scrape-full command for new scraper/browser-helper construction",
+    "Added links_only+persist, checkpoint pass-through, season filtering, listing failure surfacing in historic",
+    "Adopted upstream set_odds_format text selector with fork fallback",
+    "Verified via ruff/pytest/smoke tests",
+    "Committed and pushed sync/upstream-2026-09-09"
+  ],
+  "verification": [
+    {"check": "uv run pytest (unit, excl integration)", "result": "passed", "evidence": "1106 passed, 5 skipped"},
+    {"check": "uv run ruff check src/ tests/", "result": "passed", "evidence": "132 style issues only (W293/E501/S311/RUF); no F8xx/undefined names/import errors"},
+    {"check": "upcoming EPL scrape smoke", "result": "passed", "evidence": "5 matches, per-bookmaker 1X2 odds present"},
+    {"check": "historic EPL links-only smoke", "result": "passed", "evidence": "50 links, season=2024-2025 stamped"},
+    {"check": "checkpoint + season validation", "result": "passed", "evidence": "1/1 success; checkpoint JSON written"},
+    {"check": "integration suite", "result": "failed", "evidence": "29 failures identical on pristine upstream v0.12.0 — pre-existing env issue"}
+  ],
+  "risks": [
+    "scrape_historic behavior changed from fork Option-B (listing-page extraction) to upstream link-based flow; orchestrator pipelines using `historic` will now visit match pages (different request volume profile)",
+    "Branch is a review target; do not merge to master without Duncan/Kris sign-off"
+  ],
+  "blockers": [],
+  "recommended_next_actions": [
+    "Duncan (or Kris) review docs/upgrade-sync-2026-09-09.md and PR diff on origin/sync/upstream-2026-09-09",
+    "If the diff approach is accepted, merge to master via PR (no force-push)",
+    "Consider re-running `./scripts/orchestrator_v1.py` canary on the new master after merge to validate historic throughput behavior"
+  ],
+  "handoff_to_main": "Sync complete: 14 conflicts resolved preserving fork anti-detection; unit 1106/1106; upstream smoke green (EPL upcoming 5/5, historic links 50/50, checkpoint 1/1); commit dc76466 pushed to origin/sync/upstream-2026-09-09. Report at oddsharvester/docs/upgrade-sync-2026-09-09.md. Integration suite failures are env-identical to upstream, not merge-caused. Awaiting review before any merge to master.",
+  "telegram_usage": {
+    "used": false,
+    "bot_name": null,
+    "direction": "inbound",
+    "targets": [null],
+    "inbound_summary": "Task dispatched via sessions_send from Main Agent",
+    "outbound_reply_bot": null,
+    "exception_handled_by_main": false,
+    "note": "No Telegram contact. Handoff via sessions_send to Main Agent."
+  }
+}

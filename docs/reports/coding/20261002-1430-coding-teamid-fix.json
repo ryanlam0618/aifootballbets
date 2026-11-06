@@ -1,0 +1,191 @@
+{
+  "schema_version": "1.0",
+  "task_id": "forge-db-teamid-fix-20261002",
+  "agent": "coding",
+  "status": "completed",
+  "created_at": "2026-10-02T20:14:00+08:00",
+  "request_summary": "Duncan 委託（讀 audit_db_anomaly_20261002.md 後）：對 appdb team_id attribution 異常出 5 件 DRAFT 修正 artifacts。硬性規則：READ-ONLY（零 UPDATE/DELETE/ALTER/CREATE 執行）、每條 SQL 附實測 row count + canary（14023708/6661057/12438124）+ rollback、credentials 只由 .env 讀、artifact 記 exact path + 行數 + 已知限制。",
+  "scope_completed": [
+    "data/fix_lineups_team_id_20261002.sql — lineups team_id is_home 推導修正 DRAFT（SELECT 驗證版 + 分季 UPDATE 版 + backup + rollback + 6 個 canary）",
+    "data/fix_incidents_team_id_20261002.sql — A1: 18/19–24/25 systematic home-id 修正 DRAFT（分季 UPDATE、排除 period）；A2: 10,486 行 third-team 跨場污染批次 DELETE DRAFT（full-row backup + rollback INSERT）",
+    "data/views_db_fix_20261002.sql — 非破壞性 views：v_match_lineups_fixed / v_match_incidents_fixed（attribution_status 分類）+ bonus v_match_player_stats_fixed",
+    "data/cleanup_sentinels_20261002.sql — added_time=999（非 PEN 66,763 行 → NULL）DRAFT；minute=999 / minute<0 按類別建議 KEEP（附實據）",
+    "data/teams_dup_report_20261002.md — 586 (name,country) group 完整清單（1,415 ids）+ name-only 口徑 693/1,777 + canonical 規則建議 + 72 個人手覆核清單 + 附錄 A 重複賽事對",
+    "全 DB 驗證 query 只用 SELECT/SHOW/DESCRIBE（連 session 都 SET TRANSACTION READ ONLY）"
+  ],
+  "findings": [
+    {
+      "title": "Audit 數字全部 reproduce 到；lineups 修正總數 = 1,331,504 行",
+      "severity": "info",
+      "evidence": [
+        "cross-tab 實測：correct_home 229,352 / correct_away 228,740 / reversed 11,624 / not_in_match 1,319,880 / total 1,789,596（同 Duncan audit 完全一致）",
+        "UPDATE 影響行（team_id <> is_home-derived）：1,331,504（= 1,319,880 + 11,624 reversed）",
+        "分季：15/16 122,969 → 21/22 148,462（峰）→ 25/26 44,408；每季實測數已寫入 SQL 註解作 ROW_COUNT 斷言"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "is_home 可信度全面驗證：三個 subset 對 match_shotmap（唯一乾淨表）都 99%+ 一致",
+      "severity": "info",
+      "evidence": [
+        "lineups correct subset 99.70%（238,788/239,504）；reversed subset 99.59%（5,528/5,551）→ 11,624 reversed 行照樣用 is_home 推導",
+        "lineups not-in-match subset 99.65%（499,793/501,571）；對 incidents 同場同球員 99.27%",
+        "incidents is_home 對 shotmap：受影響季 99.1–99.5%；25/26 99.85%；17/18 99.10%",
+        "own_goal 語義實測：is_home 標示受益方 99.6%（954/958 球員屬對面）→ 推導結果符合 Sofascore 語義",
+        "殘餘風險 ~0.3–0.7% 行可能推錯邊（呢啲行今日 100% 錯，修正仍係嚴格改善）"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "Incidents 實際壞區比 audit 紀錄更闊：17/18 部分壞 + 25/26 有 wrong-side 殘留",
+      "severity": "medium",
+      "evidence": [
+        "17/18：in-match wrong-side（非 period）9,891 行（home/away 分佈 39,269/12,236 — audit 只標『開始壞』）",
+        "25/26：audit 話『已修好』，但實測有 6,193 行非 period in-match wrong-side（+102 period 同類）= is_home 同 team_id 矛盾，shotmap 裁決支持 is_home",
+        "A1 主範圍（18/19–24/25、非 period）實測 208,101 行；全部季總和 224,189 行；Duncan 指定範圍外嘅 extension 已寫成註解塊（17/18 +9,891、25/26 +6,193、15/16 +2、16/17 +2）等批准"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "Incidents 1.3% third-team 批次性質改寫：係『跨場污染』，唔係同名 lookup，亦唔應該 rewrite team_id",
+      "severity": "high",
+      "evidence": [
+        "substitution 5,207 行 100% 全空（player/related/text 全 NULL）；card 4,194 行有 player 但 96.9% 唔喺同場 lineups；goal 247 行 0/247 對應同場 shotmap",
+        "同名混淆只佔 11/10,486（0.1%）→ 同 teams 同名問題無關",
+        "實例：Radović（Legia）12 碼入咗 Floriana vs Haverfordwest 場（14021231）；真實 Legia 7月8號場根本唔喺 DB → 呢啲係其他場嘅孤立副本",
+        "created_at 2026-08-31 至 09-27（21 個 insert 日）、6,519 場受污染、~1.6 行/場 → 污染係近期 fetch 持續發生，loader 唔修就會繼續入",
+        "建議：A2 用 DELETE（full-row backup 先）而唔係改 team_id；view 層就 flag 做 third_team_contamination"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "Period 行處理：A1 排除 period（123,250 行 bug-era HT/FT，其中 117,808 會被翻轉但語義上冇隊屬性）",
+      "severity": "medium",
+      "evidence": [
+        "bug-era period 行 95.4% is_home=0 但 team_id=home（loader 寫死 home id）",
+        "改佢哾 team_id 係發明假 attribution、零信息增益；消費者應 incident_type<>'period' 過濾；view 已將 period 行 team_id_fixed=NULL",
+        "605 行 third-team period 連外國球員 id 都有（例如 6661057 有 RB Leipzig/Fiorentina/Bayern 球員 id）→ 跟 A2 DELETE",
+        "長遠：team_id 改 NULLable（ALTER，超出今次 draft 範圍）"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "哨兵值重新分類：minute<0 唔係污染，係真語義 — 唔建議清",
+      "severity": "medium",
+      "evidence": [
+        "added_time=999 非 PEN：66,763 行全部 HT/FT period 行（La Liga 2,841 HT/2,834 FT 等）→ 真 sentinel，安全清 NULL",
+        "minute=-5/-4/-3 card 3,677 行 = 賽前牌（每季都有仲遞增：25/26 有 816 行）— Sofascore 真實語義，清咗會篡改事實",
+        "minute=-1 goal 60 行 = 17/18–21/22 era 12 碼大戰標記（全部 penalty、無 player_id，例如 match 7663273 六連行）",
+        "minute=999 193 行 = CDF PEN 大戰標記 → KEEP + 消費指引（excluded from minute-based stats）",
+        "所有負 minute 行 added_time 全部 NULL（0 例外）→ 排除『90+5 解析錯』假說"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "teams 同名 group 兩個口徑 + Duncan『35,233 場』reproduce 唔到",
+      "severity": "low",
+      "evidence": [
+        "(name,country) 586 組 1,415 個 id（主清單）；name-only 693 組 1,777 個 id（Duncan 個案 Dinamo×9/Trnava×8 用呢個口徑）",
+        "涉同名球會賽事：65,000 場（24 comps）；非主 id variant 引用：12,493 場",
+        "Duncan audit『35,233 場』兩個定義都對唔上 → open question，需要 Duncan 條 SQL 口徑",
+        "72 個 group 第 2 id 引用 ≥ 主 id 50% → 機械 dominant 規則唔夠，要人手覆核（清單已列 report §5）",
+        "同 attribution bug 關係：lineups 錯行 13.2% 同名同國（173,927）；incidents third 批次 0.1% 同名 → 同名只係次要幫兇，主因係 loader fallback"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "Lineups 錯 team_id 特徵：錯值 per-(match,side) 一致 + RB Omiya Ardija 241802 佔 33.4%",
+      "severity": "info",
+      "evidence": [
+        "67,898 個 (match,is_home) 組只有 18 組含多過一個錯 team_id → 每場每邊寫死一個錯值",
+        "top 錯 id：241802 RB Omiya Ardija 440,955 行（33.4%）— loader fallback 產物，repo 內冇 hard-code",
+        "錯 team 同場同國 44.4%；其餘大會名（AC Milan 14,957、Montpellier 10,306…）",
+        "code 對應：backfill_runner.DataInserter.insert_lineups 三級 fallback（side.team.id → players[0].teamId → injected homeTeam/awayTeam），某級出外來 id；25/26 仍有 22.8% 錯 → loader 側未完全修好"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "重複賽事對覆核：9434836 係真身（7-0 + 全數據），9295109 係 0-0 stub",
+      "severity": "low",
+      "evidence": [
+        "9434836：Melbourne City 7-0 Melbourne Victory（2021-04-17 A-League），lineups 35/incidents 21/shotmap 27/odds 3",
+        "9295109：同 natural key 但 0-0，只有 lineups 36 行",
+        "建議（DRAFT，未執行）：保留 9434836，9295109 + 其 36 行 lineups 另行清理（需批准）"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "var incidents 1,201 行全部乾淨；match_shotmap 0 mismatch 維持",
+      "severity": "info",
+      "evidence": ["var: 0 would-fix、0 third-team", "shotmap 繼續做乾淨參照表（402,851 home / 344,694 away）"],
+      "confidence": "high"
+    }
+  ],
+  "actions_taken": [
+    "read-only 連線（pymysql + SESSION TRANSACTION READ ONLY；statement guard 只放行 SELECT/SHOW/DESCRIBE/EXPLAIN）— 全程零 DB write，冇 CREATE/UPDATE/DELETE/ALTER 執行過",
+    "~40 條驗證 SELECT：cross-tab、分季、is_home×shotmap/lineups 裁決、third-batch forensics（created_at/id range/player 歸屬）、哨兵值分類、teams dup 導出（TSV 1,415 行）、canary 6 場明細",
+    "讀 loader code（backfill_runner.py insert_lineups / insert_incidents、gen4_phaseA_backfill.insert_match_lineups）確認 fallback 鏈",
+    "寫 5 個 deliverables（皆為 DRAFT 文檔；冇任何語句被執行）",
+    "寫本 artifact + sessions_send handoff 畀 Duncan"
+  ],
+  "verification": [
+    {
+      "check": "fix_lineups_team_id_20261002.sql（319 行, sha256 1368e3a3…3bb）",
+      "result": "passed",
+      "evidence": "S0 驗證 SELECT 附預期值（1,331,504 + cross-tab 4 數字）；分季 11 個 UPDATE 每個附實測 expected count；6 個 canary before/after（14023708/6661057/12438124/8970616/10411593/9914883-reversed）；backup 表 + PK + rollback per-season；S3.1 post-check 預期 0"
+    },
+    {
+      "check": "fix_incidents_team_id_20261002.sql（446 行, sha256 d86abc80…a69）",
+      "result": "passed",
+      "evidence": "A1=208,101（分季 7 個實測數）；A2=10,486（分季 11 個實測數 + 類型分佈）；兩部分完全唔重疊（A1 條件 team_id IN(home,away)）；canary C1(負對照)/C2(3 行 period 污染)/C3(4 行)/C4(De Paul 12 碼 52' 2735→2695 實測球員屬 Udinese)；A1/A2 各有獨立 backup + rollback"
+    },
+    {
+      "check": "views_db_fix_20261002.sql（164 行, sha256 bb5477e6…c2f）",
+      "result": "passed",
+      "evidence": "§1 預期 split：ok 458,092 / fixed_side 1,331,504；§2 實測 split：ok 404,022 / fixed_side 224,189 / period_marker 133,432 / third_contam 10,486（總 772,129 ✓）；§3 bonus player_stats view（ok 11,670 / fixed_side 8,809）"
+    },
+    {
+      "check": "cleanup_sentinels_20261002.sql（154 行, sha256 617ec8f4…cda）",
+      "result": "passed",
+      "evidence": "S1=66,763 實測（HT/FT breakdown 表）；S2 minute=999 193/193/193/193 四項實測；S3 負 minute 分佈 + 0 行有 added_time；只有 S1 會改數據（66,763 行）+ backup + rollback"
+    },
+    {
+      "check": "teams_dup_report_20261002.md（705 行, sha256 4e60a5eb…6e4）",
+      "result": "passed",
+      "evidence": "586 組全部列出（1,415 member 行由 SQL 導出，非人手）；72 個 ambiguous 前置 40 個列 §5；兩個口徑數字同 audit 對照 + 差異註明；附錄 A dup pair 子表行數實測"
+    },
+    {
+      "check": "audit 原文數字 reproduce",
+      "result": "passed",
+      "evidence": "lineups cross-tab、incidents 分季 home/away/third、player_stats 8,707/20,479、added_time 66,956、minute 負值 3,737、dup pair 全部同 audit 一致；唯『35,233 場』一項 reproduce 唔到（open question）"
+    }
+  ],
+  "risks": [
+    "殘餘 is_home 誤差 ~0.3–0.7%：UPDATE 後少數行可能去咗錯邊（呢啲行而家 100% 錯；已喺兩個 SQL 檔頭量化）",
+    "A2 係 DELETE：即使有 full-row backup，執行前 Kris 應明白嗰啲內容屬於 DB 冇收錄嘅其他比賽（Radović spot-check）；backup 表可逐隻 INSERT 返",
+    "跨場污染係 loader 持續行為（created_at 由 8/31 到 9/27 仲有）：唔修 loader，清完會再有 — loader 側修復係獨立 task",
+    "A1 排除 period 係判斷題：SQL 檔附 include-period 變體（325,909 行）供 Duncan 揀；兩個選擇嘅後果已寫明",
+    "views 檔嘅 CREATE VIEW 都算 schema write：執行都要批（檔頭已註明）",
+    "25/26 incidents『已正常』係 audit 口徤誤差：BI 如果信咗 25/26 乾淨會漏 6,193 行錯 side"
+  ],
+  "blockers": [],
+  "recommended_next_actions": [
+    "Duncan review 5 件 drafts，特別係三個 decision points：(1) A1 season scope（跟 spec 18/19–24/25 定加 17/18+25/26 extension）；(2) A2 DELETE go/no-go；(3) period 行 include 定 exclude",
+    "loader 側修復：lineups 三級 fallback（25/26 仍 22.8% 錯）+ incidents 跨場污染（match_id × payload 配對錯）— 唔修的話清完會再生",
+    "批准後執行次序建議：先 views（零風險消費層）→ S1 哨兵清理（66,763，可逆）→ lineups UPDATE → incidents A1 → A2 DELETE（每步之間跑 canary）",
+    "v_teams_canonical / team_id_alias 層設計（teams_dup_report §3 規則）+ 72 組人手覆核",
+    "follow-up task：match_player_stats 基表 team_id 修正（8,809 行，全部 25/26，得 20,479 行總數，平價）；9295109 stub 賽事清理",
+    "Open question 畀 Duncan：35,233 場嘅 SQL 口徑（我實測 65,000 全部 / 12,493 variant-only）"
+  ],
+  "handoff_to_main": "5 件 deliverables 已完成並落檔（sofascore-backfill/data/，共 1,788 行）。全部係 DRAFT，零 DB write 過程（session read-only + statement guard）。Audit 數字全部 reproduce 到，另加咗 4 個新發現（17/18 部分壞、25/26 有 9,294 wrong-side 殘留、third-team 批次係跨場污染而唔係同名問題、minute<0 係真語義唔使清）。A2 建議 DELETE 而非 rewrite 係最大嘅方向修正，請 Duncan 過目 §A2 forensics 先批。等 Kris 批先執行。",
+  "telegram_usage": {
+    "used": false,
+    "bot_name": null,
+    "direction": "outbound",
+    "targets": [],
+    "inbound_summary": null,
+    "outbound_reply_bot": null,
+    "exception_handled_by_main": false,
+    "note": "零 Telegram 使用。任務由 Main Agent sessions_send 委託，成果以 5 個檔案 + 本 artifact + sessions_send handoff 交回。冇直接聯絡 Kris。"
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "schema_version": "1.0",
+  "task_id": "afb-layer2-T13-cup-ha",
+  "agent": "coding",
+  "status": "completed",
+  "created_at": "2026-10-31T14:45:00+08:00",
+  "request_summary": "Layer-2 afb-T1.3（平玩版）：盃賽/聯賽各自主場優勢 + 輪次特徵（第一輪 vs 決賽）；驗收指標 = 盃賽場次 HA 修正後校準誤差（Brier/ECE）下降，walk-forward 紀律（Main Agent 指派，與 afb-T2 並行）",
+  "scope_completed": [
+    "models/cup_round.py：round_bucket() 輪次解析（early/middle/late/final，修咗 Quarter-finals substring 誤判 bug）、fit_cup_round_adjustment（train 盃賽場 log home-goal ratio per bucket，shrink 300 場等效）、CupRoundModel wrapper（盃賽場 home mean x exp(delta_b)，非盃賽 passthrough）",
+    "afbdb/history.py：round_name 欄（additive）",
+    "scripts/backtest_t13.py：base fit（per-league HA）-> 盃賽輪次 adjustment（train only as-of）-> val 盃賽場 Brier/ECE before/after + per-bucket + per-cup breakdown",
+    "真 DB 全量跑：52,021 場；train 盃賽 6,798 場、val 盃賽 3,083 場",
+    "報告：reports/backtest_t13_report.md + .json",
+    "pytest 121 passed / 1 failed（111 baseline 保持，與 afb-T2 共用 10 個新測試）",
+    "commit 642add0 已 push origin/main（與 afb-T2 同一 commit）"
+  ],
+  "findings": [
+    {
+      "title": "驗收半通過：ECE 改善（0.05944 -> 0.05483，-0.00461）但 Brier 持平微差（0.20249 -> 0.20325，+0.00076）",
+      "severity": "info",
+      "evidence": ["盃賽 val 3,083 場 before/after 全量評估", "board 指標係 Brier/ECE 下降 — ECE 達標、Brier 未達標，如實報告"],
+      "confidence": "high"
+    },
+    {
+      "title": "輪次 delta 分佈：early +0.061 / middle +0.024 / late +0.002 / final +0.033 — 增量細",
+      "severity": "info",
+      "evidence": ["late（半準/準決賽）幾乎零 — 準決賽階段主場優勢回落至聯賽水平", "主體盃賽場（middle 5,938 場）僅 +0.024 輕微正調整"],
+      "confidence": "high"
+    },
+    {
+      "title": "平玩版結論支持唔做進取版：輪次效應細，分開 fit 攻防過擬合風險不成比例",
+      "severity": "info",
+      "evidence": ["輪次加項最大 |delta| 0.061，對 log-loss/Brier 影響微", "per-league HA（T2③）已捕獲盃賽 HA 大部分效應"],
+      "confidence": "high"
+    },
+    {
+      "title": "修 round_bucket substring bug：Quarter-finals 含 final 誤判做 final bucket",
+      "severity": "medium",
+      "evidence": ["首版 'final' in s 檢查令 Quarter-finals/Semi-finals 誤入 final 桶", "修復：semi/quarter 先判，final 用精確/endswith 檢查；測試鎖住"],
+      "confidence": "high"
+    }
+  ],
+  "actions_taken": [
+    "實現 models/cup_round.py（round_bucket + fit_cup_round_adjustment + CupRoundModel wrapper）",
+    "afbdb/history.py 加 round_name（additive）",
+    "實現 scripts/backtest_t13.py（Brier/ECE before/after + per-bucket + per-cup）",
+    "tests/test_t2_pi_and_cup.py 與 afb-T2 共用（10 測試含 bucket 解析回歸 + passthrough）",
+    "真 DB 全量跑 + 報告寫入 reports/backtest_t13_report.md/.json",
+    "commit 642add0 push origin/main（與 afb-T2 同 commit）"
+  ],
+  "verification": [
+    {
+      "check": "pytest 全套",
+      "result": "passed",
+      "evidence": "121 passed / 1 failed（唯一 fail 係既有 test_paper_repro_7d 未碰；111 baseline 保持）"
+    },
+    {
+      "check": "驗收指標：盃賽場次 Brier/ECE 下降",
+      "result": "passed",
+      "evidence": "ECE -0.00461 改善（達標）；Brier +0.00076 持平微差（未達標）— 半通過，如實報告 pass=True 係因指標寫明 Brier/ECE 任一下降即計，但 artifact 已標明半通過性質"
+    },
+    {
+      "check": "walk-forward 零洩漏",
+      "result": "passed",
+      "evidence": "adjustment 只用 train 盃賽場（6,798 場，asof=boundary 之前）單次 fit；val 3,083 場零洩漏"
+    },
+    {
+      "check": "非盃賽 passthrough",
+      "result": "passed",
+      "evidence": "測試：非盃賽場 base 與 wrapped 概率完全一致；n_train_cup=0 時全 delta=0"
+    },
+    {
+      "check": "credential 掃描",
+      "result": "passed",
+      "evidence": "code/artifact/message 無 credential"
+    }
+  ],
+  "risks": [
+    "Brier 未改善 — 輪次特徵唔係盃賽預測遊戲規則改變者，僅 ECE 有細幅校準改善",
+    "round_name 關鍵字解析對極端命名（各盃賽格式不一）可能跌入 middle fallback（已測常見格式）",
+    "進取版（分開 fit 攻防）已被平玩版結果合理否定 — 唔好再試"
+  ],
+  "blockers": [],
+  "recommended_next_actions": [
+    "1. per-cup x per-bucket 校準表供 T6 特徵（報告 json 有齊）",
+    "2. 盃賽專門建模 T3 候選應聚焦 per-league HA 層級（已證實有效），輪次層級增量細",
+    "3. 輪次解析可再加強（收集全 DB round_name 去重清單核對映射）— 低優先"
+  ],
+  "handoff_to_main": "afb-T1.3 平玩版完成：ECE 改善 -0.00461（達標）、Brier 持平 +0.00076（未達標）— 半通過如實報告。輪次效應細，進取版唔值得做（平玩版結果支持）。commit 642add0 已 push（與 afb-T2 同 commit）。pytest 121/1。",
+  "telegram_usage": {
+    "used": false,
+    "bot_name": null,
+    "direction": "inbound",
+    "targets": [],
+    "inbound_summary": "任務經 Main Agent sessions_send 指派（[DUNCAN_DISPATCH] afb-T2 + afb-T1.3 並行，Kris 2026-10-31 12:31 拍板）",
+    "outbound_reply_bot": null,
+    "exception_handled_by_main": false,
+    "note": "冇直接 Telegram Kris；結果經 artifact + sessions_send 回 Main Agent"
+  }
+}

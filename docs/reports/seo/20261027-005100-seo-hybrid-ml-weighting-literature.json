@@ -1,0 +1,100 @@
+{
+  "schema_version": "1.0",
+  "task_id": "20261027-005100-seo-hybrid-ml-weighting-literature",
+  "agent": "seo",
+  "status": "completed",
+  "created_at": "2026-10-27T02:00:00+08:00",
+  "request_summary": "Kris 問「以唔同數學模型做 ML 底，再按 testing 結果做權重，會唔會提升準確率？」— 查學術文獻實證（3 種解讀對號：A 特徵式 hybrid / B stacking / C testing 加權組合），含反面文獻，每篇含做法/樣本/驗證/數字/可信度評級。",
+  "scope_completed": [
+    "解讀 A 正面實證 7 篇：Hubáček 2019（GBT+ratings 0.2083）、Berrar 2019（ratings>recency ablation，XGBoost 0.2054）、Razali 2022（CatBoost+pi-ratings 0.1925 旗艦數字）、Hubáček 2022（91,155 場上限效應 0.2101±0.005）、Yeung 2024（2023 Challenge：DL 跑贏 2017 全部但輸 bookmaker 6.42%）、Robberechts 2019（ELO 0.2035 vs bookmaker 0.2020）、Groll 2019（RF+Poisson abilities）、Tax-Joustra 2015（hybrid+odds 56.054%）、Anzer-Bauer 2021（xG XGBoost 0.197）",
+    "解讀 B 間接實證 5 篇：Stübinger 2019（47,856 場 ensemble +1.58%/場）、Weissbock-Inkpen 2014（NHL meta-classifier 60.25%）、Kim-Lee 2023（KBO 0.6508→0.7430 逐級加異源特徵）、Eryarsoy-Delen 2019、Park 2018",
+    "解讀 C 實證：50-year review（等權難敗 unanimous；Aksu-Gunter 1992 非負約束最穩；Atiya 2020 多樣性分解；Mannes 2014 弱成員拖累；Conflitti 2015 LASSO 特例）+ Stock-Watson 2004 / Smith-Wallis 2009",
+    "校準加碼：Walsh & Joshi 2024（校準優化回報 +69.86%）",
+    "反面文獻 5 篇：Elmiligi-Saad 2022（hybrid 46.6%/RPS 0.2176 失敗例）、Hervert-Escobar 2018（0.2620 差）、Hubáček 2022 上限效應、2023 Challenge bookmaker 牆、puzzle 小樣本警告",
+    "Kris 場景結論：預期 RPS 0.2035-0.2101 → 0.1956-0.2083（相對改善 1-4%；0.1925 需大數據訓練）；防過擬合條件 7 條（等權 baseline/非負約束/out-of-fold/成員篩選/窗口≥200/校準優先/以 bookmaker 0.2020 做里程碑）"
+  ],
+  "findings": [
+    {
+      "title": "解讀 A（統計模型輸出做 ML 特徵）證據最硬：會提升，旗艦 RPS 0.1925 vs 純統計 0.2035 vs bookmaker 0.2020",
+      "severity": "info",
+      "evidence": [
+        "Razali 2022 CatBoost+pi-ratings 0.1925 好過 2017 Challenge 冠軍（0.2063）與 bookmaker（0.2020）",
+        "Berrar 2019 ablation：rating features > recency features（特徵質素>模型選擇）",
+        "但訓練用 OISD >21 萬場 — Kris 幾百至千場樣本需打折"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "Bookmaker consensus 仲係學術模型嘅牆：2023 Challenge SOTA DL 輸 6.42%",
+      "severity": "info",
+      "evidence": [
+        "Yeung 2024：DL 跑贏 2017 全部 published models，仍輸 bookmaker consensus 6.42%",
+        "Robberechts 2019：ELO ordered logit 0.2035 vs bookmaker 0.2020",
+        "波膽任務：簡單統計 baseline 反勝 DL/GBT — ML 迷信降溫劑"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "testing 加權組合：等權係最強對手，非負約束係最安全實現",
+      "severity": "info",
+      "evidence": [
+        "50-year review：simple combination schemes hard to beat（unanimous conclusion）",
+        "Aksu & Gunter 1992：非負約束 OLS 至少同等權一樣穩健準確",
+        "Mannes 2014：低質成員拖低組合 — 成員篩選寧缺勿濫"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "校準優先於準確率：回報差 69.86%",
+      "severity": "medium",
+      "evidence": [
+        "Walsh & Joshi 2024：校準優化模型平均回報高 69.86% vs 準確率優化",
+        "對 Kris 問題嘅直接修正：RPS 微提升嘅回報貢獻遠細過校準"
+      ],
+      "confidence": "high"
+    }
+  ],
+  "actions_taken": [
+    "搜尋供應商故障，改用 web_fetch 直接開採權威全文：arXiv 2410.21484 系統綜述（243k chars 全文 grep）、ar5iv 全文（2023 Challenge 論文 + 50-year review）",
+    "3 輪研究覆蓋 3 種解讀對號 + 反面文獻 + 校準加碼證據；20 篇文獻逐篇含做法/樣本/驗證/數字/可信度評級",
+    "撰寫 report：TL;DR 分條件答 → 逐篇盤點（A 組 🟢×7、B 組 🟡×5、C 組+校準、反面 🔴×5）→ 綜合證據強度 → Kris 場景結論（預期幅度+防過擬合 7 條件）"
+  ],
+  "verification": [
+    {
+      "check": "格式：純文字+emoji、無表格、每篇含做法/樣本/驗證/數字/可信度評級、TL;DR 分條件直接答、反面文獻有涵蓋",
+      "result": "passed",
+      "evidence": "subagent_results/20261027-005100-seo-hybrid-ml-weighting-literature.md 全文檢查"
+    },
+    {
+      "check": "無 credential/token/chat id",
+      "result": "passed",
+      "evidence": "僅公開論文引用"
+    },
+    {
+      "check": "無直接 Telegram 聯絡 Kris",
+      "result": "passed",
+      "evidence": "全程無 message tool 發送；僅 artifact + sessions_send"
+    }
+  ],
+  "risks": [
+    "旗艦數字 RPS 0.1925（Razali 2022）訓練樣本為 OISD 全量 >21 萬場，Kris 幾百至千場樣本不可直接預期重現 — 已於報告多處標明打折",
+    "搜尋供應商故障期間以 web_fetch 全文開採補位，個別文獻（Groll 2019、Stübinger 2019）數字來自系統綜述二手引述而非原文核對 — 已標註",
+    "2023 Challenge 評測集僅 736 場，其 bookmaker 6.42% 差距嘅統計誤差區間未公開 — 結論方向可信、精確幅度存疑"
+  ],
+  "blockers": [],
+  "recommended_next_actions": [
+    "Main Agent 審閱後以適當 bot 總結回覆 Kris（核心一句：會提升但細步，~1-4% RPS；真正關卡係 closing line）",
+    "如 Kris 確認動工：P0 等權 linear pool + pi-ratings 做特徵成員，理論+實證兩份 artifact 已齊，可派 Forge 實現"
+  ],
+  "handoff_to_main": "Hybrid 實證文獻盤點完成，寫入 subagent_results/20261027-005100-seo-hybrid-ml-weighting-literature.md (+ .json)。直接答案：解讀 A（統計輸出做 ML 特徵）證據最硬 — 會提升，旗艦數字 CatBoost+pi-ratings RPS 0.1925 好過純 Elo 0.2035 同 Challenge 冠軍 0.2063，甚至好過 bookmaker 0.2020（但需大數據訓練，Kris 樣本打折）；解讀 B/C 間接支持細幅提升；反面文獻齊（hybrid 46.6% 失敗例、rating 系統差距僅 0.005 上限效應、bookmaker 牆 -6.42%）。加碼發現：校準優化回報 +69.86% — 準確率唔係好 KPI。預期幅度 1-4% RPS + 防過擬合 7 條件。",
+  "telegram_usage": {
+    "used": false,
+    "bot_name": null,
+    "direction": "inbound",
+    "targets": [],
+    "inbound_summary": "任務經 sessions_send 由 Main Agent 委派（Kris Telegram 指示「叫 scout 上網查文獻」），非直接 inbound",
+    "outbound_reply_bot": null,
+    "exception_handled_by_main": false,
+    "note": "按指示未直接聯絡 Kris；全部產出經 artifact + sessions_send 交 Main Agent"
+  }
+}

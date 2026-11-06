@@ -1,0 +1,88 @@
+{
+  "schema_version": "1.0",
+  "task_id": "afb-layer2-T4-market-blend",
+  "agent": "coding",
+  "status": "completed",
+  "created_at": "2026-10-31T18:00:00+08:00",
+  "request_summary": "Layer-2 afb-T4：市場概率 de-vig + market blend — pi-ratings + DC 兩個概率源 x blend 權重 grid (w 0->1) x de-vig 對比，用 T1 嗰 3,818 場賠率子集 + walk-forward 紀律；交付「邊個 blend 權重跑贏 market baseline」+ flat-stake ROI per 權重 + closing odds 累積 spec（Main Agent 指派，Kris 拍板）",
+  "scope_completed": [
+    "scripts/backtest_blend.py：4 概率源（dc_raw/dc_temp/pi_raw/pi_temp）x 11 權重（0.0-1.0）= 44 格 grid；RPS/ll/hit/Brier + flat-stake EV ROI 模擬 per 權重",
+    "賠率子集前後半分窗（前半 1,909 fit 溫度校準器、後半 1,908 評估）— 零洩漏（calib 窗零賠率嘅數據現實已如實記錄）",
+    "DC base fit（boundary as-of）+ PI walk-forward（T2 調參 kappa=0.05/omega=0.6 照用）+ 兩者溫度校準（DC T=1.275 / PI T=0.70）",
+    "closing odds 累積機制 SPEC 交付（afb-T10 CLV 前提，本卡只出 spec）",
+    "報告：reports/backtest_blend_report.md + .json（44 格全數據）",
+    "pytest 121 passed / 1 failed（baseline 保持）",
+    "commit 0bddc1c + ba6ac74（timeout 修復）已 push origin/main"
+  ],
+  "findings": [
+    {
+      "title": "誠實結論：冇任何 blend 權重跑贏純 de-vig 市場（RPS）",
+      "severity": "high",
+      "evidence": ["market baseline RPS 0.20645 係 44 格 grid 中最強（w=0）", "全部 w>0 單調惡化：dc_raw w=1 -> 0.23328（+13%）、pi_raw w=1 -> 0.21997（+6.5%）", "市場校準近乎完美（0.1-0.8 桶 pred/real 差 <1pp）"],
+      "confidence": "high"
+    },
+    {
+      "title": "一個誘人但未證實嘅 ROI 訊號：pi blend 低權重區正數",
+      "severity": "medium",
+      "evidence": ["pi_raw w=0.1: 215 注 ROI +21.7%；pi_temp w=0.1: 225 注 +12.6%；w=0.2: +0.96%/+2.73%", "但樣本細（215-666 注）+ 44 格 grid 選擇效應 + DC 全部負數", "結論：唔夠證據報喜，需要 out-of-sample 確認"],
+      "confidence": "medium"
+    },
+    {
+      "title": "市場子集數據現實：賠率只覆蓋 2024-12 之後（+2015-16 零星），calib 窗零賠率",
+      "severity": "info",
+      "evidence": ["val 15,609 場中僅 3,818 場有 1x2 分數賠率，全部集中喺 test 半窗", "方案改用子集內前後半分窗（前半 fit 校準器、後半評估），已如實記錄"],
+      "confidence": "high"
+    }
+  ],
+  "actions_taken": [
+    "實現 scripts/backtest_blend.py（44 格 grid + ROI 模擬 + closing odds spec）",
+    "修 nll_1x2 import 錯誤 + 重構 calib/test 分窗（賠率覆蓋數據現實）",
+    "真 DB 全量 grid 跑",
+    "報告寫入 reports/backtest_blend_report.md/.json",
+    "pytest 驗證 + commit 0bddc1c push；另 ba6ac74 修 afbdb read/write timeout 60s->600s（T3 長查詢需要）"
+  ],
+  "verification": [
+    {
+      "check": "pytest 全套",
+      "result": "passed",
+      "evidence": "121 passed / 1 failed（唯一 fail 係既有 test_paper_repro_7d 未碰）"
+    },
+    {
+      "check": "blend 結論對 de-vig market baseline 有明確相對表現數字",
+      "result": "passed",
+      "evidence": "44 格 grid 全部有 RPS/ll/hit/ROI 相對 market baseline（w=0）數字：無任何 w>0 改善 RPS；ROI 訊號 pi w=0.1 +21.7% 已標明小樣本+選擇效應 caveat"
+    },
+    {
+      "check": "closing odds spec 交付",
+      "result": "passed",
+      "evidence": "collector 頻率/儲存表/closing 定義/冪等/覆蓋要求/工作量 全部喺報告 + 本 artifact"
+    },
+    {
+      "check": "credential 掃描",
+      "result": "passed",
+      "evidence": "code/artifact/message 無 credential"
+    }
+  ],
+  "risks": [
+    "pi blend 低權重區正 ROI 係小樣本 + grid 選擇效應下嘅訊號，唔可當已證實 edge",
+    "市場子集只有 2024-12 之後賠率 — 樣本期短，季節性未覆蓋",
+    "投注 EV 門檻 2% 係參數；更嚴格門檻會大幅減少注數"
+  ],
+  "blockers": [],
+  "recommended_next_actions": [
+    "1. T4 結論供 Kris 決策：現階段系統冇投注價值；pi-blend 低權重區訊號需要 out-of-sample 驗證先可認真考慮",
+    "2. T5 pipeline cron 落地時一併實作 closing odds 累積（spec 已交）",
+    "3. 累積更多賠率季節數據後重跑 blend grid 驗證 pi w=0.1-0.2 訊號穩定性"
+  ],
+  "handoff_to_main": "T4 完成：誠實結論 — 冇任何 blend 權重跑贏純 de-vig 市場（RPS），市場校準近乎完美；pi blend 低權重區有一個小樣本正 ROI 訊號（+21.7%/215 注，未證實）。closing odds spec 已交（T10 前提）。commit 0bddc1c + ba6ac74 已 push。pytest 121/1。",
+  "telegram_usage": {
+    "used": false,
+    "bot_name": null,
+    "direction": "inbound",
+    "targets": [],
+    "inbound_summary": "任務經 Main Agent sessions_send 指派（[DUNCAN_DISPATCH] afb-T4 + afb-T3 並行，Kris 2026-10-31 17:43 拍板）",
+    "outbound_reply_bot": null,
+    "exception_handled_by_main": false,
+    "note": "冇直接 Telegram Kris；結果經 artifact + sessions_send 回 Main Agent"
+  }
+}

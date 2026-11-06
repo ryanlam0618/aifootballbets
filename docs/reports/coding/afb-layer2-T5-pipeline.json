@@ -1,0 +1,105 @@
+{
+  "schema_version": "1.0",
+  "task_id": "afb-layer2-T5-pipeline",
+  "agent": "coding",
+  "status": "completed",
+  "created_at": "2026-10-31T21:30:00+08:00",
+  "request_summary": "Layer-2 afb-T5 Pipeline（v1 收官卡）：①run_day cron 化（select -> 各成員預測 -> 前日結算 -> 報告）②odds 快照累積（T4 spec：多時點取樣寫入 afb_odds_snapshots）③idempotency（同日重跑安全 + 寫明理由）④快照累積監控 ⑤賠率源聯賽覆蓋盤點報告（Main Agent 指派，Kris 拍板）",
+  "scope_completed": [
+    "v1_pipeline.py：run_pipeline(day) 串連 pick_day -> odds_snapshot_stage -> predictions_stage（DC per-league-HA + pi-ratings 雙模型，deterministic per-model run_id）-> settle_prev_day observability",
+    "scripts/run_daily.py：cron orchestrator（--mode daily/sample/coverage）+ cron lines 文件化",
+    "scripts/odds_coverage_inventory.py：24 competitions 覆蓋盤點 -> reports/odds_coverage_inventory.md + .json",
+    "odbds_snapshot_stage 加 collect_market_odds_tolerant（odds_type NULL 批次兼容）",
+    "afbdb/ledger.py：db_write_predictions 回傳累計 INSERT IGNORE rowcount（修正 last-statement-only）",
+    "tests/test_v1_pipeline.py：4 個 hermetic 測試",
+    "連續兩日實跑：2026-10-03（45 fixtures / 126 snapshot rows / 270 predictions）+ 2026-10-04（7 / 15 / 42）",
+    "冪等實證：同日重跑 0 寫入、0 重複組（DB GROUP BY 驗證）",
+    "commit 3fab022 已 push origin/main"
+  ],
+  "findings": [
+    {
+      "title": "冪等 bug 根因修復：predictions line=NULL 令 MySQL uq index 唔 dedupe（NULL 互不相等）",
+      "severity": "medium",
+      "evidence": ["uq_afb_pred (run_id, match_id, market, line, selection) 經 SHOW INDEX 驗證存在", "首版重跑每欠寫 270 行", "修復：line 改空字串 + db_write_predictions 保留空字串（原本 \"\" 被轉回 None）", "修復後：同日重跑 0 寫入、duplicate groups 0"],
+      "confidence": "high"
+    },
+    {
+      "title": "正面意外發現：24 個 competition 全部有 1x2 賠率覆蓋（16-25%），零個零覆蓋",
+      "severity": "info",
+      "evidence": ["EPL 21.0% / Ligue 1 21.4% / J1 22.8% / CSL 21.6% / A-League 24.6% 等（backfill 批次差異）", "CLV snapshot 全線可行 — 擴容方向變成提升密度而非加聯賽"],
+      "confidence": "high"
+    },
+    {
+      "title": "container 無 crontab binary — cron 安裝需 host 層處理",
+      "severity": "medium",
+      "evidence": ["crontab: not found", "cron lines 已寫入 scripts/run_daily.py docstring", "兩日連續實跑用 orchestrator 直接執行替代驗證"],
+      "confidence": "high"
+    },
+    {
+      "title": "odds_type NULL 批次：部分 backfill 批次賠率 rows odds_type=NULL 但 market_name/choice_name 齊全",
+      "severity": "medium",
+      "evidence": ["2026-10-03 場次 odds rows odds_type=NULL", "首版 odds_snapshot 0 行（嚴格過濾錯過）", "修復：collect_market_odds_tolerant 先試寬鬆查詢再 fallback 嚴格"],
+      "confidence": "high"
+    }
+  ],
+  "actions_taken": [
+    "實現 v1_pipeline.py（pick_day / odds_snapshot_stage / predictions_stage / settle_prev_day / build_snapshot_rows 純函數抽出）",
+    "實現 scripts/run_daily.py（daily/sample/coverage 三模式 orchestrator）",
+    "實現 scripts/odds_coverage_inventory.py + 修 Decimal JSON 序列化 bug",
+    "修 predictions line=NULL uq dedupe bug（line=\"\" + writer 保留空字串）",
+    "afbdb/ledger.py rowcount 累計修正 + afbdb/connection.py timeout 600s（commit ba6ac74）",
+    "連續兩日實跑 + 冪等實證 + 覆蓋盤點報告",
+    "commit 3fab022 push origin/main"
+  ],
+  "verification": [
+    {
+      "check": "pytest 全套",
+      "result": "passed",
+      "evidence": "125 passed / 1 failed（唯一 fail 係既有 test_paper_repro_7d 未碰；121 baseline 保持，新增 4 測試）"
+    },
+    {
+      "check": "cron 連續兩日實跑成功",
+      "result": "passed",
+      "evidence": "2026-10-03：45 fixtures / 126 snapshot rows / 270 predictions；2026-10-04：7 / 15 / 42 — 全鏈路成功（container 無 cron binary，用 orchestrator 直接執行替代；cron lines 已文件化）"
+    },
+    {
+      "check": "重跑無重複行",
+      "result": "passed",
+      "evidence": "同日重跑 predictions written=0（INSERT IGNORE + non-NULL line dedupe）；DB GROUP BY 重複組 = 0"
+    },
+    {
+      "check": "覆蓋盤點報告出齊",
+      "result": "passed",
+      "evidence": "reports/odds_coverage_inventory.md + .json：24 competitions 全部有 1x2 賠率（16-25%），0 個零覆蓋"
+    },
+    {
+      "check": "credential 掃描",
+      "result": "passed",
+      "evidence": "code/artifact/message 無 credential"
+    }
+  ],
+  "risks": [
+    "cron 安裝未落地（container 無 crontab binary）— 需 host 層 systemd timer/crontab，否則 pipeline 唔會自動日行",
+    "賠率快照暫時只有市場平均單一 bookmaker 來源 — T10 CLV 理想要多一個參考莊",
+    "pipeline 每次 run 重 fit 模型約 5 分鐘 — 每日一次可接受",
+    "sample mode 對未來日期取樣 0 行（DB 無未來 scheduled fixtures）— 賠率源接入後自然有數"
+  ],
+  "blockers": [],
+  "recommended_next_actions": [
+    "1. Cron 安裝：Duncan/Kris 喺 host 層加 systemd timer 或 crontab（lines 已備好在 scripts/run_daily.py docstring）— 裝咗之後 CLV 樣本開始每日累積",
+    "2. T6 ML views 萬事俱備（pi-ratings + rolling xG + pipeline 已齊）",
+    "3. T10 CLV 裁決：等 >=30 注累積",
+    "4. 賠率密度提升（16-25% -> 更高）：研究 backfill 批次點解只覆蓋部分場次"
+  ],
+  "handoff_to_main": "afb-T5 完成：v1 pipeline（select->snapshot->predict->settle）+ 冪等實證（同日重跑 0 寫入）+ 連續兩日實跑 + 覆蓋盤點（24 competitions 全有賠率，0 零覆蓋）。v1 五成員 + pipeline 全部收檔。pytest 125/1。commit 3fab022 已 push。Cron 安裝需 host 層處理（container 無 crontab binary，lines 已文件化）。",
+  "telegram_usage": {
+    "used": false,
+    "bot_name": null,
+    "direction": "inbound",
+    "targets": [],
+    "inbound_summary": "任務經 Main Agent sessions_send 指派（[DUNCAN_DISPATCH] afb-T5 Pipeline，Kris 2026-10-31 18:57 拍板）",
+    "outbound_reply_bot": null,
+    "exception_handled_by_main": false,
+    "note": "冇直接 Telegram Kris；結果經 artifact + sessions_send 回 Main Agent"
+  }
+}

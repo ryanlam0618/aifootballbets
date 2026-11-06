@@ -1,0 +1,101 @@
+{
+  "schema_version": "1.0",
+  "task_id": "20261026-133000-seo-ai-bets-math-models",
+  "agent": "seo",
+  "status": "completed",
+  "created_at": "2026-10-26T14:10:00+08:00",
+  "request_summary": "Kris 要求盤點現時 AI bets 業界實際用緊嘅數學模型：統計/概率經典、ML 層、DL/LLM 前沿、業界實況（數據商/syndicate/交易所/消費級）、底層數學工具；每項講原理+邊個用+實戰表現，並指出 2026 主力。",
+  "scope_completed": [
+    "A. 統計/概率 10 類：獨立 Poisson、DC tau、Bivariate Poisson、Skellam、Elo、pi-ratings、Glicko/Massey/Colley、state-space/Kalman、Bayesian 球員級（KickScore）、點過程/Hawkes in-play",
+    "B. ML 4 類：GBM（公開 SOTA）、logistic regression（xG 業界 baseline）、RF/SVM 退居二線、hybrid ensemble/stacking（Dolores）",
+    "C. DL/LLM：LSTM/Transformer/TabNet 輸 bookmaker 一皮；LLM 轉型研究助理/對照組",
+    "D. 業界實況：Opta xG pipeline（logistic baseline+GBM AUC 0.878）、StatsBomb、Sportradar、syndicate（power ratings+Monte Carlo+CLV）、Betfair bot、Kickoff.ai KickScore、ZCode/Betegy 黑盒註記",
+    "E. 底層工具：de-vig 四法（equal margin/power/Shin）、Kelly 家族、校準三法、Monte Carlo",
+    "業界共識 vs 現實落差 6 點＋前沿趨勢 6 點＋2026 主力明確答案"
+  ],
+  "findings": [
+    {
+      "title": "2026 主力組合：DC 系 Poisson + Elo/pi-ratings + xG features + GBM + de-vig + fractional Kelly + 校準 + market prior",
+      "severity": "info",
+      "evidence": [
+        "公開 benchmark 單一最強 = gradient boosted trees on rating+xG features（RPS 0.19-0.20）",
+        "DC 1997 29 年歷史仍是 SOTA 候選，XGBoost 40-100 features rarely beat 佢",
+        "盈利判準 = 跑贏 closing line（IEEE 2026：bookmaker implied probs dominate）"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "Logistic regression 未死：係 xG 模型嘅業界 baseline（Opta/StatsBomb 級 pipeline 核心）",
+      "severity": "info",
+      "evidence": [
+        "arXiv 2401.09940 用 StatsBomb 43,110 shots logistic 建模",
+        "thexgfootballclub 2026：logistic 因可解釋性被選為 xG 基準",
+        "Hudl 2025：logistic/RF/NN/GBM 並列比較；XGBoost AUC 0.878/Brier 0.0686"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "DL/LLM 有話題冇接棒：三份 2024-26 權威 benchmark 都未贏 GBM，更未贏市場",
+      "severity": "info",
+      "evidence": [
+        "Springer ML 2024：bookmaker RPS 0.2020 略優於 DL",
+        "LLM-SoccerArena 2026-07 / AI World Cup 2026-08：GPT-4 competitive 未超 SOTA",
+        "Nature 2021：in-play event-data 模型仍大幅輸賠率"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "透明度倒掛：越消費級越黑盒，越研究型/B2B 越可對照",
+      "severity": "low",
+      "evidence": [
+        "Kickoff.ai：方法半透明（官方解說+公開歷史記錄）",
+        "ZCode：閉源黑盒，65%+ 勝率宣稱無法驗證；Betegy：B2B 方法論未公開",
+        "Oddalerts 等公開逐日評分（51.7% 級別）反係行內誠實基線"
+      ],
+      "confidence": "medium"
+    }
+  ],
+  "actions_taken": [
+    "讀回自己上兩份 artifact 做底，確保新角度（業界盤點）不重複內容",
+    "3 輪補位 web 研究（10 條查詢）：KickScore/Opta xG/Shin/Hawkes/Kalman/Massey-Colley/Monte Carlo/消費級產品",
+    "撰寫純文字+emoji report：總覽+主力答案 → A-E 五層逐項盤點（原理+邊個用+實戰）→ 共識 vs 落差 → 趨勢 → 24 條來源"
+  ],
+  "verification": [
+    {
+      "check": "格式：純文字+emoji、無 markdown 表格、每模型含原理一句+邊個用+實戰",
+      "result": "passed",
+      "evidence": "subagent_results/20261026-133000-seo-ai-bets-math-models.md 全文檢查"
+    },
+    {
+      "check": "無 credential/token/chat id",
+      "result": "passed",
+      "evidence": "僅公開來源 URL 與論文引用"
+    },
+    {
+      "check": "無直接 Telegram 聯絡 Kris",
+      "result": "passed",
+      "evidence": "全程無 message tool 發送；僅 artifact + sessions_send"
+    }
+  ],
+  "risks": [
+    "KickScore/ZCode/Betegy 內部方法論公開有限，相關描述已標明來源層級（官方自述 vs 獨立審計）",
+    "kickscore 開源庫存在性未經直接驗證（搜尋無確認），report 內只引用官方 about/LinkedIn 描述，未引用 PyPI",
+    "部分來源（smartmatchpick、clawarbs 等）屬業界博客級，關鍵數字已同學術來源交叉"
+  ],
+  "blockers": [],
+  "recommended_next_actions": [
+    "Main Agent 審閱後以適當 bot 總結回覆 Kris",
+    "如 Kris 想深挖某一層（如 syndicate power ratings 或 in-play 點過程），可開 follow-up 任務"
+  ],
+  "handoff_to_main": "業界數學模型盤點完成，寫入 subagent_results/20261026-133000-seo-ai-bets-math-models.md (+ .json)。核心：2026 主力 = DC 系 Poisson + Elo/pi-ratings + xG + GBM + de-vig(power/Shin) + fractional Kelly + 校準 + market prior；logistic regression 仍係 xG pipeline 業界 baseline；DL/LLM 未贏 GBM/市場。A-E 五層 20+ 模型逐項含原理/使用者/實戰，另有共識 vs 落差 6 點。",
+  "telegram_usage": {
+    "used": false,
+    "bot_name": null,
+    "direction": "inbound",
+    "targets": [],
+    "inbound_summary": "任務經 sessions_send 由 Main Agent 委派（Kris Telegram 指示「call scout」），非直接 inbound",
+    "outbound_reply_bot": null,
+    "exception_handled_by_main": false,
+    "note": "按指示未直接聯絡 Kris；全部產出經 artifact + sessions_send 交 Main Agent"
+  }
+}

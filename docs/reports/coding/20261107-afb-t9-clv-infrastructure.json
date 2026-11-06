@@ -1,0 +1,111 @@
+{
+  "schema_version": "1.0",
+  "task_id": "20261107-afb-t9-clv-infrastructure",
+  "agent": "coding",
+  "status": "completed",
+  "created_at": "2026-11-07T05:00:00+08:00",
+  "request_summary": "T9-CLV (Kris approved 2026-11-07 02:25): turn the 96,959 odds rows into CLV infrastructure - de-vig module (proportional + Shin, 1x2 trio, multi-bookmaker median consensus), closing-line extraction, CLV calculation functions, cross-bookmaker consistency validation. Prep layer for the DC/Pi-Ratings model phase.",
+  "scope_completed": [
+    "Data model verified: afb_odds_snapshots holds ONE archived snapshot per (match, bookmaker) with selections 1/X/2 - OddsPortal historical pages expose the final pre-kickoff line, so the single snapshot IS the closing line (commence_time_utc is NULL on snapshots; kickoff date joined from matches)",
+    "clv_infrastructure.py: devig_proportional (multiplicative), devig_shin (Shin 1992 insider-proportion z solved by bisection, renormalised), clv_ratio (bet/closing-1), ev_vs_fair (bet*fair_prob-1) - reusable functions for the model layer",
+    "Computation tables created (no changes to existing tables): clv_closing_line (32215 rows - one per (match, bookmaker) with raw trio odds, margin, proportional + Shin de-vigged probabilities) and clv_consensus_closing (5431 rows - per-match median de-vigged probabilities across bookmakers + per-outcome dispersion)",
+    "Consistency validation delivered: per-outcome inter-bookmaker dispersion of Shin de-vigged probabilities - home median 2.02% / draw 1.29% / away 1.94% (p90 ~4.3%, max 27.9% outlier tail); proportional-vs-Shin consensus agreement mean |delta| 0.35-0.63% (max 3.94%) - methods agree closely, Shin retained as primary per quality",
+    "Coverage report: 5431/5478 matches (99.1%) have a consensus closing with >=2 complete-trio bookmakers; n_bookies low tail = 10 matches with 2 bookies, 135 with 3, bulk 4-8; 47 matches without consensus (16 incomplete 2-row trios + avg-only rows); 'avg' aggregate rows excluded (not a bookmaker, different selection labels)",
+    "No structural schema change: two NEW computation tables only, documented here; existing tables untouched",
+    "Commit 526ca48 pushed (37e18d5..526ca48 master)"
+  ],
+  "findings": [
+    {
+      "title": "De-vig quality validated via cross-bookmaker dispersion",
+      "severity": "info",
+      "evidence": [
+        "Shin de-vigged probabilities across bookmakers: median max-min dispersion home 2.02% / draw 1.29% / away 1.94%; p90 4.33%/2.54%/4.13%",
+        "A tail exists (max 27.9% draw dispersion) - driven by low-liquidity bookmakers on minor matches; the median consensus absorbs it, but per-record dispersion is stored for filtering"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "Proportional vs Shin: close agreement, Shin primary",
+      "severity": "info",
+      "evidence": [
+        "Consensus mean |prop - shin| = 0.63% home / 0.35% draw / 0.51% away; max 3.94% home",
+        "Shin corrects favourite-longshot bias; both stored for the model layer to choose"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "Coverage is near-complete with an honest small gap",
+      "severity": "info",
+      "evidence": [
+        "5431 matches (99.1% of 5478 with odds) have >=2 complete-trio bookmakers; zero single-bookie matches among complete trios",
+        "47 matches without consensus: 16 incomplete 2-row trios + matches with only 'avg' aggregate rows - listed as insufficient closing data per instruction"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "OddsPortal archived snapshots ARE closing lines",
+      "severity": "info",
+      "evidence": [
+        "Every (match, bookmaker) has exactly one snapshot trio captured at scrape time, years after kickoff for older seasons - OddsPortal historical pages expose the final pre-kickoff line for finished matches",
+        "No time-series exists, so 'last snapshot before kickoff' reduces to 'the archived snapshot' - documented as the de-vig input definition"
+      ],
+      "confidence": "high"
+    }
+  ],
+  "actions_taken": [
+    "Verified snapshot granularity, selection labels, bookmaker coverage",
+    "Built clv_infrastructure.py (de-vig module + extraction + consensus + CLV functions)",
+    "Created computation tables clv_closing_line + clv_consensus_closing and populated them",
+    "Ran consistency validation + method comparison + coverage report",
+    "Committed 526ca48 and pushed"
+  ],
+  "verification": [
+    {
+      "check": "Complete trio extraction",
+      "result": "passed",
+      "evidence": "32215 (match, bookmaker) trios inserted; 16 incomplete 2-row pairs excluded and counted"
+    },
+    {
+      "check": "De-vig maths",
+      "result": "passed",
+      "evidence": "Shin: sum(p)=1 solved by bisection then renormalised; proportional sums to 1 by construction; spot-check clv_ratio(2.50, 2.20)=+0.1364, ev_vs_fair(2.50, 0.45)=+0.1250"
+    },
+    {
+      "check": "Consensus coverage",
+      "result": "passed",
+      "evidence": "5431 consensus rows; n_bookies distribution reported (2x10, 3x135, 4x2215, ... 13x2)"
+    },
+    {
+      "check": "Consistency validation",
+      "result": "passed",
+      "evidence": "dispersion percentiles stored per match; league-level medians reported"
+    },
+    {
+      "check": "Push of commits",
+      "result": "passed",
+      "evidence": "37e18d5..526ca48 master -> master"
+    }
+  ],
+  "risks": [
+    "Dispersion tail (max 27.9%) on low-liquidity matches - consensus uses the median so it is robust, but downstream CLV users should filter on disp_* columns for high-stakes use",
+    "47 matches lack a consensus closing (incomplete trios / avg-only) - these cannot support CLV and are listed as insufficient data",
+    "commence_time_utc is NULL on snapshots - closing is by-construction pre-kickoff (OddsPortal archive), but a future time-series odds source would need the kickoff join for true last-snapshot logic"
+  ],
+  "blockers": [],
+  "recommended_next_actions": [
+    "Model phase (DC / Pi-Ratings): consume clv_consensus_closing.p_*_shin_med as the closing fair probabilities; compute CLV via clv_ratio / ev_vs_fair in clv_infrastructure.py",
+    "Optional: add a coverage VIEW joining matches/clv_consensus_closing for the model layer's convenience",
+    "Optional: filter or flag the dispersion tail (disp_* > 0.10) as low-confidence closings"
+  ],
+  "handoff_to_main": "T9-CLV completed: de-vig module (proportional + Shin), closing-line extraction into clv_closing_line (32215 rows) and clv_consensus_closing (5431 matches, median consensus + dispersion), CLV functions (clv_ratio/ev_vs_fair) ready for the model layer; consistency validated (cross-bookie median dispersion ~2%, methods agree <0.7%); coverage 99.1% with 47 honest insufficient-data matches. Commit 526ca48 pushed.",
+  "telegram_usage": {
+    "used": false,
+    "bot_name": null,
+    "direction": "inbound",
+    "targets": [],
+    "inbound_summary": null,
+    "outbound_reply_bot": null,
+    "exception_handled_by_main": false,
+    "note": "No Telegram traffic in this task; work executed in coding session per direct instruction."
+  }
+}

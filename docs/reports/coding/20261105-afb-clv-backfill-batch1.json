@@ -1,0 +1,87 @@
+{
+  "schema_version": "1.0",
+  "task_id": "20261105-afb-clv-backfill-batch1",
+  "agent": "coding",
+  "status": "partial",
+  "created_at": "2026-11-05T19:05:00+08:00",
+  "update_type": "heartbeat-blocker-fix",
+  "request_summary": "Phase 2 CLV-BACKFILL resume - first launch produced unusable results; diagnosed via heartbeat, fixed, relaunched.",
+  "scope_completed": [
+    "First-launch diagnosis: ALL scrape outputs contained only 1 record (expected 100+). Three root causes found and fixed",
+    "Fix 1: scrape timeout_s 1500 (25 min) -> 7200 (2 h). Full-season scrape measured ~13 s/match (~380 matches = ~85 min) - the old timeout killed every job mid-run",
+    "Fix 2: partial-output guard (MIN_RECORDS=20) - CLI timeouts / Node driver crashes had left 1-record JSONs that the >100-byte check wrongly accepted as complete; partial outputs now quarantined to .partial.json and re-scraped",
+    "Fix 3: per-worker state files (state.json for w1, state-w2.json for w2) - both workers previously clobbered the shared state.json, losing worker 1 checkpoints",
+    "Argparse fix retained: --league is action=append now (first launch silently ran only the LAST league per worker)",
+    "DB integrity verified: afb_odds_snapshots rows with run_id='clv_backfill_batch1' = 0 - no polluted data was written",
+    "Both workers relaunched at ~19:04 with fixed script (quiet-bloom w1, quick-bison w2)"
+  ],
+  "findings": [
+    {
+      "title": "Full-season scrape pace measured",
+      "severity": "info",
+      "evidence": [
+        "~13 s/match with all bookmakers; ~380 matches/league-season = ~85 min; 22 jobs / 2 workers = ~15-16 h total"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "Node.js driver crash observed in one scrape",
+      "severity": "medium",
+      "evidence": [
+        "england-premier-league_2023-2024.log ends with Node.js v24.22.1 crash dump after 112 matches scraped"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "State clobber race confirmed",
+      "severity": "high",
+      "evidence": [
+        "state.json contained only worker 2 entries (La Liga errors); worker 1 entries lost on every worker 2 save"
+      ],
+      "confidence": "high"
+    }
+  ],
+  "actions_taken": [
+    "Killed both workers + CLI children; archived 6 partial JSONs as .partial.bak + state as state.pre-fix.bak",
+    "Patched scripts/clv_backfill.py (timeout, MIN_RECORDS guard, rc check, per-worker state); py_compile passed",
+    " Relaunched both workers with correct multi-league args"
+  ],
+  "verification": [
+    {
+      "check": "DB not polluted by partial scrapes",
+      "result": "passed",
+      "evidence": "SELECT COUNT(*) afb_odds_snapshots WHERE run_id='clv_backfill_batch1' -> 0 rows, 0 matches"
+    },
+    {
+      "check": "Patch compiles",
+      "result": "passed",
+      "evidence": "python3 -m py_compile scripts/clv_backfill.py -> OK"
+    },
+    {
+      "check": "Workers running with fixed script",
+      "result": "passed",
+      "evidence": "quiet-bloom (w1) + quick-bison (w2) launched ~19:04"
+    }
+  ],
+  "risks": [
+    "Node driver crash may recur on long scrapes - the MIN_RECORDS guard will catch it and the job will be re-scraped on next run",
+    "~15-16 h total runtime expected; per-job checkpoints make it fully resumable"
+  ],
+  "blockers": [],
+  "recommended_next_actions": [
+    "Monitor worker completion (~15-16 h); integrate scraped/mapped/inserted/no-match totals; write final artifact + handoff"
+  ],
+  "handoff_to_main": "Phase 2 first-launch produced only partial scrapes (3 tool bugs, all fixed; DB unaffected - 0 rows written). Workers relaunched 19:04 with 2h timeout + partial guard + per-worker state; ETA ~15-16 h for all 22 league-seasons. Will handoff on completion.",
+  "telegram_usage": {
+    "used": false,
+    "bot_name": null,
+    "direction": "none",
+    "targets": [
+      null
+    ],
+    "inbound_summary": null,
+    "outbound_reply_bot": null,
+    "exception_handled_by_main": false,
+    "note": "No Telegram interaction."
+  }
+}

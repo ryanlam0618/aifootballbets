@@ -1,0 +1,61 @@
+{
+  "task_id": "afb-ODDSH-PATCHRIGHT",
+  "agent": "coding",
+  "status": "completed",
+  "created_at": "2026-11-05T19:30:00+08:00",
+  "verdict": "pass_with_caveats",
+  "request_summary": "Patchright swap 實測（Kris 批准）：驗證 Patchright（protocol-level stealth Playwright fork）能否 ①唔使 STEALTH_SCRIPT 渲染正常（根治 SPA bug）②反偵測更強；branch patchright-swap 上做 import swap + persistent context + 重跑 smoke test（EPL 2024-2025 1x2，<=25 分鐘，目標 >=5 records）",
+  "command": ".venv/bin/oddsharvester historic -s football -l england-premier-league --season 2024-2025 -m 1x2 --headless --user-agent <Chrome/131 UA> --locale en-GB --timezone Europe/London -f json -o data/smoke_test/epl_1x2_2024_2025_patchright.json（branch patchright-swap：playwright_manager.py 換 patchright import + launch_persistent_context，唔載 STEALTH_SCRIPT）",
+  "diff_summary": {
+    "files": ["src/oddsharvester/core/playwright_manager.py（import swap + initialize() launch_persistent_context）", "pyproject.toml（patchright>=1.64.0 加入 dependencies）", "uv.lock", ".gitignore（data/.patchright-profile/）"],
+    "lines_changed": "約 -25/+30 行（playwright_manager.py）+ pyproject 1 行 + .gitignore 1 行",
+    "branch": "patchright-swap（master 未動）"
+  },
+  "speed_comparison": {
+    "patchright": "1 完整 record / ~20 分鐘（checkpoint 1 次）",
+    "old_workaround": "1 完整 record / ~15 分鐘（timeout 殺掉）",
+    "verdict": "相若 — 瓶頸係網站 odds-history 頁面導航（每場 ~15-20 分鐘，並發在途匹配未完成），唔係 stealth 層",
+    "patchright_advantages": ["渲染正常無需 STEALTH_SCRIPT（根治）", "10 bookmakers vs 舊 8（多 BetInAsia、Bets.io）", "119 match links 收集", "protocol 級反偵測（無 Runtime.enable leak）"]
+  },
+  "data_validation": {
+    "match": "Aston Villa 2-1 Chelsea（2025-02-22，EPL 2024-2025）",
+    "bookmakers": ["1xBet", "22Bet", "bet-at-home", "bet365", "Betfury", "BetInAsia", "Bets.io", "Betsson", "Cloudbet", "GGBET"],
+    "odds_values": 30,
+    "odds_range": "2.60-3.67",
+    "out_of_range": 0,
+    "render_normal": true,
+    "cloudflare_or_verification": false,
+    "match_links_collected": 119
+  },
+  "acceptance": {
+    "render_without_stealth_script": "PASS（根治確認 — 無 68px 空頁，log 無 empty render 證據）",
+    "anti_detection": "PASS（無 Cloudflare/驗證彈出；attempts=1 一次成功）",
+    "records_5_in_25min": "NOT MET（1 完整 record — 網站端 odds-history 速度限制，非 Patchright 問題）",
+    "pytest_1106_baseline": "REGRESSION 7（1099 passed / 7 failed — test_playwright_manager.py 對舊 browser.new_context 架構嘅斷言；遷移工作項）"
+  },
+  "verification": [
+    {"check": "渲染無 STEALTH_SCRIPT", "result": "passed", "evidence": "smoke 走完 link collection + per-match extraction，log 無 68px/empty render"},
+    {"check": "無 Cloudflare/驗證", "result": "passed", "evidence": "log 無 cloudflare/challenge/captcha；matches attempts=1"},
+    {"check": "數據質素", "result": "passed", "evidence": "10 bookmakers / 30 odds 2.60-3.67 全部 1.01-100 內"},
+    {"check": "pytest 1106 baseline", "result": "failed", "evidence": "1099 passed / 7 failed — 7 個 test_playwright_manager.py 斷言舊架構（multi-proxy/rotated pages/HAR），persistent-context 路徑取代；遷移工作項，master 未受影響"},
+    {"check": "master 未動", "result": "passed", "evidence": "branch patchright-swap（1c9aa0c + 0c3c7bb）已 push；master 仍喺 9dfda39"},
+    {"check": "artifact 無 secret", "result": "passed", "evidence": "md/json 無 token/secret/chat ID"}
+  ],
+  "honest_limits": [
+    ">=5 records 目標未達（25 分鐘得 1 個）— 瓶頸係每場 odds-history 頁面導航（網站端）",
+    "pytest 回歸 7 個（舊架構斷言測試）— 遷移工作項",
+    "multi-proxy 模式暫不支援（persistent context 單 profile）— orchestrator proxy pool 輪換需 per-profile dirs 重設計",
+    "持久 profile 目錄（data/.patchright-profile）已 gitignore — 建議定期清理"
+  ],
+  "migration_recommendations": [
+    "1. playwright_manager.py import swap ✓（本 branch 已做）",
+    "2. 其餘 Page/TimeoutError type imports（9 處）— type-only，可逐漸換（兩者 API 相容）",
+    "3. pyproject patchright>=1.64.0 ✓ + .venv 安裝 ✓ + patchright install chromium ✓",
+    "4. .gitignore data/.patchright-profile/ ✓",
+    "5. STEALTH_SCRIPT 唔載入 ✓（persistent 路徑根本唔載）",
+    "6. TODO：遷移 7 個架構測試（test_playwright_manager.py）+ multi-proxy per-profile dirs 設計",
+    "7. 合併前用 2-3 個聯賽做再現測試（本 smoke command 照跑）"
+  ],
+  "commits": ["1c9aa0c（feat swap）", "0c3c7bb（smoke evidence + gitignore）", "branch patchright-swap 已 push"],
+  "notes": "只讀之外嘅改動全部喺 branch patchright-swap（master 未動）；pytest 回歸 7 個已如實報告為遷移工作項；artifact 無 token/secret/chat ID"
+}

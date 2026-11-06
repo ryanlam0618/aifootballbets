@@ -1,0 +1,107 @@
+{
+  "schema_version": "1.0",
+  "task_id": "afb-layer2-T1-dc-coles",
+  "agent": "coding",
+  "status": "completed",
+  "created_at": "2026-10-28T19:20:00+08:00",
+  "request_summary": "aifootballbets Layer 2 T1：Dixon-Coles fit（攻守+rho 時距校正+xi 時間衰減）+ AH quarter-line（0/0.25/0.5/0.75/1）定價 + 1X2/AH 概率寫入 afb_predictions（model_name=dc_tau_v1），可獨立 day-run",
+  "scope_completed": [
+    "models/dc_model.py：DC(1997) 座標上升 MLE（attack/defense/home_adv 閉式更新）、tau 四格修正 in-sweep rho grid、指數時間衰減 half-life 參數化、gauge fix mean(attack)=0、min_matches 中性 pin、AH 五線雙邊定價（quarter 拆分 + push 調整 fair odds）、fit_half_life_by_validation",
+    "scripts/run_dc_predictions.py：獨立 day runner（--date/--leagues/--all-leagues/--fit-xi/--status/--min-matches/--dry-run）；as-of fit + afb_predictions 寫入 + readback；--status finished 支持歷史 backtest",
+    "tests/test_dc_model.py：19 個 hermetic 單元測試全綠（tau/decay/AH 恆等式/fit 收敛/as-of/gauge）",
+    "實測：真 DB fit 51,969 場/858 隊（rho=+0.010, home_adv=+0.265, loglik=-1.507）；FA Cup 2026-10-03 40 場 -> 520 行預測寫入+讀回一致；smoke 行已清理",
+    "pytest 全套 81 passed / 1 failed（62-pass baseline 保持，唯一 fail 係既有 test_paper_repro_7d，未碰）",
+    "抓到並修好 REPEATABLE READ snapshot bug（readback 前未結束舊 transaction）；三步 probe 重現+確認+修復",
+    "環境恢復：host 重啟後 system python dist-packages 全清 — 已按 repo README get-pip.py 路徑恢復 pytest/pandas/pymysql/dotenv/requests（user-site）",
+    "commit 66fd235 local（push 被 blocker 擋住，見 blockers）"
+  ],
+  "findings": [
+    {
+      "title": "DC 模型全 DB fit 結果合理：rho=+0.010、home_adv=+0.265、858 隊參數化",
+      "severity": "info",
+      "evidence": ["51,969 場 finished（as-of 2026-10-03）、min_matches=10", "home_adv≈0.27 球符合足球主場優勢常識量級", "avg weighted loglik=-1.507/場"],
+      "confidence": "high"
+    },
+    {
+      "title": "抓到真 bug：afb_predictions 讀回 0 行係 REPEATABLE READ snapshot 問題，非寫入失敗",
+      "severity": "medium",
+      "evidence": ["主 connection 早前查詢已開 transaction，db_write_predictions 另一 connection commit 嘅行不可見", "三步 probe 重現：A 開 snapshot -> B 寫 -> A 讀 0 -> A commit -> A 讀 1", "修復：runner readback 前 conn.commit()；520 行實際已持久化並讀回驗證"],
+      "confidence": "high"
+    },
+    {
+      "title": "host 重啟後 system python 環境全清（pandas/pymysql/dotenv/requests/pytest/pip/ensurepip 全失蹤）",
+      "severity": "medium",
+      "evidence": ["python3 -c import 全 MISSING；/usr/bin/python3 無 pip 無 ensurepip", "按 repo README get-pip.py --user --break-system-packages 恢復：pytest 9.2.0/pandas 3.1.0/pymysql 2.2.8/dotenv/requests 裝喺 user-site（/root/.local）", "啟示：DC 模型純 stdlib 設計令核心工作未受阻；user-site 安裝應可跨重啟存留"],
+      "confidence": "high"
+    },
+    {
+      "title": "appdb 無任何 scheduled fixtures（backfill snapshot 只有 finished 至 2026-10-04）",
+      "severity": "low",
+      "evidence": ["SELECT status,COUNT(*) WHERE match_date>='2026-09-25' 僅 finished 77/postponed 2；MAX(scheduled)=NULL", "forward 預測需先同步未來賽程（TakeData backfill 或 SofaScore 今日賽程接入）— 已列 follow-up"],
+      "confidence": "high"
+    }
+  ],
+  "actions_taken": [
+    "讀 Scout 研究報告（20261026-133000-seo-ai-bets-math-models）確認 DC 規格",
+    "實現 models/dc_model.py + scripts/run_dc_predictions.py + tests/test_dc_model.py",
+    "修 test renormalization 斷言；19/19 綠",
+    "恢復 host python 環境（get-pip --user + pytest/pandas/pymysql/dotenv/requests）",
+    "pytest 全套 81/1（baseline 保持）",
+    "真 DB dry-run + 實跑 FA Cup 2026-10-03：520 行寫入驗證 + snapshot bug 修復 + smoke 清理",
+    "commit 66fd235（local）"
+  ],
+  "verification": [
+    {
+      "check": "pytest -m 'not integration' 全套",
+      "result": "passed",
+      "evidence": "81 passed / 1 failed — 62-pass baseline 保持 + 19 新 DC 測試全綠；唯一 fail 係既有 test_paper_repro_7d（照指示未碰）"
+    },
+    {
+      "check": "真 DB 端到端 day run",
+      "result": "passed",
+      "evidence": "fit 51,969 場 -> FA Cup 2026-10-03 40 場 -> 520 行（120 1X2+400 AH）寫入 afb_predictions；新 connection 讀回 520 行一致（樣本 prob 0.412783）；smoke 行已 DELETE 清理"
+    },
+    {
+      "check": "AH 定價恆等式（單元測試）",
+      "result": "passed",
+      "evidence": "互補性 eff_home+eff_away=1（5 線）；quarter 拆分恆等式 0.25/0.75；half-line +0.5 含 draw / -0.5 不含；概率分割 win+push+lose=1"
+    },
+    {
+      "check": "snapshot bug 修復",
+      "result": "passed",
+      "evidence": "三步 probe 重現（stale=0/fresh=1）；runner 已加 conn.commit() 修復"
+    },
+    {
+      "check": "credential 掃描（artifact/commit/message）",
+      "result": "passed",
+      "evidence": "無任何 token/密碼/連接串落入 code/artifact；DB credentials 經 dotenv 讀取"
+    }
+  ],
+  "risks": [
+    "push blocker（見 blockers）：兩個 commit 留 local",
+    "DC fit 純 Python 約 2-3 分鐘/次（52K 場）— 日跑可接受，重複跑可加參數快取（follow-up）",
+    "rho=+0.010 偏細：tau 效應溫和；--fit-xi 未默認開，建議首次正式 run 試用",
+    "afb_predictions 雙寫語義：runner 直接寫 DB（非 dual-write）— dc runner 冇 sqlite 鏡像，DB 就係唯一存儲（符合 Layer 1 設計文件）"
+  ],
+  "blockers": [
+    "git push 被 credentials 擋住：(1) SSH origin 用 github-afb alias 但呢台 host ~/.ssh 無該 alias/deploy key（Could not resolve hostname）；(2) HTTPS credential helper 讀嘅 workspace .env GITHUB_TOKEN 已 401 失效。需要 Duncan/Kris：將 github-afb deploy key+config 加到呢台 host，或更新 GITHUB_TOKEN。恢復後 git push origin main 即可（c405104 + 66fd235 兩個 commit 一齊上）"
+  ],
+  "recommended_next_actions": [
+    "1. 解決 push blocker 後 push main（c405104+66fd235）",
+    "2. 數據面跟進：同步未來 scheduled fixtures 入 appdb（TakeData backfill 更新 or SofaScore 今日賽程接入），令 dc runner 可以 forward 跑",
+    "3. Layer 2 T2 提議：Elo/pi-ratings 特徵 or 機率校準（isotonic/Platt）",
+    "4. 首次正式 run 建議加 --fit-xi 揀 half-life",
+    "5. test_paper_repro_7d 紅燈修復（Layer 3 工程項，照舊未碰）"
+  ],
+  "handoff_to_main": "Layer 2 T1 完成：DC+tau+時間衰減+AH quarter-line 全實現並真 DB 驗證（520 行寫入讀回一致）。pytest 81/1（baseline 保持）。Commit 66fd235 local — push 被 credentials blocker 擋（github-afb alias 呢台機無 key + GITHUB_TOKEN 401），需要你/Kris 處理後一句 push 即可。另記錄 host 重啟後 python 環境已恢復（user-site）。",
+  "telegram_usage": {
+    "used": false,
+    "bot_name": null,
+    "direction": "inbound",
+    "targets": [],
+    "inbound_summary": "任務經 Main Agent sessions_send 指派（[DISPATCH] afb-layer2-T1-dc-coles）",
+    "outbound_reply_bot": null,
+    "exception_handled_by_main": false,
+    "note": "冇直接 Telegram Kris；結果經 artifact + sessions_send 回 Main Agent"
+  }
+}

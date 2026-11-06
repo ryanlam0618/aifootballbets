@@ -1,0 +1,124 @@
+{
+  "schema_version": "1.0",
+  "task_id": "20261106-afb-clv-task2-batch2",
+  "agent": "coding",
+  "status": "completed",
+  "created_at": "2026-11-06T18:30:00+08:00",
+  "request_summary": "Task 2 (Kris approved '1+2' 2026-11-06 12:37): CLV odds backfill Batch 2 - UCL/UEL/UECL/EFL Cup/CSL/AFC comps x seasons 2024-25 + 2023-24, 1x2 FullTime, all bookmakers, INSERT IGNORE, checkpoint, concurrency 2. Runs after Task 1 alias remap (commit fe379db) so batch-2 output benefits from the alias table.",
+  "scope_completed": [
+    "clv_backfill.py patched: +9 LEAGUE_SLUGS batch-2 entries, SEASON_SLUG_OVERRIDES (AFC CL Two 2023-24 -> afc-cup), SEASON_FALLBACKS (ACL two-year + calendar-year candidates), scrape_slug_for()/scrape_season_candidates(), CALENDAR_YEAR_LEAGUES + CSL/Emperor's Cup/Australia Cup, stage-A multi-candidate season loop",
+    "clv_remap.py patched: afc-cup slug -> AFC Champions League Two mapping",
+    "playwright_manager.py: OH_PROFILE_DIR env override enabling parallel workers with separate patchright profiles",
+    "Dual-worker scrape completed: 9 leagues x 2 seasons = 18 jobs; 17 scraped + 1 upstream-no-data (AFC CL Two 2023-24)",
+    "Direct inserts (first-pass mapping): 11,408 snapshot rows (worker1 6,139 + worker2 5,269)",
+    "Consolidated live remap over all scrape files: 5,442 scraped -> 4,986 matched (91.6%), +25,037 new snapshot rows, alias table 286 entries",
+    "Final DB state: afb_odds_snapshots 89,684 rows / 5,024 distinct matches / 15 bookmakers (clv_backfill_batch1 run: 89,402 rows / 4,977 matches / 14 bookies)",
+    "Commit ac6a6bd pushed (fe379db..ac6a6bd master) via HTTPS + credential helper script",
+    "Full per-file report: oddsharvester data/clv_backfill/remap_final_report.txt"
+  ],
+  "findings": [
+    {
+      "title": "AFC CL Two 2023-24 has no OddsPortal data (upstream absent)",
+      "severity": "info",
+      "evidence": [
+        "afc-cup slug page loaded successfully; 0 links found, 0 records; both season candidates (2023-2024, 2023) probed empty",
+        "Same class as Australia Cup 20/21 COVID absence documented earlier"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "All CLV rows carry run_id='clv_backfill_batch1' (NEW_RUN_ID dead constant)",
+      "severity": "low",
+      "evidence": [
+        "DB GROUP BY run_id: daily_20261031=282, clv_backfill_batch1=89,402; clv_backfill_remap1=0",
+        "clv_remap.py line 44 defines NEW_RUN_ID but insert path writes batch1",
+        "Math reconciles: 52,957 (post Task 1) + 11,408 (batch2 direct) + 25,037 (remap) = 89,402"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "afb_odds_snapshots.league_name is NULL for all rows",
+      "severity": "low",
+      "evidence": [
+        "GROUP BY league_name returns single (NULL, 89402) row; per-league stats must come from scrape-side state/logs"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "Batch-2 per-league final match rates (live remap)",
+      "severity": "info",
+      "evidence": [
+        "UCL 54/55 + 65/72; UEL 85/102 + 69/79; UECL 182/190 + 205/214; EFL Cup 77/80 + 47/48",
+        "CSL 128/147 + 96/144; AFC CL 94/100 + 49/56; AFC CL Two 2024-25 72/72 (100%)",
+        "Emperor's Cup 40/56 + 15/20; Australia Cup 26/30 + 32/33",
+        "FA Cup 116/235 + 68/155 remains a DB coverage gap (DB has fewer fixtures than scraped), not a mapping failure"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "SSH deploy key id_ed25519_afb is scoped to aifootballbets only",
+      "severity": "low",
+      "evidence": [
+        "ssh -T git@github-afb greets 'Hi ryanlam0618/aifootballbets!' (repo-scoped deploy key)",
+        "oddsharvester push must use HTTPS + credential helper script (fe379db and ac6a6bd both pushed this way)"
+      ],
+      "confidence": "high"
+    }
+  ],
+  "actions_taken": [
+    "Patched scripts/clv_backfill.py + scripts/clv_remap.py + src/oddsharvester/core/playwright_manager.py",
+    "Ran dual-worker backfill (system python3, OH_PROFILE_DIR isolation, OH_CHECKPOINT_SAVE=0 per-job state files)",
+    "Ran consolidated live clv_remap.py (INSERT IGNORE idempotent, score-fingerprint guarded alias learning)",
+    "Committed ac6a6bd and pushed to origin/master via credential helper",
+    "Wrote final artifact + handoff to main"
+  ],
+  "verification": [
+    {
+      "check": "py_compile + import of patched clv_backfill.py with slug/season resolution printout",
+      "result": "passed",
+      "evidence": "UCL->champions-league, ACL2 23-24->afc-cup ['2023-2024','2023'], CSL->china-super-league ['2024'], Emperor->japan-emperors-cup ['2023'], PL unchanged"
+    },
+    {
+      "check": "DB row-count reconciliation after remap",
+      "result": "passed",
+      "evidence": "89,402 = 52,957 + 11,408 + 25,037 (exact)"
+    },
+    {
+      "check": "Overall mapping rate after alias learning",
+      "result": "passed",
+      "evidence": "5,442 scraped -> 4,986 matched (91.6%); 12 files at 100%; alias table 286 entries persisted"
+    },
+    {
+      "check": "Push of commit ac6a6bd",
+      "result": "passed",
+      "evidence": "git push output: fe379db..ac6a6bd master -> master"
+    },
+    {
+      "check": "Empty scrape file handling in remap",
+      "result": "passed",
+      "evidence": "2-byte afc-cup_2023.json / afc-cup_2023-2024.json skipped safely by load_scrape_files"
+    }
+  ],
+  "risks": [
+    "FA Cup 23-24/24-25 unmatched is a DB fixture coverage gap (149 vs 235; 125 vs 155) - needs upstream fixture backfill, separate task",
+    "Other leagues' teams-table mislabels pending lineup verification (Ligue 1 lens/angers, Serie A ac milan, J1 fc tokyo, A-League brisbane roar suspects)",
+    "league_name NULL in snapshots limits DB-side per-league analytics"
+  ],
+  "blockers": [],
+  "recommended_next_actions": [
+    "Decide whether to backfill FA Cup fixture coverage in DB (upstream fixtures exist; DB lacks them)",
+    "Optional: remove clv_remap NEW_RUN_ID dead constant; optionally populate league_name on insert going forward",
+    "Resume teams-table cleanup (lineup-verified suspects) as separate approved task"
+  ],
+  "handoff_to_main": "Task 2 Batch 2 completed: +37,434 snapshot rows total (11,408 direct + 25,037 remap), DB now 89,684 rows / 5,024 matches / 15 bookies; mapping 91.6%; only upstream-absent item is AFC CL Two 2023-24; commit ac6a6bd pushed; ready for review.",
+  "telegram_usage": {
+    "used": false,
+    "bot_name": null,
+    "direction": "inbound",
+    "targets": [],
+    "inbound_summary": null,
+    "outbound_reply_bot": null,
+    "exception_handled_by_main": false,
+    "note": "No Telegram traffic in this task; work executed in coding session per direct user instruction."
+  }
+}

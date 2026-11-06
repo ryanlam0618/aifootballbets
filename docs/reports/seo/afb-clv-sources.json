@@ -1,0 +1,103 @@
+{
+  "schema_version": "1.0",
+  "task_id": "afb-clv-sources",
+  "agent": "seo",
+  "status": "completed",
+  "created_at": "2026-10-31T17:20:00+08:00",
+  "request_summary": "搜集 CLV 追蹤用賠率數據源（付費/免費），供 Layer 2 T5 pipeline 每日 odds 快照累積及 T10 CLV 裁決使用",
+  "scope_completed": [
+    "免費源盤點 5 個（football-data.co.uk、the-odds-api、OddsPortal+OddsHarvester、Betfair Historical Data、Pinnacle 現狀）",
+    "付費源盤點 6 個（BetsAPI、OddsJam、OddsPapi、odds-api.io、TheRundown、Owls Insight/theoddsapi.com）",
+    "四維評估：closing odds 有無/快照時點、聯賽覆蓋、程式化存取難度、歷史回填可行性",
+    "推薦組合：方案 A 慳錢（$0-30/月）vs 方案 B 全面（~$180-250/月）",
+    "T5/T10 pipeline 具體建議 5 條（closing 定義、去保證金、快照 schema、亞洲聯賽缺口、爬蟲風險）"
+  ],
+  "findings": [
+    {
+      "title": "Pinnacle 已於 2025 關閉自家公開 API",
+      "severity": "high",
+      "evidence": ["sportsapis.dev 2026 目錄明確記載", "現只能經 football-data.co.uk 免費 CSV 收盤欄或第三方聚合 API 取得"],
+      "confidence": "high"
+    },
+    {
+      "title": "免費源可支撐 CLV pipeline 起步（方案 A $0）",
+      "severity": "info",
+      "evidence": ["football-data.co.uk 免費 CSV 含 Pinnacle/Bet365 收盤欄、1993 起、25+ 聯賽", "the-odds-api 免費層 500 credits/月（Reddit r/algobetting 2024-10-30 佐證）"],
+      "confidence": "high"
+    },
+    {
+      "title": "歷史多時點回填最強組合係 OddsPortal 爬蟲（OddsHarvester），但有 ToS/維護風險",
+      "severity": "medium",
+      "evidence": ["github.com/jordantete/OddsHarvester 開源 Selenium 爬蟲", "OddsPortal 有完整開盤→收盤序列但無官方 API"],
+      "confidence": "medium"
+    },
+    {
+      "title": "亞洲聯賽覆蓋係免費源最大缺口",
+      "severity": "medium",
+      "evidence": ["football-data.co.uk 以歐洲為主（俄超已停更）", "the-odds-api 亞洲細聯賽有限", "方案 B 嘅 odds-api.io/BetsAPI 才能補足"],
+      "confidence": "medium"
+    },
+    {
+      "title": "付費源中 BetsAPI 逐莊計費成本疊加快（Bet365 單莊已 $150/月）",
+      "severity": "low",
+      "evidence": ["betsapi.com/docs/pricing.html", "Reddit r/SideProject 2026-04-30 佐證"],
+      "confidence": "high"
+    }
+  ],
+  "actions_taken": [
+    "web_search: the-odds-api 免費層/付費定價",
+    "web_search: BetsAPI 定價 + Betfair 歷史數據",
+    "web_search: OddsJam 訂閱定價",
+    "web_search: football-data.co.uk 覆蓋/收盤欄",
+    "web_search: OddsPortal 爬蟲（OddsHarvester）",
+    "web_search: Pinnacle API 現狀（確認 2025 已關閉公開 API）",
+    "撰寫 subagent_results/afb-clv-sources.md（9.2KB，三節+來源清單）",
+    "產出配套 JSON artifact"
+  ],
+  "verification": [
+    {
+      "check": "每個源有 link + 價錢 + 覆蓋說明",
+      "result": "passed",
+      "evidence": "md 免費 5 源 + 付費 6 源，全部附 URL/定價/覆蓋/限制"
+    },
+    {
+      "check": "價錢數字有來源佐證（官網或第三方評測）",
+      "result": "passed",
+      "evidence": "BetsAPI $150/mo（官網+Reddit）、OddsJam $39-999（評測）、the-odds-api 500 credits（Reddit）"
+    },
+    {
+      "check": "無 credential 泄漏",
+      "result": "passed",
+      "evidence": "artifact 僅含公開連結與定價"
+    },
+    {
+      "check": "推薦組合分慳錢/全面兩檔並附 pipeline 具體建議",
+      "result": "passed",
+      "evidence": "md 第三節含方案 A/B + T5/T10 五條建議"
+    }
+  ],
+  "risks": [
+    "OddsPortal 爬蟲有 ToS 風險，建議僅一次性回填",
+    "定價數字為 2026-10 當下查證，聚合 API 市場變動快，落單前需再確認",
+    "OddsJam/TheRundown 美國市場導向，足球次級聯賽覆蓋未逐一驗證"
+  ],
+  "blockers": [],
+  "recommended_next_actions": [
+    "T5 立即行動：football-data.co.uk 下載五大+次級 CSV 補歷史 CLV 基線",
+    "T5 立即行動：the-odds-api 免費層註冊，起每日 cron 快照（開賽前 30 分鐘為 closing）",
+    "T10 設計：快照 schema {match_id, bookmaker, market, odds, snapshot_ts, is_closing}",
+    "升級決策點：T5 跑順後評估 the-odds-api 付費層 或 odds-api.io",
+    "如需亞洲盤：直接試 OddsPapi 免費層再決定付費"
+  ],
+  "handoff_to_main": "afb-clv-sources 完成。artifact: subagent_results/afb-clv-sources.md + .json。核心結論：(1) Pinnacle 公開 API 2025 已死，銳利收盤線要經第三方；(2) 起步方案 $0：football-data 補歷史 + the-odds-api 免費層前向快照；(3) 全面方案 ~$180-250/月（odds-api.io/BetsAPI + Pinnacle 經聚合）；(4) 亞洲聯賽係免費源最大缺口。請審閱後轉發 Kris。",
+  "telegram_usage": {
+    "used": false,
+    "bot_name": null,
+    "direction": "none",
+    "targets": [],
+    "inbound_summary": null,
+    "outbound_reply_bot": null,
+    "exception_handled_by_main": false,
+    "note": "Task dispatched by Duncan via sessions_send; delivered via artifact + handoff, no direct Telegram."
+  }
+}

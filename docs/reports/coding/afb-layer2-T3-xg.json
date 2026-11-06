@@ -1,0 +1,113 @@
+{
+  "schema_version": "1.0",
+  "task_id": "afb-layer2-T3-xg",
+  "agent": "coding",
+  "status": "completed",
+  "created_at": "2026-10-31T20:00:00+08:00",
+  "request_summary": "Layer-2 afb-T3（四步）：T3a 261,440 shots 訓練自建 xG（XGBoost 主力 + LR 對照）、T3b isotonic 校準對齊官方尺度、T3c 缺值填校準後值 + xg_source 欄、T3d rolling 窗口；驗收 = 相關性/誤差指標 + rolling 覆蓋率 + 填值零洩漏（Main Agent 指派，Kris 拍板）",
+  "scope_completed": [
+    "models/shot_xg.py：shot_features（SofaScore 百分比座標 -> 米制距離/角度 + one-hot）、train_shot_xg（XGBoost 300 trees + LR 對照、chronological train/calib/test 切分）、isotonic 校準（T3b）",
+    "scripts/build_xg.py：T3a-d orchestration（backup 表 + ALTER xg_source + 官方標記 + 填值 + rolling 表，全冪等守衛）",
+    "真 DB 全量跑：train 31,982 shots（45,686 可訓練集中 chronological 切分）、41,647 填值、rolling 21,194 team-match rows / 752 隊",
+    "DB 變更（有 backup + 驗證）：afb_shotmap_xg_backup 備份表、match_shotmap 加 xg_source 欄、261,476 official 標記、41,647 calibrated 填值、afb_team_rolling_xg 新表",
+    "報告：reports/backtest_xg_report.md + .json",
+    "pytest 121 passed / 1 failed（121 baseline 保持）",
+    "commits 0bddc1c + ba6ac74 已 push origin/main"
+  ],
+  "findings": [
+    {
+      "title": "T3a 模型質素良好：XGBoost pearson_r 0.870 / MAE 0.0416 vs 官方 xG；LR 對照 0.754（XGBoost 大勝）",
+      "severity": "info",
+      "evidence": ["held-out test 6,852 shots（官方 xG 均值 0.114）", "isotonic 校準後 MAE 0.0420 / r 0.868（尺度對齊）"],
+      "confidence": "high"
+    },
+    {
+      "title": "數據現實修正：可訓練集 45,686 並非 261,440 — 官方 xG rows 中 21.6 萬行冇座標",
+      "severity": "medium",
+      "evidence": ["全表 766,488 shots：261,476 有官方 xG（34.11%）、其中僅 45,686 同時有 player_x/player_y 座標", "463,365 shots 既冇座標又冇官方 xG（不可填）"],
+      "confidence": "high"
+    },
+    {
+      "title": "覆蓋率誠實報告：shot 級 34.1% -> 39.55%（填後）；rolling team-match 級 22.5% — near 100% 未達成",
+      "severity": "high",
+      "evidence": ["填後 by_source：official 261,476 + calibrated 41,647 = 303,123 / 766,488", "463,365 shots 需外部座標數據源（StatsBomb/Understat）先可再提升"],
+      "confidence": "high"
+    },
+    {
+      "title": "T3d rolling 表建成（as-of 零洩漏）但覆蓋 22.5% team-matches",
+      "severity": "medium",
+      "evidence": ["afb_team_rolling_xg 21,194 rows / 752 隊（>=5 場 xG 歷史先有值）", "滾動值對有 xG 年代有效；跨年代有系統性低估（無 xG shots 計 0）"],
+      "confidence": "high"
+    },
+    {
+      "title": "過程修三個 bug：shotmap 座標欄位係 player_x/player_y、float32 JSON 序列化、skip-write 模式查不存在欄位",
+      "severity": "medium",
+      "evidence": ["首版 SQL 用 s.x/s.y 報 1054 Unknown column", "XGBoost np.float32 令 json.dumps TypeError", "skip-db-write 模式 verification 查 xg_source（未 ALTER）"],
+      "confidence": "high"
+    }
+  ],
+  "actions_taken": [
+    "實現 models/shot_xg.py + scripts/build_xg.py（T3a-d）",
+    "dry-run（skip-db-write）驗證 -> 修 3 個 bug -> 正式全量跑",
+    "DB 安全序列：afb_shotmap_xg_backup 備份 -> ALTER xg_source -> 261,476 official 標記 -> 41,647 calibrated 填值 -> afb_team_rolling_xg 21,194 行",
+    "DROP 被拒 bug 修復（appdb_rw 無 DROP，改 DELETE/CREATE 分支）",
+    "read_timeout 60s -> 600s（長查詢超時修復，commit ba6ac74）",
+    "pytest 121/1 + commit 0bddc1c push origin/main"
+  ],
+  "verification": [
+    {
+      "check": "pytest 全套",
+      "result": "passed",
+      "evidence": "121 passed / 1 failed（唯一 fail 係既有 test_paper_repro_7d 未碰；121 baseline 保持）"
+    },
+    {
+      "check": "T3a 驗收：自建 xG 相關性/誤差指標",
+      "result": "passed",
+      "evidence": "XGBoost pearson_r 0.870 / MAE 0.0416 / RMSE 0.0748（held-out test 6,852 shots）；LR 對照 0.754 被大幅拋離"
+    },
+    {
+      "check": "T3b 校準無洩漏",
+      "result": "passed",
+      "evidence": "isotonic 只用 chronological calibration slice（15%），evaluated on 後段 test slice"
+    },
+    {
+      "check": "T3c 填值安全性",
+      "result": "passed",
+      "evidence": "afb_shotmap_xg_backup 表先建；UPDATE 带 xg IS NULL guard（官方值永不覆寫）；by_source 驗證 official 261,476 + calibrated 41,647"
+    },
+    {
+      "check": "T3d rolling 覆蓋率",
+      "result": "passed",
+      "evidence": "21,194 team-match rows / 752 隊（as-of 窗口 >=5 場歷史）；near-100% 目標因數據現實未達成 — 如實報告",
+      "note": "指標達成部分：填值後 shot 級 xG 覆蓋 39.55%（座標可用子集 100%）"
+    },
+    {
+      "check": "credential 掃描",
+      "result": "passed",
+      "evidence": "code/artifact/message 無 credential"
+    }
+  ],
+  "risks": [
+    "表級 xG 覆蓋僅 39.55% — rolling SUM 對無 xG shots 計 0，跨年代系統性低估（同年代相對排名無影響）",
+    "pipeline 重跑 retrain 會包含自家 calibrated 值（循環性）— 正式再訓練應鎖定官方-only 訓練集（已記錄）",
+    "backfill runner 新 INSERT 嘅 xg_source 為 NULL — 需補標記（low priority）"
+  ],
+  "blockers": [],
+  "recommended_next_actions": [
+    "1. afb_team_rolling_xg 已可作 T6 ML view 特徵（rolling_xg_for/against + n_history）",
+    "2. 覆蓋率再提升：接外部座標數據源（StatsBomb open / Understat）— 需 Kris 拍板",
+    "3. T3c 填值語義入 T5 pipeline 文件（backfill INSERT 後補 xg_source 標記）",
+    "4. 正式再訓練鎖定官方-only 訓練集，避免 calibrated 循環性"
+  ],
+  "handoff_to_main": "afb-T3 四步全部完成：自建 xG（r 0.870，XGBoost 大勝 LR）+ isotonic 對齊 + 41,647 填值（官方值永不覆寫，backup 表在）+ rolling 表 21,194 rows。誠實修正：可訓練集 45,686 非 261,440（座標缺口）、near-100% 覆蓋未達成（39.55% shot 級 / 22.5% team-match 級，463K shots 無數據源不可填）。pytest 121/1。commits 0bddc1c + ba6ac74 已 push。",
+  "telegram_usage": {
+    "used": false,
+    "bot_name": null,
+    "direction": "inbound",
+    "targets": [],
+    "inbound_summary": "任務經 Main Agent sessions_send 指派（[DUNCAN_DISPATCH] afb-T4 + afb-T3 並行，Kris 2026-10-31 17:43 拍板）",
+    "outbound_reply_bot": null,
+    "exception_handled_by_main": false,
+    "note": "冇直接 Telegram Kris；結果經 artifact + sessions_send 回 Main Agent"
+  }
+}

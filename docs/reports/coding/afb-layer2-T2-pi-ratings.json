@@ -1,0 +1,94 @@
+{
+  "schema_version": "1.0",
+  "task_id": "afb-layer2-T2-pi-ratings",
+  "agent": "coding",
+  "status": "completed",
+  "created_at": "2026-10-31T14:30:00+08:00",
+  "request_summary": "Layer-2 afb-T2：實作 pi-ratings 賽果序列評分系統（Constantinou & Fenton 制式，逐場進化），輸出每場 ratings-based probabilities，接入 backtest 框架對比 DC baseline；驗收指標 = walk-forward RPS 相對改善 >=1%",
+  "scope_completed": [
+    "models/pi_ratings.py：per-team home/away ratings、expected supremacy h_i - a_j、4-way 誤差更新（playing-condition share omega）、supremacy -> Poisson goal means -> 1X2 probs、kappa/omega grid 調參（train supremacy MAE proxy）、league mu_totals as-of shrinkage",
+    "models/metrics.py：RPS / Brier / ECE 共享指標模組（純 stdlib）",
+    "scripts/backtest_pi.py：walk-forward（先預測後更新，結構性零洩漏）+ 溫度校準（val 前半 fit 後半 apply）+ DC baseline 對比 + 分聯賽 RPS breakdown",
+    "真 DB 全量跑：52,021 場序列、1,971 隊、15,609 val 預測",
+    "報告：reports/backtest_pi_report.md + .json",
+    "pytest 121 passed / 1 failed（111 baseline 保持，新增 10 測試）",
+    "commit 642add0 已 push origin/main"
+  ],
+  "findings": [
+    {
+      "title": "驗收通過：walk-forward RPS 相對改善 +5.79%（目標 >=1%，細樣本預期 1-4%）",
+      "severity": "info",
+      "evidence": ["DC raw RPS 0.22862 vs PI raw RPS 0.21538（rel +0.05791）", "校準後 test 半窗：DC temp 0.22893 vs PI temp 0.21801（rel +0.0477，同樣過 1%）"],
+      "confidence": "high"
+    },
+    {
+      "title": "三指標全面勝出：ll 0.98702 vs 1.03792、Brier 0.19661 vs 0.20664、hit 52.0% vs 49.6%",
+      "severity": "info",
+      "evidence": ["val 15,609 場 walk-forward 逐場統計", "pi-ratings 係文獻驗證最強單一特徵（Razali 2022 RPS 0.1925 基準區間）"],
+      "confidence": "high"
+    },
+    {
+      "title": "分聯賽全面改善：盃賽/continental 最大（FA Cup +8.98%、UECL +7.06%、UEL +6.96%），頂級聯賽細幅（EPL +2.24%、Serie A +2.44%），La Liga 持平",
+      "severity": "info",
+      "evidence": ["per_league breakdown（n>=50）喺報告 json", "DC 喺杯賽/次級賽事較弱，pi-ratings 逐場進化補足"],
+      "confidence": "high"
+    },
+    {
+      "title": "pi 概率偏保守（T=0.875 需 sharpening）；校準後指標基本持平 — supremacy->Poisson 轉換本身校準良好",
+      "severity": "info",
+      "evidence": ["test 半窗 pi raw ll 0.99417 vs temp 0.99422（無實質差異）", "RPS 0.21760 -> 0.21801（微升）"],
+      "confidence": "high"
+    }
+  ],
+  "actions_taken": [
+    "實現 models/pi_ratings.py + models/metrics.py",
+    "實現 scripts/backtest_pi.py（walk-forward + 溫度校準 + DC 對比 + 分聯賽）",
+    "tests/test_t2_pi_and_cup.py 10 測試（更新方向/supremacy 符號/概率歸一/調參/mu shrinkage/RPS 已知值）",
+    "真 DB 全量跑（52,021 場序列）",
+    "commit 642add0 push origin/main"
+  ],
+  "verification": [
+    {
+      "check": "pytest 全套",
+      "result": "passed",
+      "evidence": "121 passed / 1 failed（唯一 fail 係既有 test_paper_repro_7d 未碰；111 baseline 保持）"
+    },
+    {
+      "check": "驗收指標：walk-forward RPS 相對改善",
+      "result": "passed",
+      "evidence": "+5.79% >= 1% 目標（raw walk-forward）；校準後 test 半窗 +4.77% 亦過"
+    },
+    {
+      "check": "零洩漏（walk-forward 紀律）",
+      "result": "passed",
+      "evidence": "pi-ratings 每場先預測（用當前 ratings）後更新；參數調叠只用 train 序列；溫度校準 val 前半 fit 後半 apply"
+    },
+    {
+      "check": "credential 掃描",
+      "result": "passed",
+      "evidence": "code/artifact/message 無 credential"
+    }
+  ],
+  "risks": [
+    "RPS 改善不等於市場 edge — pi 概率 vs 市場 de-vig ROI 未測（T2① 已證明 DC 校準後無 edge）",
+    "新隊（升班馬）起步 rating=0 中性，熱身期約 10 場 — 新賽季初預測會較弱",
+    "常數為數據調叠（非 paper 原值）— paper 亦係自己數據集調叠，方法一致但已記錄"
+  ],
+  "blockers": [],
+  "recommended_next_actions": [
+    "1. pi-ratings 概率接入 T6 集成 features（workboard 連結已標）— 本任務輸出即 T6 基石",
+    "2. pi 概率 vs 市場 de-vig ROI 對比（同 T2① 方法，待派）",
+    "3. pi + DC ensemble blend 實驗（兩模型誤差相關性低，blend 有空間）"
+  ],
+  "handoff_to_main": "afb-T2 完成：pi-ratings walk-forward RPS 相對改善 +5.79% PASS（目標 1%），三指標全面勝 DC baseline，分聯賽全面改善。commit 642add0 已 push。pytest 121/1。產出 probabilities 供 T6 集成。",
+  "telegram_usage": {
+    "used": false,
+    "bot_name": null,
+    "direction": "inbound",
+    "targets": [],
+    "inbound_summary": "任務經 Main Agent sessions_send 指派（[DUNCAN_DISPATCH] afb-T2 + afb-T1.3 並行，Kris 2026-10-31 12:31 拍板）",
+    "outbound_reply_bot": null,
+    "exception_handled_by_main": false,
+    "note": "冇直接 Telegram Kris；結果經 artifact + sessions_send 回 Main Agent"
+  }
+}

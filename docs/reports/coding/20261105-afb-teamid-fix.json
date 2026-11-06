@@ -1,0 +1,111 @@
+{
+  "schema_version": "1.0",
+  "task_id": "20261105-afb-teamid-fix",
+  "agent": "coding",
+  "status": "completed",
+  "created_at": "2026-11-05T16:20:00+08:00",
+  "request_summary": "TEAMFIX Phase 1: fix EPL team_id/name mismatches in aifootballbets DB (teams/matches) so CLV-BACKFILL mapping works. Kris approved Plan A 2026-11-05 13:30 HKT; direct-session execution authorized by Kris.",
+  "scope_completed": [
+    "Root-cause diagnosis revised: matches.team_id values are CORRECT Sofascore ids; teams table had 10 mislabeled rows squatting on EPL Sofascore ids",
+    "Full-table backup before write: afb_backup_teams_20261105 (3740 rows), afb_backup_matches_20261105 (52154 rows) in-DB + CSV backups/teamfix-20261105/",
+    "10 teams-row renames executed (id unchanged): 7 Nice->Crystal Palace, 17 AC Milan->Manchester City, 32 Luton Town->Ipswich Town, 37 PSG->West Ham United, 38 Getafe->Chelsea, 41 Cardiff City->Sunderland, 42 Athletic Club->Arsenal, 43 Montpellier->Fulham, 44 AS Roma->Liverpool, 60 Southampton->Bournemouth",
+    "Slug/short_name/country_code/city/stadium aligned; no INSERT needed; no matches.team_id UPDATE needed",
+    "Old branch cleanup verified: requested 4 remote branches (clawbot/clawbot_v2/desktop/openclaw_v3) already absent on remote; local merged clawbot_v3 deleted (remote copy kept)"
+  ],
+  "findings": [
+    {
+      "title": "Root cause was teams-table mislabels, not matches corruption",
+      "severity": "info",
+      "evidence": [
+        "Ligue1/LaLiga/SerieA matches use correct Sofascore ids (PSG=1644, Nice=1661, Roma=2702) with 0 usage of suspect ids",
+        "PL matches use suspect ids as CORRECT EPL Sofascore ids in 2423 matches across all seasons"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "Identity confirmed by 3 independent evidence classes",
+      "severity": "info",
+      "evidence": [
+        "Real fixture deduction: Man Utd vs id43 2024-08-16 = real Man Utd 1-0 Fulham; Man Utd vs id44 2024-09-01 = 0-3 Liverpool; id17 vs id32 2024-08-24 = Man City 4-1 Ipswich",
+        "European history match: id38 UEL18/19+UECL24/25 titles (Chelsea); id42 UCL gap 17/18-22/23 with UEL same years (Arsenal); id44 UEL15/16 final (Liverpool); id43/id60 PL gaps 19/20-21/22 (Fulham/Bournemouth relegations); id41 PL 15/16+16/17+25/26 (Sunderland); id32 PL only 24/25+26/27 (Ipswich)",
+        "Player rosters: id7 Wharton (Palace), id38 Morata/Ruediger/Fabregas/Palmer (all ex-Chelsea), id44 Lallana (Liverpool), id60 Adam Smith (Bournemouth captain)"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "clv_backfill.py script missing from working tree",
+      "severity": "medium",
+      "evidence": [
+        "scripts/clv_backfill.py absent; git log --all shows it was never committed on any branch",
+        "Phase 2 CLV-BACKFILL resume requires restoring/rebuilding this script"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "Residual data-quality items (out of approved scope)",
+      "severity": "low",
+      "evidence": [
+        "id 3052 labeled 'Manchester City' used by 117 UCL/UEL/UECL matches but roster suggests a different club (Benfica/Turkish mix); needs ground truth",
+        "Garbage duplicate teams rows (36554 'Arsenal', 1138371 'West Ham United', 6070/530631 'PSG', etc.) mostly unreferenced",
+        "players.current_team_id polluted for some ids (40, 45)",
+        "id41 has a handful of FA Cup rows with Cardiff players in lineups - possible Cardiff mislabels"
+      ],
+      "confidence": "medium"
+    }
+  ],
+  "actions_taken": [
+    "SELECT-only diagnosis queries (team_id usage by competition/season, roster sampling, PL season club sets)",
+    "UPDATE teams x10 rows (name/slug/short_name/country_code/city/stadium/team_type), single transaction, commit only after all 10 succeeded"
+  ],
+  "verification": [
+    {
+      "check": "PL 2023-24 club set after fix",
+      "result": "passed",
+      "evidence": "20/20 correct English clubs incl. previously missing Fulham/Liverpool/Arsenal/Chelsea/Crystal Palace/Bournemouth/Luton(id72 correct)/Sheffield Utd(id15 correct)"
+    },
+    {
+      "check": "PL 2024-25 club set after fix",
+      "result": "passed",
+      "evidence": "20/20 correct English clubs incl. Ipswich(id32)/Leicester(id31)/Southampton(id45)"
+    },
+    {
+      "check": "2025-02-15 round displays real fixtures",
+      "result": "passed",
+      "evidence": "Fulham 2-1 Nottingham Forest; Man City 4-0 Newcastle; Leicester 0-2 Arsenal; Aston Villa 1-1 Ipswich; Southampton 1-3 Bournemouth; West Ham 0-1 Brentford; Crystal Palace 1-2 Everton - all real results"
+    },
+    {
+      "check": "Foreign competitions unaffected",
+      "result": "passed",
+      "evidence": "Ligue1/LaLiga/SerieA matches use ids 1644/1661/2702 etc., 0 usage of renamed ids"
+    },
+    {
+      "check": "mysqldump backup",
+      "result": "not_run",
+      "evidence": "mysqldump not installed (exit 127); used CREATE TABLE AS SELECT + Python CSV export instead"
+    }
+  ],
+  "risks": [
+    "If any historical data pipeline assumed old teams names (e.g. cached reports keyed by name), they may show old names - ids unchanged so id-keyed consumers unaffected",
+    "id41 residual cup-row doubts affect a handful of FA Cup rows only"
+  ],
+  "blockers": [],
+  "recommended_next_actions": [
+    "Restore/rebuild scripts/clv_backfill.py (was never committed) then run Phase 2 CLV-BACKFILL resume",
+    "Ground-truth check of teams id 3052 (117 UCL/UEL/UECL rows)",
+    "Cosmetic cleanup of unreferenced duplicate teams rows",
+    "Separate task: players.current_team_id pollution"
+  ],
+  "handoff_to_main": "TEAMFIX Phase 1 complete and verified. Root cause revised (teams-table mislabels, not matches corruption). DB obstacle for CLV-BACKFILL removed, but clv_backfill.py script itself is missing and needs restore before Phase 2. Awaiting decision on next step.",
+  "telegram_usage": {
+    "used": false,
+    "bot_name": null,
+    "direction": "none",
+    "targets": [
+      null
+    ],
+    "inbound_summary": null,
+    "outbound_reply_bot": null,
+    "exception_handled_by_main": false,
+    "note": "No Telegram interaction in this task segment; all work executed in-session per Kris direct instruction."
+  }
+}

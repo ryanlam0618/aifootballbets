@@ -1,0 +1,75 @@
+{
+  "task_id": "afb-DATAQ-TEAMID",
+  "agent": "coding",
+  "status": "completed",
+  "created_at": "2026-11-05T22:30:00+08:00",
+  "verdict": "teams表不完整（6/20 EPL球會缺席）+ loader對缺席球會分配錯誤team_id（歐陸球會碰撞）— 錯配集中喺2024-08季初window",
+  "request_summary": "matches/teams team_id 錯配調查（只讀診斷）：範圍量化、根因定位、連帶影響盤點、修復方案草稿（Duncan 指派，與 SLUGFIX 並行）",
+  "scope_quantification": {
+    "method": "club frequency >=10 = canonical，per-season mismatch rate",
+    "results": {
+      "Premier League": {"total": 4271, "teams": 35, "canonical": 34, "mismatch": "0-1%（2015-16→2025-26）；2026-27 部分完成季 10%"},
+      "La Liga": {"total": 4255, "teams": 32, "canonical": 31, "mismatch": "全部 0%"},
+      "Serie A": {"total": 4242, "teams": 35, "canonical": 35, "mismatch": "全部 0%"},
+      "Bundesliga": {"total": 3424, "teams": 32, "canonical": 30, "mismatch": "0-1%"},
+      "Ligue 1": {"total": 3954, "teams": 39, "canonical": 33, "mismatch": "0-1%"},
+      "J1 League": {"total": 3692, "teams": 34, "canonical": 31, "mismatch": "0-1%（2026-27 部分完成季 20%）"},
+      "K League 1": {"total": 2418, "teams": 22, "canonical": 19, "mismatch": "0-4%"},
+      "A-League Men": {"total": 1728, "teams": 13, "canonical": 13, "mismatch": "全部 0%"},
+      "Chinese Super League": {"total": 2584, "teams": 35, "canonical": 35, "mismatch": "全部 0%"}
+    },
+    "conclusion": "9 個核心聯賽 team_id 數據質素良好（0-1% mismatch）— 無系統性 team_id 錯配"
+  },
+  "root_cause": {
+    "definitive": "teams 表不完整：6/20 EPL 2024-25 球會缺席（Liverpool/Chelsea/Bournemouth/Fulham/Crystal Palace/Ipswich Town）。loader 對缺席球會嘅 matches 分配咗歐陸球會 team_id（Nice=7/Getafe=38/AC Milan=17/AS Roma=44/Montpellier=43/PSG=37/Athletic Club=42）",
+    "timing": "錯配集中喺 2024-08-16 至 2024-08-31（季初頭兩週）— 新季開始時 loader 遇到唔喺 teams 表嘅球會",
+    "not_the_cause": "唔係 team_id 跨聯賽 collision（club frequency 分析確認 team_id 一致性良好）；唔係 loader 分配錯 index（正確球會嘅 team_id 全部一致）",
+    "vs_2026_10_repair": "2026-10-02/03 修復針對 team_id attribution（正確球會嘅 id 對應），但無涵蓋 teams 表嘅球會完整性（缺席球會嘅新增）"
+  },
+  "downstream_impact": {
+    "afb_predictions": "DC + pi-ratings 以 team 名做特徵 — 唔受 team_id 錯配直接影響，但受影響球會嘅歷史場次 JOIN 會攞到錯誤球隊數據",
+    "rolling_xg": "afb_team_rolling_xg 以 team_id 為 key — 受影響球會 rolling 值來自錯誤球隊 shots",
+    "clv_backfill": "mapping 對唔上（BLOCKED）",
+    "t6_ml_views": "team_id JOIN 下游全部受影響",
+    "scope": "主要係 2024-25 季季初（2024-08）+ 缺席球會嘅所有場次"
+  },
+  "fix_plan_draft": {
+    "option_a": {
+      "title": "teams 表補齊缺失球會 + matches.team_id 重新映射（針對性修復）",
+      "steps": [
+        "1. 識別全部缺席球會（所有 competition 嘅 canonical 球會 vs teams 表比對）",
+        "2. INSERT 新 teams rows（SofaScore team_id 或新 sequential id）",
+        "3. UPDATE matches.team_id 指向正確新 teams rows（對手 + 日期 + 賽果反查）",
+        "4. 驗證：重跑 club frequency 分析 + PL 2024-25 球會名抽查"
+      ],
+      "effort": "2-4 小時",
+      "risk": "UPDATE matches 表係生產數據改動 — 需要備份 + Kris 批准"
+    },
+    "option_b": {
+      "title": "SofaScore API 重新拉取正確 team mapping（更徹底）",
+      "benefit": "同時修復 team 名 + country_code + metadata",
+      "effort": "更大（API 調用 + 數據比對）"
+    },
+    "recommendation": "方案 A 先行，方案 B 作為長期改善"
+  },
+  "verification": [
+    {"check": "9 聯賽 team_id 質素（club frequency 方法）", "result": "passed", "evidence": "0-1% mismatch（2015-16→2025-26），teams 表 team_id 一致性良好"},
+    {"check": "teams 表完整性（EPL 2024-25）", "result": "failed", "evidence": "14/20 球會存在；6 個缺席（Liverpool/Chelsea/Bournemouth/Fulham/Crystal Palace/Ipswich Town）"},
+    {"check": "錯配 team_id 映射追蹤", "result": "passed", "evidence": "7 個錯誤 team_id 全部確認指向歐陸球會（Nice=7/Getafe=38/AC Milan=17/AS Roma=44/Montpellier=43/PSG=37/Athletic Club=42）"},
+    {"check": "只讀約束", "result": "passed", "evidence": "零 DB 改動（純 SELECT 診斷）"},
+    {"check": "artifact 無 secret", "result": "passed", "evidence": "md/json 無 token/secret/password/chat ID"}
+  ],
+  "risks": [
+    "缺席球會唔止 EPL — 全部 competition 嘅 canonical 球會 vs teams 表比對可能發現更多缺失",
+    "受影響球會嘅 rolling xG 同 T6 特徵已使用錯誤球隊數據 — 修復後需要重新生成"
+  ],
+  "blockers": [],
+  "recommended_next_actions": [
+    "1. Duncan/Kris 拍板修復方案（A 針對性 vs B 全面）",
+    "2. 方案 A 執行需要：Kris 批准 UPDATE matches 表 + 備份先行",
+    "3. 修復後 CLV-BACKFILL resume（scripts/clv_backfill.py 已就緒）",
+    "4. T6 ML views 應等修復後先做"
+  ],
+  "commits": [],
+  "notes": "只讀診斷零 DB 改動；與 SLUGFIX 並行完成（SLUGFIX 用 browser、本任務用 SQL，零資源衝突）；artifact 無 token/secret/chat ID"
+}
