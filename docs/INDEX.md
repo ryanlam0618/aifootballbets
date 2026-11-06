@@ -24,6 +24,7 @@
 - **Layer 1**（~2026-09）：Sofascore 全量 backfill（15/16–25/26 + 26/27）+ DB schema + loader
 - **Layer 2 T1-T5 + T13**（2026-10-28 ~ 10-31）：**模型層 v1 完成** — DC + pi-ratings 雙模型、校準（temperature/isotonic 對比）、market blend、xG 特徵、walk-forward backtest、v1 pipeline、cup HA 修正
 - **OddHarvester 升級**（2026-11-04 ~ 11-05）：security audit、smoke test、Patchright 遷移、SLUGFIX（覆蓋 11→24 competitions）
+- **T9b 模型重考**（2026-11-07）：CLV 樣本 5,430 場 + rolling-xG 特徵重考 — **確認 T4 結論**（market closing rps 0.19482 vs 最佳模型 0.21236；positive edge + negative ROI = miscalibrated 非 value）；報告 reports/backtest_t9b_report.md
 - **TEAMFIX / CLV 工程**（2026-11-05 ~ 11-07）：teams 表錯標修復（EPL 10 + La Liga 7 + 18 + 10 + 4 對 dedupe，共 49+ 行改名/合併）、odds backfill（Batch 1+2 → 96,893 rows）、alias remap（57%→99.9%）、T9 CLV 基礎設施（de-vig Shin + closing line + 共識表）
 
 ## 4. 反 memory-出錯守則

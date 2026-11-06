@@ -37,9 +37,17 @@
 - 硬指標：ML 1X2 天花板 50-56%；DC 1997 難打敗；CLV = 唯一北極星；Kaunitz 2017 實戰 8.5% 後封帳
 - T4 實測（w=0 最優）已驗證「模型難贏市場」— 下一步差異化要靠：xG/rolling_xg 特徵（DB 有現貨）、CLV 管線、或次級市場
 
-## 5. 下一步（等 Kris 拍板）
+## 5. T9b 模型重考 ✅（2026-11-07，commit 526ca48 + 本 commit）
 
-- 用 T9 CLV 共識表重跑模型對比（夾 xG / rolling_xg 特徵，treat T4 結論為 v1 基線）
+- 樣本升級：clv_consensus_closing 5,430 場（2023-02-17 ~ 2025-05-31；T4 舊樣本 1,908）— calib/test 對半
+- 特徵升級：DC + pi + xG-Poisson（rolling_xg 特徵，覆蓋 2,413/5,430 = 44.4% 有 n_history>=3）
+- KPI 升級：主 KPI = CLV（對 de-vig closing consensus）；RPS/log-loss 參考
+- **結果（誠實）：重考確認 T4 結論** — market（closing consensus）rps=0.19482 vs 最佳模型（pi）rps=0.21236；全部源 positive raw edge（pi +13.5pp / dc +23.7pp / xg +37.6pp）但 ROI 全負（pi -1.2% / dc -7.4% / xg -9.9%）= 模型相對 closing 系統性 miscalibrated，唔係 value。closing consensus 比 T4 市場基線更銳利（0.19482 vs 0.20645）
+- rolling-xG 特徵零增益：pi_xg w*=1.0（純 pi 主導）、dc_xg w*=0.9；xG-Poisson standalone 最弱（rps 0.23187 / hit 0.351）
+- 順手任務：shotmap xG 覆蓋核實 — official xG 只有大五聯賽 100% + UCL 77-82%；Emperor's Cup 0%、FA Cup 27-30%、UECL ~50% shotmap 缺；rolling_xg 經 calibrated fill ~100%
+- 報告：reports/backtest_t9b_report.md/json；腳本：scripts/backtest_t9b.py（commit 526ca48 + 本 commit）
+
+## 6. 下一步（等 Kris 拍板）
 - GBM（T6）— 業界主力，但要夠數據；paper trading + CLV 追蹤 3 個月
 - PHASE8（剩餘 duplicate rows）— 未批；合成 ID 對賬（Sofascore backfill 前）
 - 實時賠率（要 proxy / cron 設計）
