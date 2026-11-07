@@ -136,6 +136,19 @@ class TestAsianHandicap(unittest.TestCase):
         eff_expected = 0.5 * (r05["win"] + 0.5 * r05["push"]) + 0.5 * (r1["win"] + 0.5 * r1["push"])
         self.assertAlmostEqual(r075["eff"], eff_expected, places=10)
 
+    def test_deep_quarter_lines_are_supported(self):
+        # afb-T11: deep quarter lines (-1.25 etc.) are genuine main lines for
+        # lopsided matches; the adjacent-line split must hold at any depth.
+        r1 = ah_probs(self.mat, -1.0)["home"]
+        r15 = ah_probs(self.mat, -1.5)["home"]
+        r125 = ah_probs(self.mat, -1.25)["home"]
+        eff_expected = 0.5 * (r1["win"] + 0.5 * r1["push"]) + 0.5 * (r15["win"] + 0.5 * r15["push"])
+        self.assertAlmostEqual(r125["eff"], eff_expected, places=10)
+        self.assertAlmostEqual(r125["win"] + r125["push"] + r125["lose"], 1.0, places=10)
+        for side in ("home", "away"):
+            s = ah_probs(self.mat, -2.25)[side]
+            self.assertAlmostEqual(s["win"] + s["push"] + s["lose"], 1.0, places=10)
+
     def test_probability_mass_partition(self):
         for line in (0.0, 0.25, 0.5, 0.75, 1.0):
             res = ah_probs(self.mat, line)

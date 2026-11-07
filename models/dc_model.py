@@ -148,7 +148,10 @@ def _single_line_outcome(mat: Sequence[Sequence[float]], line: float) -> Tuple[f
 def _ah_side(mat: Sequence[Sequence[float]], home_line: float) -> dict:
     """Price the HOME side of `home + home_line`; quarter lines are splits."""
     q = round(home_line * 4)
-    if abs(home_line * 4 - q) > 1e-9 or q % 2 != 0 and abs(q) > 4:
+    # afb-T11: depth guard relaxed from |q|>4 to the score-matrix resolution -
+    # the adjacent-line split formula is depth-agnostic and deep quarter lines
+    # (+-1.25, +-1.75, ...) are genuine main lines for lopsided matches.
+    if abs(home_line * 4 - q) > 1e-9 or abs(home_line) > len(mat):
         raise ValueError(f"unsupported AH line: {home_line}")
 
     if q % 2 == 0:  # integer or half line: single line settlement
