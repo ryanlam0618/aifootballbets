@@ -47,7 +47,17 @@
 - 順手任務：shotmap xG 覆蓋核實 — official xG 只有大五聯賽 100% + UCL 77-82%；Emperor's Cup 0%、FA Cup 27-30%、UECL ~50% shotmap 缺；rolling_xg 經 calibrated fill ~100%
 - 報告：reports/backtest_t9b_report.md/json；腳本：scripts/backtest_t9b.py（commit 526ca48 + 本 commit）
 
-## 6. 下一步（等 Kris 拍板）
+## 6b. T10-AH 賠率爬蟲 ✅（2026-11-07，Kris 拍板「刮，先做爬蟲」）
+
+- **目標**：Batch 1+2 同批 matches 補刮 OddsPortal AH FullTime 賠率（亞洲讓球，含 quarter-line）
+- **結果**：`afb_odds_snapshots` run_id='clv_backfill_ah' — **430,381 rows / 8,408 場 / 72 條 distinct lines**（遠超 1x2 嘅 96,893 rows / 5,474 場）
+- 覆蓋：PL 760 / La Liga 760 / Serie A 759 / J1 682 / Ligue 1 617 / Bundesliga 616 / UECL 593 / CSL 467 / K1 464 / FA Cup 457 / UEL 417 / UCL 378 / A-League 345 / AFC CL 279 / Copa del Rey 240 / EFL Cup 185 / AFC CL2 121 / Emperor's 114 / Coppa 88 / Australia Cup 66
+- 配對：8,582 刮 / 8,375 配對（97.6%，alias-table 機制 + PHASE7 side-swap）/ 207 no-match（2.4%，集中 FA Cup/Copa del Rey 低輪次）
+- **誠實聲明**：preview-only passive 模式 — 一條 line 一個 quote（OddsPortal average view），**冇 per-bookmaker breakdown**（full-line click 模式量度過要 ~15 日所以放棄）；closing-only snapshot（同 1x2 一致，無 open->close 序列）
+- 執行環境：afb-ah-scraper-tmp 容器（Kris option C，12GB memory — gateway 容器 4GiB cgroup 裝唔落 chromium）；工具 OH_LOW_MEM patch（oddsharvester ae4bfbe）+ ah_backfill.py（19e7b47, 67fdb24）
+- 報告：reports/ah_coverage_inventory.md（gitignored per convention）
+
+## 7. 下一步（等 Kris 拍板）
 - GBM（T6）— 業界主力，但要夠數據；paper trading + CLV 追蹤 3 個月
 - PHASE8（剩餘 duplicate rows）— 未批；合成 ID 對賬（Sofascore backfill 前）
 - 實時賠率（要 proxy / cron 設計）

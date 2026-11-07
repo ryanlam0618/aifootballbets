@@ -8,7 +8,8 @@
 
 - `matches` — fixtures/結果（Sofascore 口徑，~52K；PHASE4 後 FA Cup 274→480）
 - `teams` — 3,740+ rows；經 4 輪 teams-fix（2026-11-05~07）後 EPL/La Liga/Ligue 1/Serie A/J1/A-League/K League + 盃賽 duplicate-label 已驗證改名/合併
-- `afb_odds_snapshots` — **96,893 rows / 5,474 distinct matches / 15 bookies**（run_id='clv_backfill_batch1' 起，INSERT IGNORE 冪等；OddsPortal 1x2 FullTime；alias remap 配對率 99.9%）
+- `afb_odds_snapshots` — 1x2: 96,893 rows（run_id=clv_backfill_batch1）；**AH: 430,381 rows / 8,408 場 / 72 lines（run_id=clv_backfill_ah，bookmaker='average'）**
+- `afb_odds_snapshots`(dup-anchor) — **96,893 rows / 5,474 distinct matches / 15 bookies**（run_id='clv_backfill_batch1' 起，INSERT IGNORE 冪等；OddsPortal 1x2 FullTime；alias remap 配對率 99.9%）
 - `afb_predictions` — 模型預測（uq_afb_pred：run_id+match_id+market+line+selection；line 用空字串唔用 NULL）
 - `clv_closing_line` — 32,215 rows（每 match × bookmaker 收盤 trio + de-vig 機率）
 - `clv_consensus_closing` — 5,431 場（median consensus + dispersion；覆蓋 99.1%）
