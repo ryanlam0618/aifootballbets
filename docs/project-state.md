@@ -57,6 +57,17 @@
 - 執行環境：afb-ah-scraper-tmp 容器（Kris option C，12GB memory — gateway 容器 4GiB cgroup 裝唔落 chromium）；工具 OH_LOW_MEM patch（oddsharvester ae4bfbe）+ ah_backfill.py（19e7b47, 67fdb24）
 - 報告：reports/ah_coverage_inventory.md（gitignored per convention）
 
+## 6c. T11-AH 回測 ✅（2026-11-07，Kris 批准「批做AH回測」）
+
+- **問題**：「AH（兩個 option + 走水）會唔會易贏過 1x2？」
+- **答案（誠實）**：**market 仍贏，但 AH 對模型友善 ~4.4 倍** — market Brier 0.21037 vs 最佳校準模型（pi）0.21435（gap 0.0040）對比 T9b 1x2 嘅 gap 0.0175；5 個聯賽 pi 與 market 差距喺噪聲內（A-League/Bundesliga/Ligue 1/PL/Serie A，部分負數=模型名義上更好但喺噪聲內）
+- **Raw CLV signature 同 T9b 一致**：positive edge（dc +30.3pp / pi +20.9pp）+ negative ROI at actual odds（-3.4% / -3.1%）= miscalibration 非 value（每源 4,000+ 注，非小樣本噪聲）
+- **Isotonic 陷阱（如實列出）**：校準後人人轉正 — 連 market 自己 recalibrate 都 +3.38% >= pi +2.96% >= dc +2.48% — 增益嚟自 average-view 軟線（人人可得，非模型技能）；對 sharp book 大概率消失；法律紅線不變（唔落真錢）
+- **結構發現**：DC miscalibration 集中深線（|line|>=2.0 gap +0.123）同不平衡聯賽（CSL +0.108 / Coppa +0.103）；pi 全域平坦（max +0.026）— 模型層若用 AH，pi + 淺線係唯一可辯護配置
+- **方法**：8,408 場 / 每場主線（最接近平衡）/ calib-test 對半 / DC frozen 2023-02-16 / pi walk-forward / settlement 用真實 quarter-line 規則（單元測試鎖死慣例）/ binary isotonic 校準先行
+- 過程修復：`_ah_side` 深度 guard 放寬（439ddc4，20 tests 綠）、'AH 100.0' scrape artifact 過濾、away settlement 符號、common-subset join 型別
+- 報告：reports/backtest_t11_ah_report.md/json；腳本：scripts/backtest_t11_ah.py
+
 ## 7. 下一步（等 Kris 拍板）
 - GBM（T6）— 業界主力，但要夠數據；paper trading + CLV 追蹤 3 個月
 - PHASE8（剩餘 duplicate rows）— 未批；合成 ID 對賬（Sofascore backfill 前）
