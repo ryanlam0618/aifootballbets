@@ -110,6 +110,18 @@
 - 方法：25/26 AH 爬蟲（T10 管道，20 賽事 × 2025-2026，6 workers ~1.3h，161,940 rows / 3,190 場入庫 run_id='clv_backfill_ah'）+ pre-2023 模型零重訓 + pi as-of 行到 25/26 + 量綱 sanity check 全綠（過程修 2 個 bug：kelly sanity rebuild skip-aware、bootstrap key）
 - 報告：reports/bankroll_sim_t13_oos_report.md/json；腳本：scripts/bankroll_sim_t13_oos.py
 
+## 6h. T14 落差分解 ✅（2026-11-09，Kris 指示「搵出之間嘅原因同關係」）
+
+- **問題**：分解 T12 window（+5.77%）同 T13 window（-5.10%）嘅落差來源
+- **發現 1 — 長 shot 假說否定**：T12 window 全部 7,465 條 rule-B 注 odds 都 < 3（模型揀接近平衡主線 favour 嗰邊）— 冇長 shot，+24,253 唔係長 shot 主導；剔除後 ROI 不變（-0.41%）
+- **發現 2 — 評估配置 artifact 證實係主因**：T12c 嘅 +5.77% 量度自特定配置：(a) pi 只行過 AH-sample 事件（漏 ~60% 比賽結果，ratings 較噪）；(b) 注組只計 test half。T14 用全歷史 pi（行過所有比賽）+ 全 window 注組重計同一時期：23-24 **-0.54%** / 24-25 **-1.05%** — 「edge」對模型狀態定義唔穩健
+- **發現 3 — 季節拆分（全歷史 pi）單調惡化**：-0.54% → -1.05% → -3.29%（25/26）— 符合「冇 edge + 噪聲」或「軟線逐步修正 / 輕度老化」，唔係斷崖
+- **發現 4 — 月度曲線衰減 pattern**：2023-03~06 強勁正數（月 ROI +7~+16%，cum +2,663）之後 2023-07 起持續陰跌到 -14,835 — **edge 只活咗頭 4 個月，之後再無返嚟**；逐漸衰減唔係斷崖
+- **發現 5 — 統計檢定（誠實）**：三季合計 10,793 注、per-unit mean -0.0119、t=-1.363、p=0.173 — **唔顯著**（兩邊都唔顯著）
+- **總判定（混合）**：主因 = 評估配置 artifact（pi 狀態定義 + test-half-only 注組）；次要 = 2023 年頭短暫正數（軟線初期效應）之後陰跌；排除 = 長 shot 運氣（零長 shot）+ 斷崖式收緊（衰減 pattern）
+- 過程修復：excl 表 ROI 單位錯標（per-bet 美元當 fraction，100 倍家族）已修正；T14 統一流（pi as-of 狀態同 T12/T13 完全一致）取代 build_priced_bets 依賴
+- 報告：reports/decomposition_t14_report.md/json；腳本：scripts/decomposition_t14.py
+
 ## 7. 下一步（等 Kris 拍板）
 - GBM（T6）— 業界主力，但要夠數據；paper trading + CLV 追蹤 3 個月
 - PHASE8（剩餘 duplicate rows）— 未批；合成 ID 對賬（Sofascore backfill 前）
