@@ -5,17 +5,19 @@ Question (Kris 2026-11-08): "唔睇 ROI/edge，只根據模型勝率落注（1x2
 最後結果係幾多？本金 10000" - a formal flat-stake bankroll simulation.
 
 Design (zero leakage, same test periods as T9b/T11):
-- Sample: the TEST halves of the T9b 1x2 CLV sample (~4,204 matches) and the
+- Sample: the TEST halves of the T9b 1x2 CLV sample (~2,715 matches) and the
   T11 AH sample (~4,204 matches). Model probabilities from the established
-  walk-forward pipelines: DC frozen at the boundary (sample_start - 1 day);
-  pi-ratings initialised on all finished matches before the boundary, then
-  walk-forward through the sample in date order (update AFTER pricing each
-  unique match - as-of discipline). RAW model probabilities are used
-  (argmax betting is invariant to temperature calibration; for AH the natural
-  rule is raw cover prob vs 0.5).
+  walk-forward pipelines: DC frozen at the boundary (full-sample start - 1
+  day); pi-ratings initialised on all finished matches before the boundary,
+  then walk-forward through the FULL samples in date order (update AFTER
+  pricing each unique match - as-of discipline; pi walks the calib half
+  before the test half). RAW model probabilities are used (argmax betting is
+  invariant to temperature calibration; for AH the natural rule is raw cover
+  prob vs 0.5).
 - Betting rule (pure probability, NO edge threshold): 1x2 - bet the outcome
   with the highest model probability; AH - bet the side with the higher model
-  cover probability (home if p>0.5 else away). EVERY match gets a bet.
+  cover probability (home if p>0.5 else away). EVERY test-half match gets a
+  bet.
 - Settlement at PRE-de-vig closing odds (real market quotes):
   1x2 - bookmaker-average raw odds per outcome (afb_odds_snapshots
   run_id='clv_backfill_batch1', market_key='1X2');
@@ -29,6 +31,9 @@ Design (zero leakage, same test periods as T9b/T11):
   chronologically into one bankroll journey). pi is the primary model (best
   in T9b/T11); DC reported as a robustness variant.
 
+afb-T12b builds on this file: build_priced_bets() is importable and shared
+with scripts/bankroll_sim_t12b.py (dynamic staking variants).
+
 Zero DB writes. Expected result is negative - reported as-is.
 
 Outputs: reports/bankroll_sim_t12_report.json + .md
@@ -41,7 +46,7 @@ import sys
 from collections import defaultdict
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
@@ -74,7 +79,7 @@ def run_bankroll(bets: List[dict]) -> dict:
         if bankroll <= 0 or bankroll < STAKE:
             bankrupt_at = i - 1
             break
-        pl = b["pl"]
+        pl = b["pl"] * STAKE  # b["pl"] is PER-UNIT; scale by the real stake
         bankroll += pl
         total_staked += STAKE
         if pl > 0:
@@ -107,24 +112,19 @@ def run_bankroll(bets: List[dict]) -> dict:
     }
 
 
-# --------------------------------------------------------------------- main
+# ------------------------------------------------------- priced bet streams
 
-def main() -> int:
-    p = argparse.ArgumentParser(description="T12 bankroll simulation")
-    p.add_argument("--half-life", type=float, default=365.0)
-    p.add_argument("--min-matches", type=int, default=10)
-    p.add_argument("--max-sweeps", type=int, default=30)
-    p.add_argument("--tol", type=float, default=1e-4)
-    p.add_argument("--max-goals", type=int, default=10)
-    p.add_argument("--stake", type=float, default=100.0)
-    p.add_argument("--out-prefix", type=str,
-                   default=str(REPO_ROOT / "reports" / "bankroll_sim_t12_report"))
-    args = p.parse_args()
-    stake = args.stake
+def build_priced_bets(conn, cur, half_life: float = 365.0, min_matches: int = 10,
+                      max_sweeps: int = 30, tol: float = 1e-4,
+                      max_goals: int = 10) -> Tuple[List[dict], List[dict], dict]:
+    """Price the T9b/T11 test-half bet streams (model picks + real-odds P/L).
 
-    conn = afb_mysql_connect()
-    cur = conn.cursor()
-
+    Returns (final_1x2, final_ah, meta). Each bet carries: date, match_id,
+    league, pick and per-unit P/L for pi (primary) and dc (robustness), plus
+    the picked side's model probability and real odds (for staking schemes).
+    Zero leakage: DC frozen at the full-sample boundary; pi walks the FULL
+    samples in date order (calib before test), update AFTER pricing.
+    """
     # ---- 1x2 sample: T9b query and split, exactly ----
     cur.execute("""SELECT c.match_id, c.p_home_shin_med, c.p_draw_shin_med, c.p_away_shin_med,
                           m.match_date, th.name, ta.name, m.home_score, m.away_score, comp.name
@@ -161,8 +161,8 @@ def main() -> int:
 
     # ---- DC frozen at boundary ----
     dc = fit_dc(to_match_records(train), asof=boundary,
-                half_life_days=args.half_life, min_matches=args.min_matches,
-                max_sweeps=args.max_sweeps, tol=args.tol)
+                half_life_days=half_life, min_matches=min_matches,
+                max_sweeps=max_sweeps, tol=tol)
 
     # ---- unique events across both markets (FULL samples: pi walks the
     # calib half too; bets placed only on test-half events) ----
@@ -189,7 +189,7 @@ def main() -> int:
     for m in to_match_records(train):
         pi.update(m.home, m.away, m.home_goals, m.away_goals)
     mu_totals = league_mu_totals(to_match_records(train), asof=boundary,
-                                 half_life_days=args.half_life)
+                                 half_life_days=half_life)
 
     rows_1x2_by_id = {str(r[0]): r for r in test_1x2}
     ah_by_id = {str(r["match_id"]): r for r in test_ah}
@@ -223,8 +223,8 @@ def main() -> int:
                 else:
                     p_pi = pi.probs_1x2(home, away,
                                         mu_total=mu_totals.get(league or "", mu_totals[""]),
-                                        max_goals=args.max_goals)
-                    p_dc = dc.probs_1x2(home, away, max_goals=args.max_goals)
+                                        max_goals=max_goals)
+                    p_dc = dc.probs_1x2(home, away, max_goals=max_goals)
                     outcome = one_x_two_outcome(hsc, asc)
                     o_real = {"Home": o["1"], "Draw": o["X"], "Away": o["2"]}
                     pick_pi = max(SEL_1X2, key=lambda s: p_pi[s])
@@ -236,16 +236,18 @@ def main() -> int:
                         "pl_pi": (o_real[pick_pi] - 1.0) if outcome == pick_pi else -1.0,
                         "pick_dc": pick_dc,
                         "pl_dc": (o_real[pick_dc] - 1.0) if outcome == pick_dc else -1.0,
+                        "odds_pi": o_real[pick_pi], "odds_dc": o_real[pick_dc],
+                        "p_pi_pick": p_pi[pick_pi], "p_dc_pick": p_dc[pick_dc],
                     })
         elif ev["market"] == "ah" and ev["part"] == "test":
             row = ah_by_id[ev["match_id"]]
             mat_pi = pi.score_matrix(ev["home"], ev["away"],
                                      mu_total=mu_totals.get(ev["league"] or "", mu_totals[""]),
-                                     max_goals=args.max_goals)
+                                     max_goals=max_goals)
             pr = ah_probs(mat_pi, row["line"])
             denom = pr["home"]["win"] + pr["home"]["lose"]
             ph = pr["home"]["win"] / denom if denom > 0 else 0.5
-            mat_dc = dc.score_matrix(ev["home"], ev["away"], max_goals=args.max_goals,
+            mat_dc = dc.score_matrix(ev["home"], ev["away"], max_goals=max_goals,
                                      league=ev["league"])
             prd = ah_probs(mat_dc, row["line"])
             denom_d = prd["home"]["win"] + prd["home"]["lose"]
@@ -264,6 +266,9 @@ def main() -> int:
             bets_ah.append({
                 "date": ev["date"], "match_id": ev["match_id"],
                 "side_pi": side, "pl_pi": pl_pi, "side_dc": side_d, "pl_dc": pl_dc,
+                "odds_pi": o, "odds_dc": o_d,
+                "p_pi_pick": ph if side == "home" else 1.0 - ph,
+                "p_dc_pick": pdh if side_d == "home" else 1.0 - pdh,
                 "league": ev["league"],
             })
         # pi update AFTER the event (as-of discipline) - once per unique match
@@ -273,6 +278,27 @@ def main() -> int:
 
     final_1x2 = sorted(bets_1x2, key=lambda b: (b["date"], b["match_id"]))
     final_ah = sorted(bets_ah, key=lambda b: (b["date"], b["match_id"]))
+    meta = {"1x2_test_n": len(test_1x2), "1x2_bets": len(final_1x2),
+            "1x2_skipped_no_raw_odds": skipped_1x2,
+            "ah_test_n": len(test_ah), "ah_bets": len(final_ah),
+            "boundary": str(boundary), "train_n": len(train)}
+    return final_1x2, final_ah, meta
+
+
+# --------------------------------------------------------------------- main
+
+def main() -> int:
+    p = argparse.ArgumentParser(description="T12 bankroll simulation")
+    p.add_argument("--stake", type=float, default=100.0)
+    p.add_argument("--out-prefix", type=str,
+                   default=str(REPO_ROOT / "reports" / "bankroll_sim_t12_report"))
+    args = p.parse_args()
+    stake = args.stake
+
+    conn = afb_mysql_connect()
+    cur = conn.cursor()
+
+    final_1x2, final_ah, meta = build_priced_bets(conn, cur)
     combined = sorted(final_1x2 + final_ah, key=lambda b: (b["date"], b["match_id"]))
 
     # ---- portfolios (pi primary; dc robustness) ----
@@ -288,10 +314,7 @@ def main() -> int:
     report = {
         "meta": {"bankroll0": BANKROLL0, "stake": stake,
                  "sample": "T9b/T11 test halves",
-                 "1x2_test_n": len(test_1x2), "1x2_bets": len(final_1x2),
-                 "1x2_skipped_no_raw_odds": skipped_1x2,
-                 "ah_test_n": len(test_ah), "ah_bets": len(final_ah),
-                 "boundary": str(boundary), "train_n": len(train),
+                 **meta,
                  "model": "pi primary (raw probs, argmax/majority-side pick); dc robustness",
                  "settlement": "pre-de-vig closing odds (bookmaker-average 1x2; average-view AH quotes); T1 quarter-line rules"},
         "portfolios": portfolios,
@@ -302,8 +325,8 @@ def main() -> int:
     lines = ["# T12 BANKROLL SIMULATION (afb-T12)", "",
              f"bankroll0={BANKROLL0:.0f} stake={stake:.0f} flat; "
              "model=pi primary (raw probs; pick = highest model probability)",
-             f"1x2 test bets {len(final_1x2)}/{len(test_1x2)} (skipped, no raw odds: {skipped_1x2}); "
-             f"AH test bets {len(final_ah)}/{len(test_ah)}; boundary {boundary}; train {len(train)}",
+             f"1x2 test bets {meta['1x2_bets']}/{meta['1x2_test_n']} (skipped, no raw odds: {meta['1x2_skipped_no_raw_odds']}); "
+             f"AH test bets {meta['ah_bets']}/{meta['ah_test_n']}; boundary {meta['boundary']}; train {meta['train_n']}",
              ""]
     for name in ("1x2_pi", "ah_pi", "combined_pi", "1x2_dc", "ah_dc", "combined_dc"):
         r = portfolios[name]

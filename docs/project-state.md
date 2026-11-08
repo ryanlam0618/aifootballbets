@@ -68,14 +68,22 @@
 - 過程修復：`_ah_side` 深度 guard 放寬（439ddc4，20 tests 綠）、'AH 100.0' scrape artifact 過濾、away settlement 符號、common-subset join 型別
 - 報告：reports/backtest_t11_ah_report.md/json；腳本：scripts/backtest_t11_ah.py
 
-## 6d. T12 本金模擬 ✅（2026-11-08，Kris 要求「純勝率落注，本金 10000」）
+## 6d. T12 本金模擬 ✅⚠️已更正（2026-11-08，Kris 要求「純勝率落注，本金 10000」）
 
-- **規則**：唔睇 ROI/edge，每場必落注（1x2 揀模型機率最高 outcome；AH 揀模型 cover prob > 0.5 嗰邊），flat 100/注，本金 10,000，結算用 de-vig 前真實報價（1x2 bookmaker-average raw odds；AH average-view quotes + T1 quarter-line 規則）
-- **結果（如實）**：**冇破產，但全部貼近打和** — pi 版：1x2 -101.62 / AH +242.53 / 合併 +140.91；DC 版全負：1x2 -78.54 / AH -134.48 / 合併 -213.02（maxDD 227.52 全場最痛）。ROI on staked 全部 ±0.06%，1 SE ≈ ±1.1% — **全部喺統計噪聲內，AH_pi 嘅 +242 唔可以當 edge**
-- 同 T11 嘅 -3.08% 差異係落注規則唔同（T11 max-edge side vs T12 模型自己 pick），唔係矛盾；共同結論不變：**冇策略展示出可交易 edge**
-- pi-AH maxDD 只有 28.25（1x2 118.72）— push 結算 + 接近平衡主線令波幅細，係組合特性唔係賺錢能力
-- 方法：T9b/T11 test halves（1x2 2,715 場 0 skipped / AH 4,204 場）、boundary 2023-02-16、pi walk 行晒 calib、raw probs argmax（temperature 對 argmax 無影響）、零 DB 寫入
-- 報告：reports/bankroll_sim_t12_report.md/json；腳本：scripts/bankroll_sim_t12.py
+- ⚠️ **更正（2026-11-08）**：第一版有 stake bug — run_bankroll 將 per-unit P/L 當美元入帳（實際每注 1 蚊而唔係 100 蚊），最初報告嘅「冇破產、貼近打和」（-101.62/+242.53）係 1-unit journey，100 倍低估。已修正並公開更正；正確結果同 T12b flat 完全一致
+- **規則**：唔睇 ROI/edge，每場必落注（1x2 揀模型機率最高 outcome；AH 揀模型 cover prob > 0.5 嗰邊），flat 100/注，本金 10,000，結算用 de-vig 前真實報價
+- **修正後結果（如實）**：**1x2_pi 破產**（bet 2,066，final 67.20，輸 9,933）；**ah_pi +24,253**（final 34,253；ROI on staked +5.77%，avg odds 1.98，hit 53.55% vs break-even 50.48%）；**combined_pi +14,091**（1x2 腿破產路徑被 AH 利潤交錯救起）；**DC 全滅**（ah_dc 破產 bet 2,927 / combined_dc 破產 bet 1,022 / 1x2_dc -7,854）
+- **ah_pi +5.77% 嘅誠實警示**：(a) 軟 average-view 線（冇 per-bookie dispersion）；(b) 同 T11 max-edge 規則（-3.08%）相反 — 兩個規則喺 favourite-aligned 場次揀相反邊，符號取決於規則唔係穩健模型特性；(c) T11 isotonic market-recal +3.38% 已顯示 average view 軟。唔構成可交易結論；法律紅線不變
+- 報告：reports/bankroll_sim_t12_report.md/json（含更正段）；腳本：scripts/bankroll_sim_t12.py
+
+## 6e. T12b 動態注碼模擬 ✅（2026-11-08，Kris 拍板「跑咗先知會唔會輸」）
+
+- **三種注碼對比**（同 T12 樣本/pick 規則/settlement）：flat 100 vs quarter-Kelly（cap 5%/注，kelly≤0 跳過）vs bankroll 1%
+- **Kelly 兩邊放大（理論預期）**：AH_pi_kelly 10,000 → **17,148,783**（1,715x，3,890 注，maxDD 14.0M）；1x2_pi_kelly → 175.9（近滅，1,416/2,715 注被負 Kelly 跳過）；dc_kelly 全部 ~19（近全滅）
+- **1% bankroll 複利同方向**：AH_pi → 94,942（+849%）；1x2_pi → 3,105.8（-69%）；dc 全負
+- **Kelley 特別報告**：單注最大損失 1,120,198（AH_pi_kelly）；max stake 5% cap；stake std 同 heavy-streak 喺 JSON
+- **誠實結論**：17M 係噪聲級 edge 嘅路徑依賴複利（比例注碼唔會破產但變異數主導）；AH_pi 正路徑有 T12 之軟線警示 + 同 T11 max-edge 規則相反；全部唔構成可交易策略
+- 報告：reports/bankroll_sim_t12b_report.md/json；腳本：scripts/bankroll_sim_t12b.py（重用 T12 build_priced_bets）
 
 ## 7. 下一步（等 Kris 拍板）
 - GBM（T6）— 業界主力，但要夠數據；paper trading + CLV 追蹤 3 個月
