@@ -25,6 +25,7 @@
 - **Layer 2 T1-T5 + T13**（2026-10-28 ~ 10-31）：**模型層 v1 完成** — DC + pi-ratings 雙模型、校準（temperature/isotonic 對比）、market blend、xG 特徵、walk-forward backtest、v1 pipeline、cup HA 修正
 - **OddHarvester 升級**（2026-11-04 ~ 11-05）：security audit、smoke test、Patchright 遷移、SLUGFIX（覆蓋 11→24 competitions）
 - **T9b 模型重考**（2026-11-07）：CLV 樣本 5,430 場 + rolling-xG 特徵重考 — **確認 T4 結論**（market closing rps 0.19482 vs 最佳模型 0.21236；positive edge + negative ROI = miscalibrated 非 value）；報告 reports/backtest_t9b_report.md
+- **T12 本金模擬**（2026-11-08）：「純勝率落注，本金 10000」— **冇破產但全部貼近打和**（pi：1x2 -102 / AH +243 / 合併 +141；DC 全負 maxDD 227.52；ROI ±0.06% 全喺噪聲內）；同 T11 -3.08% 差異係落注規則唔同；報告 reports/bankroll_sim_t12_report.md
 - **T11-AH 回測**（2026-11-07）：「AH 易唔易贏過 1x2？」— **market 仍贏但 AH 對模型友善 4.4 倍**（Brier gap 0.0040 vs 1x2 嘅 0.0175）；raw CLV signature 同 T9b 一致（positive edge + negative ROI）；isotonic 校準增益係 average-view 軟線 artifact（market 自己 recal 都 +3.4%）；DC 深線爆升、pi 平坦；報告 reports/backtest_t11_ah_report.md
 - **T10-AH 賠率爬蟲**（2026-11-07）：OddsPortal AH 補刮 Batch 1+2 同批 matches — **430,381 rows / 8,408 場 / 72 條 lines**（quarter-line 齊）；preview-only passive（average view，無 per-bookie breakdown，誠實聲明見 project-state 6b）；報告 reports/ah_coverage_inventory.md
 - **TEAMFIX / CLV 工程**（2026-11-05 ~ 11-07）：teams 表錯標修復（EPL 10 + La Liga 7 + 18 + 10 + 4 對 dedupe，共 49+ 行改名/合併）、odds backfill（Batch 1+2 → 96,893 rows）、alias remap（57%→99.9%）、T9 CLV 基礎設施（de-vig Shin + closing line + 共識表）

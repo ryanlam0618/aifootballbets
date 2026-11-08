@@ -68,6 +68,15 @@
 - 過程修復：`_ah_side` 深度 guard 放寬（439ddc4，20 tests 綠）、'AH 100.0' scrape artifact 過濾、away settlement 符號、common-subset join 型別
 - 報告：reports/backtest_t11_ah_report.md/json；腳本：scripts/backtest_t11_ah.py
 
+## 6d. T12 本金模擬 ✅（2026-11-08，Kris 要求「純勝率落注，本金 10000」）
+
+- **規則**：唔睇 ROI/edge，每場必落注（1x2 揀模型機率最高 outcome；AH 揀模型 cover prob > 0.5 嗰邊），flat 100/注，本金 10,000，結算用 de-vig 前真實報價（1x2 bookmaker-average raw odds；AH average-view quotes + T1 quarter-line 規則）
+- **結果（如實）**：**冇破產，但全部貼近打和** — pi 版：1x2 -101.62 / AH +242.53 / 合併 +140.91；DC 版全負：1x2 -78.54 / AH -134.48 / 合併 -213.02（maxDD 227.52 全場最痛）。ROI on staked 全部 ±0.06%，1 SE ≈ ±1.1% — **全部喺統計噪聲內，AH_pi 嘅 +242 唔可以當 edge**
+- 同 T11 嘅 -3.08% 差異係落注規則唔同（T11 max-edge side vs T12 模型自己 pick），唔係矛盾；共同結論不變：**冇策略展示出可交易 edge**
+- pi-AH maxDD 只有 28.25（1x2 118.72）— push 結算 + 接近平衡主線令波幅細，係組合特性唔係賺錢能力
+- 方法：T9b/T11 test halves（1x2 2,715 場 0 skipped / AH 4,204 場）、boundary 2023-02-16、pi walk 行晒 calib、raw probs argmax（temperature 對 argmax 無影響）、零 DB 寫入
+- 報告：reports/bankroll_sim_t12_report.md/json；腳本：scripts/bankroll_sim_t12.py
+
 ## 7. 下一步（等 Kris 拍板）
 - GBM（T6）— 業界主力，但要夠數據；paper trading + CLV 追蹤 3 個月
 - PHASE8（剩餘 duplicate rows）— 未批；合成 ID 對賬（Sofascore backfill 前）
