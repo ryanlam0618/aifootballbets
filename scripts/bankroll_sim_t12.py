@@ -266,6 +266,7 @@ def build_priced_bets(conn, cur, half_life: float = 365.0, min_matches: int = 10
             bets_ah.append({
                 "date": ev["date"], "match_id": ev["match_id"],
                 "side_pi": side, "pl_pi": pl_pi, "side_dc": side_d, "pl_dc": pl_dc,
+                "line": row["line"],
                 "odds_pi": o, "odds_dc": o_d,
                 "p_pi_pick": ph if side == "home" else 1.0 - ph,
                 "p_dc_pick": pdh if side_d == "home" else 1.0 - pdh,

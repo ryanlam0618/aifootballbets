@@ -85,6 +85,16 @@
 - **誠實結論**：17M 係噪聲級 edge 嘅路徑依賴複利（比例注碼唔會破產但變異數主導）；AH_pi 正路徑有 T12 之軟線警示 + 同 T11 max-edge 規則相反；全部唔構成可交易策略
 - 報告：reports/bankroll_sim_t12b_report.md/json；腳本：scripts/bankroll_sim_t12b.py（重用 T12 build_priced_bets）
 
+## 6f. T12c AH bootstrap + 敏感性 ✅（2026-11-08，Kris 指示驗證「真 edge 定路徑運氣」）
+
+- **Bootstrap（1,000 i.i.d. 路徑）**：flat-100 全部 1,000 條路徑正回報（median 33,739、p5 24,600、0% 破產）；kelly/pct1 同樣 100% 正 — **+5.77% 唔係單一路徑運氣**（per-bet P/L 分佈正平均內部一致），**但 bootstrap 答唔到個 mean 本身係咪真**（重採樣同一 window，要 out-of-sample 先知）
+- **線深切分（結構答案）**：淺線（|line|≤0.5）ROI **+6.83%**（2,261 注）/ 中線 **+7.22%**（1,295 注）/ **深線（≥1.5）-0.81%**（只有 42.2% 路徑正）— edge 完全集中淺/中線，同 T11 結構一致：模型 AH 意見只喺接近平衡線上有訊息
+- **抽水敏感性（致命）**：+5.73%（0%）→ +3.25%（+5%）→ +0.78%（+10%）→ **-1.70%（+15%）** — **edge 食唔起 HKJC 級成本，唔可利用**（vig 表用二元結算近似，5.73% vs 精確 5.77% 差異無關痛癢）
+- **Kelly 分數敏感性**：1/8 最穩（boot min 83,478）；1/4 median 16.5M（boot min 11,060）；full Kelly median 反而低過 1/4 且有路徑 -70%（3,020）— 過度下注拖累
+- 量綱 sanity check 全綠（T12 教訓應用：flat 420,400 staked / +24,253 / final 34,253 重算吻合）；vig ROI 段曾犯同一量綱錯誤（100 倍低估）已修正
+- **總結**：+5.77% 唔係路徑運氣但亦唔可以當已驗證真 edge — 單一 window、軟 average-view 線、規則依賴（T11 max-edge -3.08%）、食唔起 HKJC 級抽水；法律紅線不變
+- 報告：reports/bankroll_sim_t12c_report.md/json；腳本：scripts/bankroll_sim_t12c.py
+
 ## 7. 下一步（等 Kris 拍板）
 - GBM（T6）— 業界主力，但要夠數據；paper trading + CLV 追蹤 3 個月
 - PHASE8（剩餘 duplicate rows）— 未批；合成 ID 對賬（Sofascore backfill 前）
