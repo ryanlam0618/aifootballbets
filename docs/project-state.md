@@ -95,6 +95,21 @@
 - **總結**：+5.77% 唔係路徑運氣但亦唔可以當已驗證真 edge — 單一 window、軟 average-view 線、規則依賴（T11 max-edge -3.08%）、食唔起 HKJC 級抽水；法律紅線不變
 - 報告：reports/bankroll_sim_t12c_report.md/json；腳本：scripts/bankroll_sim_t12c.py
 
+## 6g. T13 25/26 OOS 驗證 ✅（2026-11-08，Kris 拍板「開工，先唔做live paper」）
+
+- **問題**：T12c window（23-24+24-25）嘅 rule-B +5.77% 係真 edge 定 window 運氣？
+- **答案（決定性）**：**翻車 — 完全翻轉**。25/26 OOS（3,190 場 AH、rule B 2,940 場、零重訓）全部組合全負：
+  - flat_pi：10,000 → **88.50**（ROI **-5.10%**，1,942 注，near-bankrupt）
+  - kelly_pi：10,000 → **19.14**（ROI **-5.58%**，maxDD 13,347 近全滅）
+  - pct1_pi：10,000 → 3,370.59（ROI **-4.01%**）
+  - DC 同樣全負：flat -1.83% / kelly -3.39% / pct1 -2.21%
+- **Depth split 都翻轉**：淺線（T12c「edge」桶）ROI **-3.84%**、bootstrap 只有 **4.2%** 路徑正（p5 -3,474.95、min -9,032.50）；中線 -2.42%（17.7% 正）
+- **OOS bootstrap**：flat 只有 3.3% 路徑正、kelly 0.0%、pct1 1.8% — 同 T12c window 嘅 100% 正完全相反
+- **結論（決定性）**：T12b/T12c 嘅 window 數字係 23-24+24-25 window 運氣（或平均 view 被市場修正嘅短暫錯價）— rule-B「edge」唔係真 out-of-sample。連同 T11 規則依賴（max-edge 規則同樣負）同 vig 分析（食唔起 HKJC 成本），**AH 模型-pick 策略線死亡**
+- **正面驗證**：零洩漏 OOS �紀律有效 — T12c 嘅 in-window bootstrap（100% 正）正係唔能分辨 window 運氣同真 edge 嘅證據類型；只有 25/26 OOS 能，而佢答咗
+- 方法：25/26 AH 爬蟲（T10 管道，20 賽事 × 2025-2026，6 workers ~1.3h，161,940 rows / 3,190 場入庫 run_id='clv_backfill_ah'）+ pre-2023 模型零重訓 + pi as-of 行到 25/26 + 量綱 sanity check 全綠（過程修 2 個 bug：kelly sanity rebuild skip-aware、bootstrap key）
+- 報告：reports/bankroll_sim_t13_oos_report.md/json；腳本：scripts/bankroll_sim_t13_oos.py
+
 ## 7. 下一步（等 Kris 拍板）
 - GBM（T6）— 業界主力，但要夠數據；paper trading + CLV 追蹤 3 個月
 - PHASE8（剩餘 duplicate rows）— 未批；合成 ID 對賬（Sofascore backfill 前）

@@ -26,6 +26,7 @@
 - **OddHarvester 升級**（2026-11-04 ~ 11-05）：security audit、smoke test、Patchright 遷移、SLUGFIX（覆蓋 11→24 competitions）
 - **T9b 模型重考**（2026-11-07）：CLV 樣本 5,430 場 + rolling-xG 特徵重考 — **確認 T4 結論**（market closing rps 0.19482 vs 最佳模型 0.21236；positive edge + negative ROI = miscalibrated 非 value）；報告 reports/backtest_t9b_report.md
 - **T12 本金模擬**（2026-11-08）⚠️已更正：「純勝率落注，本金 10000」— 首版 stake bug（per-unit 當美元，100 倍低估）已公開更正；**修正後：1x2_pi 破產（bet 2,066）/ ah_pi +24,253（ROI +5.77%，軟線警示）/ combined +14,091 / DC 全滅**；報告 reports/bankroll_sim_t12_report.md
+- **T13 25/26 OOS 驗證**（2026-11-08）：rule-B +5.77% **out-of-sample 徹底翻車** — 25/26（3,190 場 AH、零重訓）全部組合全負：flat_pi -5.10%（near-bankrupt 88.50）、kelly_pi -5.58%（近全滅 19.14）、淺線翻轉 -3.84%（bootstrap 只 4.2% 正）；**T12b/T12c window 數字係 window 運氣，AH 模型-pick 策略線死亡**；OOS 紀律有效驗證；報告 reports/bankroll_sim_t13_oos_report.md
 - **T12c AH bootstrap**（2026-11-08）：驗證 T12b AH 數字 — bootstrap 1,000 路徑全部正（唔係路徑運氣但答唔到 mean 係咪真）；**edge 集中淺/中線（+6.8/+7.2%），深線 -0.8%**；**抽水敏感性：+10~15% 額外 vig 歸零轉負 = 食唔起 HKJC 級成本**；Kelly 1/8 最穩、full 有 -70% 路徑；報告 reports/bankroll_sim_t12c_report.md
 - **T12b 動態注碼**（2026-11-08）：flat vs quarter-Kelly vs 1% bankroll — Kelly 兩邊放大（AH_pi_kelly 17.1M vs 1x2 近滅 175.9；dc ~19 全滅）；1% 複利同方向（AH 94,942）；17M 係噪聲 edge 路徑依賴複利；報告 reports/bankroll_sim_t12b_report.md
 - **T11-AH 回測**（2026-11-07）：「AH 易唔易贏過 1x2？」— **market 仍贏但 AH 對模型友善 4.4 倍**（Brier gap 0.0040 vs 1x2 嘅 0.0175）；raw CLV signature 同 T9b 一致（positive edge + negative ROI）；isotonic 校準增益係 average-view 軟線 artifact（market 自己 recal 都 +3.4%）；DC 深線爆升、pi 平坦；報告 reports/backtest_t11_ah_report.md
