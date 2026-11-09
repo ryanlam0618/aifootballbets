@@ -37,3 +37,7 @@
 - Kaunitz 2017：模擬 44% ROI → 實戰 8.5% → 5 個月封帳
 - Starlizard（£600m/年）：模型只係入場券，模型+資金+執行+法律四位一體
 - T4 blend 實測（10-31）：market w=0 最優 — 模型 v1 跑唔贏 de-vig 市場，如實記錄唔粉飾
+
+### 2026-11-08 T12 stake bug（量綱錯誤）
+- bankroll sim 第一版將 per-unit P/L 當美元（每注實際 1 蚊唔係 100）→ 全部結果 100 倍低估 → Duncan 向 Kris 報錯數，Forge 之後自己捉到先更正
+- **教訓**：驗收模擬/回測數字時必做量綱 sanity check（例：總 stake × 注數 vs bankroll 變化、ROI × staked vs P/L 絕對值）；「verification 全綠」只代表 script 講嘅嘢自洽，唔代表個 script 計啱
